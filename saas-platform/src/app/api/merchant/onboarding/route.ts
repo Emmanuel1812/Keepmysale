@@ -63,16 +63,56 @@ export async function POST(request: Request) {
       ],
     };
 
-    const merchant = await merchantService.update(merchantId, {
-      shopName: parsed.data.merchantName,
-      shopDomain: normalizeShopDomain(parsed.data.shopDomain),
-      email: parsed.data.supportEmail,
-      onboardingCompleted: true,
-      settings,
-    });
+    const normalizedShopDomain = normalizeShopDomain(parsed.data.shopDomain);
+
+    let merchant;
+    try {
+      merchant = await merchantService.update(merchantId, {
+        shopName: parsed.data.merchantName,
+        shopDomain: normalizedShopDomain,
+        email: parsed.data.supportEmail,
+        onboardingCompleted: true,
+        settings,
+      });
+    } catch (updateError) {
+      const errorCode =
+        typeof updateError === "object" &&
+        updateError !== null &&
+        "code" in updateError &&
+        typeof (updateError as { code?: unknown }).code === "string"
+          ? (updateError as { code: string }).code
+          : null;
+      const isUniqueViolation = errorCode === "23505";
+      if (!isUniqueViolation) {
+        throw updateError;
+      }
+
+      // Recover from duplicate shop_domain rows by updating the canonical shop record.
+      const byShopDomain = await merchantService.findByShopDomain(normalizedShopDomain);
+      if (!byShopDomain) {
+        throw updateError;
+      }
+
+      merchant = await merchantService.update(byShopDomain.id, {
+        supabaseUserId: existingMerchant.supabaseUserId,
+        shopName: parsed.data.merchantName,
+        shopDomain: normalizedShopDomain,
+        email: parsed.data.supportEmail,
+        onboardingCompleted: true,
+        settings,
+      });
+    }
     return apiResponse({ merchantId: merchant.id });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not create merchant";
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" &&
+            error !== null &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Could not create merchant";
     return apiError("DB_ERROR", message, 500);
   }
 }
