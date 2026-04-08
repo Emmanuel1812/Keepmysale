@@ -60,13 +60,28 @@ export async function POST() {
 
   if (!response.ok) {
     const upstreamBody = await response.text();
-    if (response.status === 401 || response.status === 403) {
+    
+    if (response.status === 403) {
+      return apiError(
+        "SHOPIFY_MISSING_SCOPES",
+        "Shopify rejected the request because the app is missing 'read_orders' scope. Please update the scopes in your .env and reconnect.",
+        403,
+        {
+          reconnectUrl: `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`,
+          shopDomain,
+          upstreamStatus: response.status,
+          upstreamBody: upstreamBody.slice(0, 300),
+        },
+      );
+    }
+
+    if (response.status === 401) {
       await merchantService.update(merchant.id, {
         shopifyAccessTokenEncrypted: null,
       });
       return apiError(
         "SHOPIFY_AUTH_FAILED",
-        "Shopify rejected the token/scopes. Reconnect Shopify and try again.",
+        "Shopify rejected the token. Reconnect Shopify and try again.",
         401,
         {
           reconnectUrl: `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`,

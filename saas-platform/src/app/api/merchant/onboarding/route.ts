@@ -93,6 +93,12 @@ export async function POST(request: Request) {
         throw updateError;
       }
 
+      if (byShopDomain.id !== existingMerchant.id) {
+        // Prevent breaking .single() queries later by deleting the orphaned merchant record
+        // before transferring the supabaseUserId to the canonical record.
+        await merchantService.delete(existingMerchant.id);
+      }
+
       merchant = await merchantService.update(byShopDomain.id, {
         supabaseUserId: existingMerchant.supabaseUserId,
         shopName: parsed.data.merchantName,
