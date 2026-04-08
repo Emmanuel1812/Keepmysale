@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FulfillmentBadge, FinancialBadge } from "@/components/ui/status-badges";
 
 interface OrderItem {
   id: string;
@@ -8,6 +9,7 @@ interface OrderItem {
   email: string | null;
   totalPrice: string | null;
   currency: string;
+  financialStatus: string | null;
   fulfillmentStatus: string | null;
   trackingNumber: string | null;
 }
@@ -41,6 +43,7 @@ export default function OrdersPage() {
                 <th className="p-3">Order</th>
                 <th className="p-3">Customer</th>
                 <th className="p-3">Amount</th>
+                <th className="p-3">Payment</th>
                 <th className="p-3">Fulfillment</th>
                 <th className="p-3">Tracking</th>
               </tr>
@@ -53,13 +56,18 @@ export default function OrdersPage() {
                   <td className="p-3">
                     {order.totalPrice ?? "0.00"} {order.currency}
                   </td>
-                  <td className="p-3">{order.fulfillmentStatus ?? "-"}</td>
+                  <td className="p-3">
+                    <FinancialBadge status={order.financialStatus} />
+                  </td>
+                  <td className="p-3">
+                    <FulfillmentBadge status={order.fulfillmentStatus} />
+                  </td>
                   <td className="p-3">{order.trackingNumber ?? "-"}</td>
                 </tr>
               ))}
               {orders.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-zinc-500" colSpan={5}>
+                  <td className="p-3 text-zinc-500" colSpan={6}>
                     No orders synced yet.
                   </td>
                 </tr>

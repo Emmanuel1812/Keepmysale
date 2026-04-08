@@ -7,15 +7,21 @@ export interface IAnalyticsSummary {
   resolvedToday: number;
   activeNegotiations: number;
   returnsPrevented: number;
+  totalOrders: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  fulfilledOrders: number;
 }
 
 export class AnalyticsService {
   private readonly conversationsDal: ConversationsDal;
   private readonly negotiationsDal: NegotiationsDal;
+  private readonly ordersDal: OrdersDal;
 
   constructor(private readonly supabase: SupabaseClient) {
     this.conversationsDal = new ConversationsDal(supabase);
     this.negotiationsDal = new NegotiationsDal(supabase);
+    this.ordersDal = new OrdersDal(supabase);
   }
 
   async getSummary(merchantId: string): Promise<IAnalyticsSummary> {
@@ -36,11 +42,21 @@ export class AnalyticsService {
         item.finalRefundType === "exchange"),
     ).length;
 
+    const orders = await this.ordersDal.findByMerchant(merchantId);
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const fulfilledOrders = orders.filter((o) => o.fulfillmentStatus !== null).length;
+
     return {
       openConversations,
       resolvedToday,
       activeNegotiations,
       returnsPrevented,
+      totalOrders,
+      totalRevenue,
+      avgOrderValue,
+      fulfilledOrders,
     };
   }
 }

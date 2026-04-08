@@ -16,5 +16,5 @@ export async function GET() {
   const analyticsService = new AnalyticsService(supabase);
   const summary = await analyticsService.getSummary(merchantId);
 
-  return apiResponse(summary);
+  return apiResponse({ ...summary, shopName: merchant.shopName });
 }
