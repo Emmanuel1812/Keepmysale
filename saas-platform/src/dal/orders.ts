@@ -38,6 +38,18 @@ export class OrdersDal {
     return mapOrderRow(data as OrderRow);
   }
 
+  async findByShopifyOrderId(merchantId: string, shopifyOrderId: string): Promise<IOrder | null> {
+    const { data, error } = await this.supabase
+      .from("orders")
+      .select("*")
+      .eq("merchant_id", merchantId)
+      .eq("shopify_order_id", shopifyOrderId)
+      .maybeSingle();
+    
+    if (error || !data) return null;
+    return mapOrderRow(data as OrderRow);
+  }
+
   async findByMerchant(merchantId: string): Promise<IOrder[]> {
     const { data, error } = await this.supabase
       .from("orders")

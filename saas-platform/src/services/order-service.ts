@@ -44,8 +44,7 @@ export class OrderService {
       throw new Error("Missing Shopify order id");
     }
 
-    const existingOrders = await this.ordersDal.findByMerchant(merchantId);
-    const existing = existingOrders.find((order) => order.shopifyOrderId === shopifyOrderId);
+    const existing = await this.ordersDal.findByShopifyOrderId(merchantId, shopifyOrderId);
 
     const payload: IOrderUpdate = {
       shopifyOrderNumber: (shopifyOrderData.name as string | undefined) ?? null,
