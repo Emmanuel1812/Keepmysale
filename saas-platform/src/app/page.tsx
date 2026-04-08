@@ -1,4 +1,11 @@
-export default function Home() {
+import { redirect } from "next/navigation";
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ shop?: string }> }) {
+  const sp = await searchParams;
+  if (sp.shop) {
+    redirect(`/api/shopify/install?shop=${sp.shop}`);
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <h1 className="text-3xl font-semibold">ReturnShield SaaS Platform</h1>

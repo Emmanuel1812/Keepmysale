@@ -50,7 +50,7 @@ export async function POST() {
   }
   const shopDomain = normalizeShopDomain(merchant.shopDomain);
 
-  const response = await fetch(`https://${shopDomain}/admin/api/2025-01/orders.json?limit=50`, {
+  const response = await fetch(`https://${shopDomain}/admin/api/2025-01/orders.json?limit=50&status=any`, {
     headers: {
       "X-Shopify-Access-Token": accessToken,
       "Content-Type": "application/json",
