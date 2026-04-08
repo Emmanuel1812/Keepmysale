@@ -5,8 +5,25 @@ import { apiError, apiResponse } from "@/lib/api-helpers";
 import { WebhookService } from "@/services/webhook-service";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const parsed = zSesWebhookPayload.safeParse(body);
+  const rawBody = await request.text();
+  let snsPayload: Record<string, unknown>;
+
+  try {
+    snsPayload = JSON.parse(rawBody);
+  } catch {
+    return apiError("VALIDATION_ERROR", "Invalid JSON", 400);
+  }
+
+  // Handle SNS subscription confirmation
+  if (snsPayload.Type === "SubscriptionConfirmation") {
+    const subscribeUrl = snsPayload.SubscribeURL as string;
+    if (subscribeUrl) {
+      await fetch(subscribeUrl);
+    }
+    return apiResponse({ confirmed: true });
+  }
+
+  const parsed = zSesWebhookPayload.safeParse(snsPayload);
 
   if (!parsed.success) {
     return apiError("VALIDATION_ERROR", "Invalid SES webhook payload", 400, parsed.error.flatten());
