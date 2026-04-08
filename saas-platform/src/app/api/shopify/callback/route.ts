@@ -137,6 +137,9 @@ export async function GET(request: Request) {
       throw verifyResult.error;
     }
 
+    // Register required Shopify webhooks
+    await shopifyService.registerWebhooks(normalizedShop, accessToken);
+
     const redirectPath = merchant.onboardingCompleted ? "/dashboard" : "/onboarding/configure";
     return NextResponse.redirect(new URL(redirectPath, env.NEXT_PUBLIC_APP_URL));
   } catch (error) {

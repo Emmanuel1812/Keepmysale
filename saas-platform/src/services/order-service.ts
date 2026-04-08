@@ -61,6 +61,18 @@ export class OrderService {
       lineItems: (shopifyOrderData.line_items as Array<Record<string, unknown>> | undefined) ?? [],
     };
 
+    const fulfillments = shopifyOrderData.fulfillments as Array<Record<string, unknown>> | undefined;
+    if (fulfillments && fulfillments.length > 0) {
+      const latest = fulfillments[fulfillments.length - 1];
+      payload.trackingNumber = (latest.tracking_number as string) ?? null;
+      payload.trackingUrl = (latest.tracking_url as string) ?? null;
+      payload.trackingCompany = (latest.tracking_company as string) ?? null;
+      
+      if (latest.shipment_status === "delivered") {
+        payload.deliveredAt = new Date().toISOString();
+      }
+    }
+
     if (existing) {
       return this.ordersDal.update(existing.id, payload);
     }
