@@ -1,0 +1,115 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { IMerchant, IMerchantCreate, IMerchantUpdate } from "@/types";
+
+type MerchantRow = Record<string, unknown>;
+
+function mapMerchantRow(row: MerchantRow): IMerchant {
+  return {
+    id: String(row.id),
+    supabaseUserId: (row.supabase_user_id as string | null) ?? null,
+    shopDomain: String(row.shop_domain),
+    shopName: (row.shop_name as string | null) ?? null,
+    email: String(row.email),
+    shopifyAccessTokenEncrypted: (row.shopify_access_token_encrypted as string | null) ?? null,
+    birdChannelId: (row.bird_channel_id as string | null) ?? null,
+    whatsappPhoneNumber: (row.whatsapp_phone_number as string | null) ?? null,
+    sesVerifiedDomain: (row.ses_verified_domain as string | null) ?? null,
+    mollieCustomerId: (row.mollie_customer_id as string | null) ?? null,
+    subscriptionTier: row.subscription_tier as IMerchant["subscriptionTier"],
+    subscriptionStatus: row.subscription_status as IMerchant["subscriptionStatus"],
+    trialEndsAt: (row.trial_ends_at as string | null) ?? null,
+    onboardingCompleted: Boolean(row.onboarding_completed),
+    settings: row.settings as IMerchant["settings"],
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export class MerchantsDal {
+  constructor(private readonly supabase: SupabaseClient) {}
+
+  async findById(id: string): Promise<IMerchant | null> {
+    const { data, error } = await this.supabase.from("merchants").select("*").eq("id", id).single();
+    if (error || !data) return null;
+    return mapMerchantRow(data as MerchantRow);
+  }
+
+  async findByMerchant(merchantId: string): Promise<IMerchant[]> {
+    const { data, error } = await this.supabase
+      .from("merchants")
+      .select("*")
+      .eq("id", merchantId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => mapMerchantRow(row as MerchantRow));
+  }
+
+  async findByUserId(supabaseUserId: string): Promise<IMerchant | null> {
+    const { data, error } = await this.supabase
+      .from("merchants")
+      .select("*")
+      .eq("supabase_user_id", supabaseUserId)
+      .single();
+    if (error || !data) return null;
+    return mapMerchantRow(data as MerchantRow);
+  }
+
+  async findByShopDomain(shopDomain: string): Promise<IMerchant | null> {
+    const { data, error } = await this.supabase
+      .from("merchants")
+      .select("*")
+      .eq("shop_domain", shopDomain)
+      .single();
+    if (error || !data) return null;
+    return mapMerchantRow(data as MerchantRow);
+  }
+
+  async create(input: IMerchantCreate): Promise<IMerchant> {
+    const payload = {
+      supabase_user_id: input.supabaseUserId ?? null,
+      shop_domain: input.shopDomain,
+      shop_name: input.shopName ?? null,
+      email: input.email,
+      subscription_tier: input.subscriptionTier ?? "starter",
+      subscription_status: input.subscriptionStatus ?? "trial",
+      trial_ends_at: input.trialEndsAt ?? null,
+      onboarding_completed: input.onboardingCompleted ?? false,
+      settings: input.settings ?? null,
+    };
+    const { data, error } = await this.supabase.from("merchants").insert(payload).select("*").single();
+    if (error || !data) throw error ?? new Error("Could not create merchant");
+    return mapMerchantRow(data as MerchantRow);
+  }
+
+  async update(id: string, input: IMerchantUpdate): Promise<IMerchant> {
+    const payload = {
+      supabase_user_id: input.supabaseUserId,
+      shop_domain: input.shopDomain,
+      shop_name: input.shopName,
+      email: input.email,
+      shopify_access_token_encrypted: input.shopifyAccessTokenEncrypted,
+      bird_channel_id: input.birdChannelId,
+      whatsapp_phone_number: input.whatsappPhoneNumber,
+      ses_verified_domain: input.sesVerifiedDomain,
+      mollie_customer_id: input.mollieCustomerId,
+      subscription_tier: input.subscriptionTier,
+      subscription_status: input.subscriptionStatus,
+      trial_ends_at: input.trialEndsAt,
+      onboarding_completed: input.onboardingCompleted,
+      settings: input.settings,
+    };
+    const { data, error } = await this.supabase
+      .from("merchants")
+      .update(payload)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !data) throw error ?? new Error("Could not update merchant");
+    return mapMerchantRow(data as MerchantRow);
+  }
+
+  async delete(id: string): Promise<void> {
+    const { error } = await this.supabase.from("merchants").delete().eq("id", id);
+    if (error) throw error;
+  }
+}

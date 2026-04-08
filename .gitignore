@@ -1,0 +1,22 @@
+# Secrets and local auth artifacts
+token.json
+credentials.json
+client_secret*.json
+
+# Environment files
+.env
+.env.*
+
+# Python virtual environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# IDE/editor
+.idea/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
