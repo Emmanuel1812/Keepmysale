@@ -13,11 +13,8 @@ export function ShopifyConnectCard() {
     if (!shop.trim() || loading) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/shopify/install?shop=${encodeURIComponent(shop)}`);
-      const payload = (await response.json()) as { success: boolean; data?: { installUrl: string } };
-      if (payload.success && payload.data?.installUrl) {
-        window.location.href = payload.data.installUrl;
-      }
+      window.location.href = `/api/shopify/install?shop=${encodeURIComponent(shop)}`;
+      return;
     } finally {
       setLoading(false);
     }
