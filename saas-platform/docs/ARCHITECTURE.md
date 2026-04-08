@@ -46,8 +46,16 @@ Gebaseerd op de 10 Supabase migraties onder `/supabase/migrations`.
 | shop_name | varchar | Naam van merchant overzicht |
 | email | varchar | Support e-mail / notificatie mail |
 | shopify_access_token_encrypted | text | AES-256 encrypted app key |
-| subscription_tier | text | starter, pro, agency |
+| bird_channel_id | text | MessageBird channel ID |
+| whatsapp_phone_number | text | Gekoppeld WhatsApp nummer |
+| ses_verified_domain | text | Amazon SES custom return domain |
+| mollie_customer_id | text | Betaal identificatie |
+| subscription_tier | text | trial, starter, growth, scale |
+| subscription_status | text | trial, active, past_due, cancelled |
+| trial_ends_at | timestamptz | Einde proefperiode |
+| onboarding_completed | boolean | Setup voltooid flag |
 | settings | jsonb | Return en business parameters (regels etc.) |
+| created_at / updated_at | timestamptz | Audit timestamps |
 *Relaties: has_many orders, has_many conversations, has_many customers.*
 
 ### customers
@@ -55,8 +63,13 @@ Gebaseerd op de 10 Supabase migraties onder `/supabase/migrations`.
 |---|---|---|
 | id | uuid (PK) | Interne identifier |
 | merchant_id | uuid (FK) | Scope |
-| email | varchar | Klant email adres |
-| shopify_customer_id | varchar | ID afkomstig van sync |
+| email | text | Klant email adres |
+| phone | text | Klant telefoonnummer |
+| name | text | Naam van de klant |
+| shopify_customer_id | text | ID afkomstig van sync |
+| language | text | Taalvoorkeur ('nl', 'en') |
+| metadata | jsonb | Extra Shopify variabelen |
+| created_at / updated_at | timestamptz | Audit timestamps |
 
 ### conversations
 | Kolom | Type | Beschrijving |
@@ -64,8 +77,17 @@ Gebaseerd op de 10 Supabase migraties onder `/supabase/migrations`.
 | id | uuid (PK) | Interne ticket ID |
 | merchant_id | uuid (FK) | Scope |
 | customer_id | uuid (FK)| Betreffende klant |
-| channel | text | 'email' |
+| channel | text | 'email' of 'whatsapp' |
 | status | text | 'open', 'resolved', 'escalated' |
+| subject | text | E-mail onderwerp |
+| intent | text | Huidige AI klassificering scope |
+| assigned_to | uuid (FK) | Admin user toewijzing |
+| ai_resolved | boolean | Was dit volledig AI gestuurd |
+| shopify_order_id | text | Gekoppelde order string |
+| last_message_at | timestamptz | Handig voor SLA sortering |
+| resolved_at | timestamptz | Moment van sluiting |
+| metadata | jsonb | Inbound context data |
+| created_at / updated_at | timestamptz | Audit timestamps |
 *Relaties: has_many messages*
 
 ### messages
@@ -73,45 +95,95 @@ Gebaseerd op de 10 Supabase migraties onder `/supabase/migrations`.
 |---|---|---|
 | id | uuid (PK) | Uniek ID |
 | conversation_id | uuid (FK) | De thread |
-| sender_type | text | 'customer', 'merchant', 'ai' |
-| body_text | text | De parsed inhoud |
-| raw_payload | jsonb | Originele AWS of Webhook block |
-| intent | text | AI classification (bijv. 'refund_request') |
+| merchant_id | uuid (FK) | Scope bypass |
+| sender | text | 'customer', 'merchant', 'ai', 'system' |
+| channel | text | Communicatie bron |
+| content | text | De parsed inhoud |
+| content_html | text | Raw email design view |
+| external_message_id | text | SES of WhatsApp Message-ID tracking |
+| attachments | jsonb | Array met URLs/references |
+| ai_confidence | float | Zekerheidsscore van gpt-4o |
+| metadata | jsonb | Overige header meta |
+| created_at | timestamptz | Timestamp binnen thread |
 
 ### orders
 | Kolom | Type | Beschrijving |
 |---|---|---|
 | id | uuid (PK) | Interne ID |
 | merchant_id | uuid (FK) | Scope |
-| shopify_order_id | varchar | De raw identifier van Shopify |
-| tracking_number | varchar | Extracted van Shopify fulfillments |
-| fulfillment_status | varchar | 'fulfilled' etc. |
+| shopify_order_id | text | De raw identifier van Shopify |
+| shopify_order_number | text | Visuele '#1000' nummers |
+| customer_id | uuid (FK) | Koper identifier |
+| email | text | Fallback copy van snapshot |
+| financial_status | text | 'paid', 'refunded' etc. |
+| fulfillment_status | text | 'fulfilled', 'unfulfilled' etc. |
 | total_price | decimal | Valuta bedrag |
+| currency | text | Betalingsvaluta (default 'EUR') |
+| line_items | jsonb | Array van gekochte varianten |
+| tracking_number | text | Extracted van Shopify fulfillments |
+| tracking_url | text | Extracted courier link |
+| tracking_company | text | Extracted (PostNL, DHL) |
+| delivered_at | timestamptz | Voltooiingstijd courier webhook |
+| proactive_check_sent | boolean | Voorkoming van spam double triggers |
+| synced_at | timestamptz | Laatste Shopify webhook sync |
+| created_at / updated_at | timestamptz | Audit timestamps |
 *Relaties: has_many negotiations*
 
 ### negotiations
 | Kolom | Type | Beschrijving |
 |---|---|---|
 | id | uuid (PK) | Onderhandeling structuur |
-| order_id | uuid (FK) | De bestelling ter discussie |
+| merchant_id | uuid (FK) | Scope |
 | conversation_id | uuid (FK) | De bijbehorende email thread |
-| status | varchar | 'initiated', 'offer_sent', 'offer_rejected', 'completed' |
-| current_step | int | (1,2,3) conform settings cascade |
+| customer_id | uuid (FK) | Koper |
+| order_id | uuid (FK) | De bestelling ter discussie |
+| status | text | 'initiated', 'offer_sent', 'offer_rejected', 'completed', 'expired', 'return_initiated' |
+| current_step | int | State pointer (1,2,3) |
+| max_steps | int | Dynamische threshold limit |
+| offers | jsonb | Track record van aangeboden percentages |
+| product_cost | decimal | Kostprijs validatie |
+| estimated_return_cost | decimal | Algoritme berekening logistiek |
+| final_refund_amount | decimal | Daadwerkelijk geaccepteerde discount |
+| final_refund_type | text | partial_refund, store_credit, exchange |
+| shopify_refund_id | text | Gekoppeld aan Shopify REST api object |
+| return_reason | text | NLP extracted reden |
+| customer_feedback | text | Wat klant antwoordde op deal |
+| savings | decimal | Berekende marge bespaard |
+| audit_pdf_url | text | Archivering storage link |
+| completed_at | timestamptz | Deal sluiting of fallback sturing |
+| created_at | timestamptz | Start van flow |
 *Aangestuurd via RPC atomic mutaties in supabase.*
 
 ### refund_logs
 | Kolom | Type | Beschrijving |
 |---|---|---|
-| id | uuid (PK) | - |
+| id | uuid (PK) | Audit log |
+| merchant_id | uuid (FK) | Scope |
 | negotiation_id | uuid (FK) | Waar de log is uitgespuugd |
+| order_id | uuid (FK) | Gekoppelde sale |
+| customer_id | uuid (FK) | Persoon die ontving |
+| action | text | Bijv. 'refund_executed' |
 | amount | decimal | Bedrag daadwerkelijk uitbetaald op shopify |
+| currency | text | Rekeneenheid |
+| shopify_refund_id | text | REST referentie |
+| shopify_transaction_id | text | Stripe/Mollie reference |
+| channel | text | Langs waar geinitieerd |
+| customer_consent_recorded | boolean | Juridische flag opt-in |
+| audit_details | jsonb | Raw JSON trace calls |
+| created_at | timestamptz | Tijdlijn index |
 
 ### knowledge_base
 | Kolom | Type | Beschrijving |
 |---|---|---|
 | id | uuid (PK) | Document structuur |
 | merchant_id | uuid (FK) | Scope |
-| content | text | De antwoorden en huisregels (voor AI retrieval) |
+| title | text | Naam of trefwoord snippet |
+| content | text | De antwoorden en huisregels |
+| content_embedding | vector(1536)| Pinecone/Postgis OpenAI Vector ruimte |
+| category | text | Type ruleset |
+| language | text | Locale detectie |
+| active | boolean | In of out gescopeed uit memory |
+| created_at / updated_at | timestamptz | Audit timestamps |
 
 
 ## Authenticatie Flow
