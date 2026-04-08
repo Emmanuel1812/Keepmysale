@@ -67,7 +67,7 @@ export async function POST() {
         "Shopify rejected the token/scopes. Reconnect Shopify and try again.",
         401,
         {
-          reconnectUrl: "/api/shopify/install",
+          reconnectUrl: `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`,
           shopDomain,
           upstreamStatus: response.status,
           upstreamBody: upstreamBody.slice(0, 300),
