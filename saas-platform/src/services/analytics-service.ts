@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ConversationsDal } from "@/dal/conversations";
 import { NegotiationsDal } from "@/dal/negotiations";
+import { OrdersDal } from "@/dal/orders";
 
 export interface IAnalyticsSummary {
   openConversations: number;
