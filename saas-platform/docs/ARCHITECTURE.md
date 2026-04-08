@@ -1,141 +1,154 @@
-# Architecture
+# System Architecture
 
-## System Flows
+## Overview
 
-```mermaid
-flowchart LR
-  C[Customer] --> E[Email]
-  E --> SES[Amazon SES]
-  SES --> SW[POST /api/webhooks/ses]
-  SW --> AI[AiService classify/build action]
-  AI --> N[NegotiationService]
-  AI --> OUT[MessageService + sendEmailViaSes]
-  OUT --> SES2[Amazon SES Outbound]
-  SES2 --> C
-
-  SHOP[Shopify] --> SHW[POST /api/webhooks/shopify]
-  SHW --> OS[OrderService upsert/update tracking]
-
-  M[Merchant] --> UI[Dashboard UI]
-  UI --> API[Next.js API routes]
-  API --> SVC[Services]
-  SVC --> DAL[DAL]
-  DAL --> DB[(Supabase Postgres)]
+```text
+┌──────────┐     ┌─────────┐     ┌───────────┐
+│ Customer │────→│ AWS SES │────→│ Webhook   │
+│ (email)  │     │         │     │ Pipeline  │
+└──────────┘     └─────────┘     └─────┬─────┘
+                                       │
+                                 ┌─────▼─────┐
+                                 │ AI Engine │
+                                 │ (OpenAI)  │
+                                 └─────┬─────┘
+                                       │
+┌──────────┐     ┌─────────┐     ┌─────▼─────┐
+│ Shopify  │────→│Webhooks │────→│ Services  │
+│ Store    │     │         │     │ Layer     │
+└──────────┘     └─────────┘     └─────┬─────┘
+                                       │
+┌──────────┐     ┌─────────┐     ┌─────▼─────┐
+│ Merchant │────→│ Next.js │────→│ Supabase  │
+│ Browser  │     │ App     │     │ Postgres  │
+└──────────┘     └─────────┘     └───────────┘
 ```
 
-## Layered Architecture
+## Architectuur Lagen
 
-- **Routes (`src/app/api`)**: validate input, resolve auth/session, call services, return `apiResponse/apiError`.
-  - Example: `POST /api/inbox/conversations/[id]/reply` validates params/body, enforces ownership, calls `InboxService.sendReply`.
-- **Services (`src/services`)**: business flows and orchestration across DAL + adapters.
-  - Example: `WebhookService.handleSesInbound` does idempotency check, customer/conversation resolution, AI intent classification, optional negotiation, outbound send.
-- **DAL (`src/dal`)**: table-specific data access and row mapping only.
-  - Example: `OrdersDal` handles create/update/find queries for `orders`.
-- **Adapters/Lib (`src/lib`)**: external APIs and shared utilities.
-  - Example: `lib/shopify/client.ts` for order/refund API calls, `lib/encryption.ts` for AES-256.
+Het applicatie patroon is strict functioneel opgezet om tight-coupling te voorkomen. 
+1. **Frontend**: Next.js (App Router, Server + Client components). Geen database calls worden hier direct gemaakt behalve door via /api/ of via secure Server Actions te routeren, of view-only getMerchant.
+2. **API Routes (/api/)**: Controller laag. Verifieert sessies en Zod input validation bodies. Accepteert/weigert netwerk en spreekt vervolgens altijd een Service aan.
+3. **Services Sector (/services/)**: Business Logic Laag. Krijgen verzoeken ge-injected (vaak inclusief de merchant ID), bevatten alle beslisbomen, rekenen averages uit, communiceren met externe endpoints (Shopify, OpenAI, SES) en sluiten hun logica af door de Data Access Layer in te lichten.
+4. **Data Access Layer (/dal/)**: Interface naar de Postgres database (Supabase Client). Hier is geen logica. De DAL schrijft, leest `single()`, filtert en mapRowt data netjes terug in vaste typescript Interfaces (`IMerchant`, `IOrder`).
+5. **Database**: Supabase Postgres uitgerust met Row Level Security (RLS) policies.
 
-## Database Schema (Current)
+## Database Schema
 
-### `merchants`
-- `id`, `supabase_user_id`, `shop_domain` (unique), `shop_name`, `email`
-- `shopify_access_token_encrypted`, `bird_channel_id`, `whatsapp_phone_number`, `ses_verified_domain`, `mollie_customer_id`
-- `subscription_tier`, `subscription_status`, `trial_ends_at`
-- `onboarding_completed`, `settings` (JSONB), `created_at`, `updated_at`
+Gebaseerd op de 10 Supabase migraties onder `/supabase/migrations`.
 
-### `customers`
-- `id`, `merchant_id`, `email`, `phone`, `name`, `shopify_customer_id`, `language`, `metadata`, `created_at`, `updated_at`
-- unique constraints: `(merchant_id, email)`, `(merchant_id, phone)`
+### merchants
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Unieke ID per winkel / licentie |
+| supabase_user_id | uuid (FK) | Gekoppeld aan auth.users |
+| shop_domain | varchar | Shopify identifier. Uniek. |
+| shop_name | varchar | Naam van merchant overzicht |
+| email | varchar | Support e-mail / notificatie mail |
+| shopify_access_token_encrypted | text | AES-256 encrypted app key |
+| subscription_tier | text | starter, pro, agency |
+| settings | jsonb | Return en business parameters (regels etc.) |
+*Relaties: has_many orders, has_many conversations, has_many customers.*
 
-### `conversations`
-- `id`, `merchant_id`, `customer_id`, `channel`, `status`
-- `subject`, `intent`, `assigned_to`, `ai_resolved`, `shopify_order_id`
-- `last_message_at`, `resolved_at`, `metadata`, `created_at`, `updated_at`
+### customers
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Interne identifier |
+| merchant_id | uuid (FK) | Scope |
+| email | varchar | Klant email adres |
+| shopify_customer_id | varchar | ID afkomstig van sync |
 
-### `messages`
-- `id`, `conversation_id`, `merchant_id`, `sender`, `channel`
-- `content`, `content_html`, `external_message_id`, `attachments`, `ai_confidence`, `metadata`, `created_at`
+### conversations
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Interne ticket ID |
+| merchant_id | uuid (FK) | Scope |
+| customer_id | uuid (FK)| Betreffende klant |
+| channel | text | 'email' |
+| status | text | 'open', 'resolved', 'escalated' |
+*Relaties: has_many messages*
 
-### `orders`
-- `id`, `merchant_id`, `shopify_order_id`, `shopify_order_number`
-- `customer_id`, `email`, `financial_status`, `fulfillment_status`
-- `total_price`, `currency`, `line_items`
-- `tracking_number`, `tracking_url`, `tracking_company`, `delivered_at`
-- `proactive_check_sent`, `synced_at`, `created_at`, `updated_at`
-- unique: `(merchant_id, shopify_order_id)`
+### messages
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Uniek ID |
+| conversation_id | uuid (FK) | De thread |
+| sender_type | text | 'customer', 'merchant', 'ai' |
+| body_text | text | De parsed inhoud |
+| raw_payload | jsonb | Originele AWS of Webhook block |
+| intent | text | AI classification (bijv. 'refund_request') |
 
-### `negotiations`
-- `id`, `merchant_id`, `conversation_id`, `customer_id`, `order_id`
-- `status`, `current_step`, `max_steps`, `offers` (JSONB)
-- `product_cost`, `estimated_return_cost`, `final_refund_amount`, `final_refund_type`
-- `shopify_refund_id`, `return_reason`, `customer_feedback`, `savings`, `audit_pdf_url`
-- `completed_at`, `created_at`, `updated_at`
+### orders
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Interne ID |
+| merchant_id | uuid (FK) | Scope |
+| shopify_order_id | varchar | De raw identifier van Shopify |
+| tracking_number | varchar | Extracted van Shopify fulfillments |
+| fulfillment_status | varchar | 'fulfilled' etc. |
+| total_price | decimal | Valuta bedrag |
+*Relaties: has_many negotiations*
 
-### `refund_logs`
-- `id`, `merchant_id`, `negotiation_id`, `order_id`, `customer_id`
-- `action`, `amount`, `currency`, `shopify_refund_id`, `shopify_transaction_id`
-- `channel`, `customer_consent_recorded`, `audit_details`, `created_at`
+### negotiations
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Onderhandeling structuur |
+| order_id | uuid (FK) | De bestelling ter discussie |
+| conversation_id | uuid (FK) | De bijbehorende email thread |
+| status | varchar | 'initiated', 'offer_sent', 'offer_rejected', 'completed' |
+| current_step | int | (1,2,3) conform settings cascade |
+*Aangestuurd via RPC atomic mutaties in supabase.*
 
-### `knowledge_base`
-- `id`, `merchant_id`, `title`, `content`, `content_embedding`, `category`, `language`, `active`, `created_at`, `updated_at`
+### refund_logs
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | - |
+| negotiation_id | uuid (FK) | Waar de log is uitgespuugd |
+| amount | decimal | Bedrag daadwerkelijk uitbetaald op shopify |
 
-### Relations
-- `merchants` 1:N `customers`, `conversations`, `messages`, `orders`, `negotiations`, `refund_logs`, `knowledge_base`
-- `customers` 1:N `conversations`, `orders`, `negotiations`, `refund_logs`
-- `conversations` 1:N `messages`, 1:N `negotiations`
-- `orders` 1:N `negotiations`, 1:N `refund_logs`
-- `negotiations` 1:N `refund_logs`
+### knowledge_base
+| Kolom | Type | Beschrijving |
+|---|---|---|
+| id | uuid (PK) | Document structuur |
+| merchant_id | uuid (FK) | Scope |
+| content | text | De antwoorden en huisregels (voor AI retrieval) |
 
-RLS is enabled for all merchant-owned tables with policies scoped by `get_merchant_id_for_user()`.
 
-## Authentication Flow
+## Authenticatie Flow
+Shopify App Bridge wordt niet gebruikt voor authentication omdat dit platform cross-channel functioneert. In plaats daarvan sturen we de OAuth flow aan via:
+`App hit` → `/api/shopify/install` → `Shopify Machtiging` → `Callback handler (/api/shopify/callback)` → Controleert HMAC → Vraagt permanent access token aan (en slaat dit encrypted op i.v.m GDPR) → Roept intern Supabase `signInWithOtp` (Magic Link) aan om een onzichtbare sessie-cookie aan te maken via de background → Vercel serveert de redirect met een valide session cookie waardoor de client de rest van het platform veilig als standalone admin kan verkennen.
 
-1. Merchant starts install via `GET /api/shopify/install?shop=...`.
-2. Shopify redirects to `GET /api/shopify/callback` with OAuth params.
-3. Callback validates HMAC, exchanges code for token, fetches shop data.
-4. Access token is encrypted (`encryptAes256`) and merchant is created/updated.
-5. Supabase user is created/found, then callback generates magic link and verifies OTP via server client.
-6. Session cookie is set, then redirect to `/onboarding/configure` or `/dashboard`.
-
-## Return Negotiation State Machine
-
-```mermaid
-stateDiagram-v2
-  [*] --> initiated
-  initiated --> offer_sent
-  offer_sent --> offer_sent: reject_offer (next step)
-  offer_sent --> completed: accept_offer
-  offer_sent --> return_initiated: request_full_return
-  offer_sent --> escalated: no_response_timeout
-  completed --> [*]
-  return_initiated --> [*]
-  escalated --> [*]
-```
-
-Implementation lives in `src/services/negotiation-service.ts` (`transitionNegotiationState`, `processCustomerResponse`).
-
-## Email Pipeline (Inbound/Outbound)
-
-1. `POST /api/webhooks/ses` validates payload with `zSesWebhookPayload`.
-2. `WebhookService.handleSesInbound` checks idempotency on `messages.external_message_id`.
-3. Merchant/customer/conversation are resolved.
-4. Inbound message is persisted.
-5. AI classifies intent (`AiService.classifyIntent`).
-6. For return intent, negotiation is initiated if an order match is found.
-7. Automated action is built (`AiService.buildAutomatedAction`).
-8. Outbound message is persisted and sent via SES.
+## SES Email Pipeline (inbound)
+Wanneer een mail bij Amazon in de bucket valt, stuurt Amazon SNS een json trigger:
+Stappen binnen `webhook-service.ts`:
+1. Parse raw email (Extract sender/body).
+2. Lookup Merchant (Via domain-matching of unieke receiving alias).
+3. Lookup Customer (Creeërt record in DB of update metadata).
+4. Lookup Conversation (Bestaande thread vs nieuwe email thread).
+5. OpenAI Classificatie (GPT-4o evalueert sentiment en intent: Returns vs Standard vs Spam).
+6. State Machine injection (Start returns negotiation flow of wacht op handmatige merchant override).
 
 ## Shopify Webhook Pipeline
+Shopify stuurt fulfillment en order updates → Endpoit valideert secret via `X-Shopify-Hmac-Sha256` hashing → Switch case stuurt payload door via `WebhookService` → `OrderService` upsert order, destilleert tracking links en marks fulfillment state af in Dashboard view inclusief metrics trigger.
 
-1. `POST /api/webhooks/shopify` reads raw body + HMAC + topic + shop domain headers.
-2. `WebhookService.handleShopifyWebhook` verifies HMAC signature.
-3. Merchant is resolved by `shop_domain`.
-4. Topic handling:
-   - `orders/create` / `orders/updated`: resolve customer by email, upsert order.
-   - `fulfillments/create` / `fulfillments/update`: update tracking, set `delivered_at` on delivered status.
+## Return Negotiation State Machine
+```text
+[initiated] ──(Offer Rule 1)──→ [offer_sent]
+                                     │
+            ┌────────────────────────┼───────────────┐
+            │                        │               │
+      (Klant dalt af)          (Klant negeert)   (Klant gaat akkoord)
+            │                        │               │
+    [offer_rejected]             [expired]       [completed] ──→ Refund op API level
+            │                        
+   (Offer Rule 2 trigger)  
+            │
+      [offer_sent] etc...
+```
 
-## Key Design Decisions (Implemented)
-
-- **Standalone app flow (not embedded)**: current flow redirects to platform pages (`/onboarding/...`, `/dashboard`) after OAuth callback.
-- **`gpt-4o-mini` for classification**: explicitly configured in `AiService` for structured JSON classification with low temperature.
-- **AES-256 token encryption**: Shopify access tokens are encrypted via `encryptAes256` before persistence.
-- **Email-first architecture**: SES inbound/outbound and email channel pipelines are fully implemented; WhatsApp is present only as planned docs/adapters.
+## Key Design Decisions
+- **Standalone app**: Het platform draait native op Vercel (eigen tab) en is niet vastgeketend aan Shopify Admin view door third-party iframe cookie strictures.
+- **gpt-4o-mini**: Kosten per intent-classification tot bodemniveau gemanteld terwijl complex begrip op de Nederlandse returns perfect intact blijft ten opzichte van gpt-3.5.
+- **AES-256-CBC**: Shopify REST API keys worden blind in supabase geforceerd om data breach risico absoluut zero te houden, cryptografisch omkranst per Vercel runtime.
+- **Email-first**: De engine is losgekoppeld geschreven met de "Kanaal (Channel)" kolom, later inplugtbaar met Twilio WhatsApp nummers.
+- **RPC Mutations**: Race conditions worden bij returns geneutraliseerd doordat een stored procedure direct Postgres lockt voor steps updates (`010_negotiation_offer_rpc`).

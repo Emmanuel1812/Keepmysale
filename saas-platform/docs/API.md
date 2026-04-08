@@ -1,295 +1,150 @@
-# API Reference
+# API Documentation
 
-All API routes return JSON via:
-- success: `{ "success": true, "data": ... }`
-- error: `{ "success": false, "error": { "code", "message", "details?" } }`
+## Auth & Shopify Endpoints
 
-## GET `/api/health`
-- **Auth**: No
-- **Request body**: None
-- **Response**:
-  - `200` -> `{ status, service, now }`
-- **Example response**
+### GET /api/shopify/install
+**Auth:** None
+**Beschrijving:** Initieert de Shopify OAuth sessie. Redirect de merchant naar het bewuste Shopify permssie-scherm afhankelijk van het `shop` query param.
+**Request Params:**
+- `shop` (string)
+
+### GET /api/shopify/callback
+**Auth:** None (Shopify HMAC)
+**Beschrijving:** Ontvangt de tijdelijke code van Shopify, verifieert HMAC, vraagt de access token op, creëert of update de `merchants` row, en initieert een Supabase OTP Magic Link flow voor Cookie creatie in de achtergrond.
+**Request Params:**
+- `code`, `shop`, `hmac`, `host`
+
+### POST /api/shopify/sync-orders
+**Auth:** Supabase Session
+**Beschrijving:** Triggert een asynchrone pull van recente orders (status=any) via de Shopify REST API en slaat ze op of update ze in de lokale `orders` tabel. Handelt de Protected Customer scope error af met reconnect links.
+**Response:**
 ```json
-{
-  "success": true,
-  "data": {
-    "status": "ok",
-    "service": "returnshield-saas-platform",
-    "now": "2026-04-08T18:00:00.000Z"
-  }
-}
+{ "success": true, "data": { "synced": number } }
 ```
-- **Errors**: none in current implementation
 
-## POST `/api/merchant/onboarding`
-- **Auth**: Yes (session required via `getMerchantFromSession`)
-- **Request body (Zod)**:
-  - `merchantName: string(min 2)`
-  - `shopDomain: string(min 3)`
-  - `supportEmail: email`
-  - `step1Percentage: int 0..100`
-  - `step2Percentage: int 0..100`
-  - `step3Percentage: int 0..100`
-- **Response**:
-  - `200` -> `{ merchantId }`
-- **Example request**
+## Dashboard & App Routes
+
+### GET /api/health
+**Auth:** None
+**Beschrijving:** Interne health checker.
+**Response:**
+```json
+{ "success": true, "data": { "status": "ok", "timestamp": "ISO-STRING" } }
+```
+
+### POST /api/merchant/onboarding
+**Auth:** Supabase Session
+**Beschrijving:** Configureert initial instellingen na registratie.
+**Request body:**
 ```json
 {
-  "merchantName": "Efo",
-  "shopDomain": "efo-testing-store.myshopify.com",
-  "supportEmail": "support@example.com",
+  "merchantName": "string",
+  "shopDomain": "string",
+  "supportEmail": "email",
   "step1Percentage": 20,
   "step2Percentage": 35,
   "step3Percentage": 50
 }
 ```
-- **Example response**
+**Response:**
 ```json
-{
-  "success": true,
-  "data": { "merchantId": "d04743cc-9fba-402c-a910-04628fe6043f" }
-}
+{ "success": true, "data": { "merchantId": "uuid" } }
 ```
-- **Errors**:
-  - `401 UNAUTHORIZED`
-  - `400 VALIDATION_ERROR`
-  - `404 NOT_FOUND`
-  - `500 DB_ERROR`
 
-## GET `/api/inbox/conversations`
-- **Auth**: Yes
-- **Request body**: None
-- **Response**:
-  - `200` -> `{ conversations: IConversation[] }`
-- **Example response**
+### GET /api/merchant/settings
+**Auth:** Supabase Session
+**Beschrijving:** Haalt de huidige settings en basis-info op voor weergave in het instellingen formulier.
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "conversations": []
+    "id": "uuid",
+    "shopName": "string",
+    "email": "string",
+    "settings": { "return_negotiation_enabled": true, "negotiation_offers": [...] }
   }
 }
 ```
-- **Errors**:
-  - `401 UNAUTHORIZED`
 
-## GET `/api/inbox/conversations/[id]/messages`
-- **Auth**: Yes
-- **Request**:
-  - path param `id: string(min 1)`
-  - ownership enforced (`404` on not-owned resources)
-- **Response**:
-  - `200` -> `{ messages: IMessage[] }`
-- **Example response**
+### PATCH /api/merchant/settings
+**Auth:** Supabase Session
+**Beschrijving:** Overschrijft geselecteerde settings binnen het settings JSONB object.
+**Request body:**
+```json
+{
+  "shopName": "string",
+  "email": "string",
+  "settings": { ... partial overrides ... }
+}
+```
+
+### GET /api/orders
+**Auth:** Supabase Session
+**Beschrijving:** Haalt alle lokale orders op van de betreffende merchant.
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "messages": []
+    "orders": [
+      {
+         "id": "uuid",
+         "shopifyOrderNumber": "string",
+         "financialStatus": "paid",
+         "fulfillmentStatus": "fulfilled",
+         "trackingNumber": "string",
+         "totalPrice": "100.00",
+         "currency": "EUR"
+      }
+    ]
   }
 }
 ```
-- **Errors**:
-  - `401 UNAUTHORIZED`
-  - `400 VALIDATION_ERROR`
-  - `404 NOT_FOUND`
 
-## POST `/api/inbox/conversations/[id]/reply`
-- **Auth**: Yes
-- **Request**:
-  - path param `id: string(min 1)`
-  - body (Zod): `{ content: string(min 1) }`
-  - ownership enforced (`404` on not-owned resources)
-- **Response**:
-  - `200` -> `{ message: IMessage }`
-- **Example request**
-```json
-{
-  "content": "Thanks, we are checking your order."
-}
-```
-- **Example response**
+### GET /api/inbox/conversations
+**Auth:** Supabase Session
+**Beschrijving:** Haalt gegroepeerde mail conversations op per merchant.
+
+### GET /api/inbox/conversations/[id]/messages
+**Auth:** Supabase Session
+**Beschrijving:** Laat alle in- en outbound messages zien van een unieke conversation, eigendom geverifieerd.
+
+### POST /api/inbox/conversations/[id]/reply
+**Auth:** Supabase Session
+**Beschrijving:** Verstuurt direct een message naar de klant via Amazon SES en documenteert deze in de database.
+
+### GET /api/analytics/summary
+**Auth:** Supabase Session
+**Beschrijving:** Berekening API voor de metrics dashboard cards via DAL aggregation.
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "message": {
-      "id": "msg_123",
-      "sender": "human_agent",
-      "content": "Thanks, we are checking your order."
-    }
-  }
-}
-```
-- **Errors**:
-  - `401 UNAUTHORIZED`
-  - `400 VALIDATION_ERROR`
-  - `404 NOT_FOUND`
-  - `500 REPLY_ERROR`
-
-## GET `/api/analytics/summary`
-- **Auth**: Yes
-- **Request body**: None
-- **Response**:
-  - `200` -> `{ openConversations, resolvedToday, activeNegotiations, returnsPrevented }`
-- **Example response**
-```json
-{
-  "success": true,
-  "data": {
-    "openConversations": 0,
+    "openConversations": 1,
     "resolvedToday": 0,
     "activeNegotiations": 0,
-    "returnsPrevented": 0
+    "returnsPrevented": 0,
+    "totalOrders": 10,
+    "totalRevenue": 2500.00,
+    "avgOrderValue": 250.00,
+    "fulfilledOrders": 4,
+    "shopName": "My Store"
   }
 }
 ```
-- **Errors**:
-  - `401 UNAUTHORIZED`
 
-## GET `/api/shopify/install`
-- **Auth**: No
-- **Request**:
-  - query param `shop` required
-- **Response**:
-  - `200` -> `{ installUrl, state }`
-- **Example request**
-```
-GET /api/shopify/install?shop=efo-testing-store.myshopify.com
-```
-- **Example response**
-```json
-{
-  "success": true,
-  "data": {
-    "installUrl": "https://efo-testing-store.myshopify.com/admin/oauth/authorize?...",
-    "state": "uuid-state"
-  }
-}
-```
-- **Errors**:
-  - `400 VALIDATION_ERROR`
+### POST /api/billing/subscribe
+**Auth:** Supabase Session
+**Beschrijving:** Creëert Mollie payment subscription link voor tier upgrade.
 
-## GET `/api/shopify/callback`
-- **Auth**: No (creates session)
-- **Request**:
-  - Shopify OAuth callback params (`shop`, `code`, `hmac`, etc.)
-- **Behavior**:
-  - validate HMAC
-  - exchange code for token
-  - fetch shop data
-  - encrypt token
-  - create/update merchant + Supabase user linkage
-  - create session cookie using magiclink + verifyOtp
-  - redirect to `/onboarding/configure` or `/dashboard`
-- **Response**:
-  - HTTP redirect (`307/302` style via `NextResponse.redirect`)
-- **Errors**:
-  - `400 VALIDATION_ERROR` (missing callback params)
-  - `401 UNAUTHORIZED` (OAuth/signature/exchange/auth failures)
+## Webhooks (Inbound Services)
 
-## POST `/api/shopify/sync-orders`
-- **Auth**: Yes
-- **Request body**: None
-- **Behavior**:
-  - decrypt merchant Shopify token
-  - fetch up to 50 orders from Shopify
-  - resolve customer by email
-  - `upsertFromShopify` per order
-- **Response**:
-  - `200` -> `{ synced: number }`
-- **Example response**
-```json
-{
-  "success": true,
-  "data": { "synced": 50 }
-}
-```
-- **Errors**:
-  - `401 UNAUTHORIZED`
-  - `400 VALIDATION_ERROR` (missing merchant token)
-  - `502 UPSTREAM_ERROR` (Shopify request failed)
+### POST /api/webhooks/ses
+**Auth:** Geen (AWS SNS Signature check intern)
+**Beschrijving:** Ontvangt inbound gestructureerde notificatys (JSON) van Amazon Simple Email Service (SES) via Amazon SNS inclusief de raw email content verstuurd naar merchants. Trigger voor de AI engine en State machine.
 
-## POST `/api/webhooks/ses`
-- **Auth**: No (payload-validated webhook)
-- **Request body (Zod)**:
-  - `messageId`, `merchantId`, `from`, `to`, `subject`, `textBody`
-- **Response**:
-  - `200` -> `{ handled: true, deduplicated, action? }`
-- **Example request**
-```json
-{
-  "messageId": "ses-123",
-  "merchantId": "d04743cc-9fba-402c-a910-04628fe6043f",
-  "from": "customer@example.com",
-  "to": "support@example.com",
-  "subject": "Where is my order",
-  "textBody": "Where is order #1001?"
-}
-```
-- **Example response**
-```json
-{
-  "success": true,
-  "data": {
-    "handled": true,
-    "deduplicated": false,
-    "action": "send_tracking_status"
-  }
-}
-```
-- **Errors**:
-  - `400 VALIDATION_ERROR`
-  - `404 NOT_FOUND` (merchant not found)
-  - `500 WEBHOOK_PROCESSING_ERROR`
-
-## POST `/api/webhooks/shopify`
-- **Auth**: No (HMAC signature required)
-- **Request**:
-  - raw body
-  - headers: `x-shopify-hmac-sha256`, `x-shopify-topic`, `x-shopify-shop-domain`
-- **Response**:
-  - `200` -> webhook handling result (`{ accepted, topic, orderId? }`)
-- **Example response**
-```json
-{
-  "success": true,
-  "data": {
-    "accepted": true,
-    "topic": "orders/create",
-    "orderId": "order_123"
-  }
-}
-```
-- **Errors**:
-  - `401 UNAUTHORIZED` (invalid signature/headers/merchant/topic handling errors)
-
-## POST `/api/billing/subscribe`
-- **Auth**: No (current route does not enforce session)
-- **Request body (Zod)**:
-  - `customerId: string(min 1)`
-  - `amountValue: string(min 1)`
-  - `description: string(min 2)`
-- **Response**:
-  - `200` -> `{ subscriptionId, status }`
-- **Example request**
-```json
-{
-  "customerId": "cst_123",
-  "amountValue": "29.00",
-  "description": "Starter plan"
-}
-```
-- **Example response**
-```json
-{
-  "success": true,
-  "data": {
-    "subscriptionId": "sub_123",
-    "status": "pending"
-  }
-}
-```
-- **Errors**:
-  - `400 VALIDATION_ERROR`
+### POST /api/webhooks/shopify
+**Auth:** Shopify HMAC secret (`X-Shopify-Hmac-Sha256`)
+**Beschrijving:** Handler voor real-time shopify triggers zoals `orders/create` en `fulfillments/update`.

@@ -1,94 +1,93 @@
-# ReturnShield SaaS Platform
+# KeepMySale
 
-Email-first Shopify support automation SaaS built with Next.js, Supabase, and OpenAI.
+> "AI helpdesk die tickets afhandelt EN retouren voorkomt voor Shopify merchants"
 
-## Tech Stack
-- Next.js 16 (App Router), React 19, TypeScript
-- Supabase (`@supabase/supabase-js`, `@supabase/ssr`) for Postgres + auth
-- AWS SES/SNS SDKs for email channel integrations
-- Shopify Admin API integrations (OAuth, orders, refunds, webhooks)
-- OpenAI (`gpt-4o-mini`) for intent classification and automated actions
-- Mollie client integration for billing
-- Zod validation, Vitest tests, ESLint
+KeepMySale is een grootschalig B2B SaaS platform ontworpen om de return-frictie bij Shopify verkopers te verpulveren. Via artificial intelligence die reageert op inkomende klant-emails, analyseert de engine de intentie van de klant (retourverzoek) en initieert deze volledig autonoom dynamische State Machine onderhandelingen. In drie gerobotiseerde escalatie-stappen (partial refund, store credit, omruiling) kaapt hij de vergaande omzetten terug uit de klauwen van een volledige retour.
+
+## Technology Stack
+- **Framework:** Next.js 14, React Serverside Components, App Router
+- **Language:** TypeScript
+- **Database / Auth:** Supabase (PostgresSQL + Magic Link OTP auth)
+- **AI Engine:** OpenAI (gpt-4o-mini intent classifier)
+- **Inbound Comms:** Amazon Web Services (SES + SNS webhook proxy)
+- **E-Commerce:** Shopify API (GraphQL + Webhooks + OAuth flow)
+- **Billing:** Mollie API
+- **Deployment:** Vercel
+- **Package Manager:** pnpm
 
 ## Prerequisites
+Controleer voor setup dat de volgende technologieën in locale cache zitten:
 - Node.js 18+
-- `pnpm`
-- Supabase project/account
-- Shopify Partner app credentials
-- AWS SES credentials
-- OpenAI API key
+- pnpm (package manager)
+- Een geactiveerd Supabase instance
+- Shopify Partner Development store
 
-## Setup
+## Setup Instructions
+
 ```bash
-git clone <your-repo-url>
+# Clone the repository
+git clone [repository_url]
 cd saas-platform
+
+# Install dependencies using pnpm explicitly
 pnpm install
+
+# Copy environment variables skeleton
 cp .env.example .env.local
-pnpm dev
+
+# Voer migraties uit en start supabase connectie
+# Vul .env.local met juiste credential parameters
 ```
 
-### Required Environment Variables
-Copy from `.env.example` and set real values:
+## Environment Variables
+Voor core functionering moet `.env.local` volledig over de volgende constructie beschikken:
 
-- `NEXT_PUBLIC_APP_URL` -> your app URL (local: `http://localhost:3000`)
-- `NEXT_PUBLIC_SUPABASE_URL` -> Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` -> Supabase anon key
-- `SUPABASE_SERVICE_ROLE_KEY` -> Supabase service role key
-- `OPENAI_API_KEY` -> OpenAI dashboard API key
-- `AWS_SES_REGION` -> AWS SES region
-- `AWS_SES_ACCESS_KEY_ID` -> AWS IAM access key
-- `AWS_SES_SECRET_ACCESS_KEY` -> AWS IAM secret key
-- `AWS_SES_FROM_EMAIL` -> verified SES sender email
-- `AWS_SNS_WEBHOOK_SECRET` -> internal webhook secret value
-- `SHOPIFY_API_KEY` -> Shopify app API key
-- `SHOPIFY_API_SECRET` -> Shopify app API secret
-- `SHOPIFY_SCOPES` -> OAuth scopes for your app
-- `SHOPIFY_APP_URL` -> public app base URL
-- `SHOPIFY_WEBHOOK_SECRET` -> Shopify webhook signing secret
-- `MOLLIE_API_KEY` -> Mollie API key
-- `ENCRYPTION_KEY` -> 64-char hex key for AES-256 token encryption
+| Environment Variabele | Beschrijving | Waar te vinden |
+|-------------------------|--------------|----------------|
+| `NEXT_PUBLIC_APP_URL` | De live/local base URL voor redirect | App Setup |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Postgres gateway URL | Supabase Dashboard |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public access key API | Supabase Auth settings |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secure admin access (voor webhooks) | Supabase API configuratie |
+| `OPENAI_API_KEY` | Connectiekey API | OpenAI Developer Dashboard |
+| `AWS_SES_REGION` | Regio van outbound mails (`eu-west-1`) | AWS Console |
+| `AWS_SES_ACCESS_KEY_ID` | Amazon policy auth key | AWS IAM |
+| `AWS_SES_SECRET_ACCESS_KEY` | Amazon policy secret key | AWS IAM |
+| `AWS_SES_FROM_EMAIL` | Afzender support email voor replies | AWS Verified Identities |
+| `AWS_SNS_WEBHOOK_SECRET` | Auth secret om inbound payloads te un-gate | AWS SNS Dashboard |
+| `SHOPIFY_API_KEY` | Public app key voor specifieke shop | Shopify Partners App |
+| `SHOPIFY_API_SECRET` | Backend Shopify key voor access exchanges | Shopify Partners App |
+| `SHOPIFY_SCOPES` | e.g. `read_orders,write_orders...` | Shopify Configuration |
+| `SHOPIFY_APP_URL` | URL match configuration. Gelijk aan NEXT URL | App Bridge settings |
+| `SHOPIFY_WEBHOOK_SECRET` | Payload authenticatie per-shop configuratie | Shopify App |
+| `MOLLIE_API_KEY` | Live / test licentie key voor onboarding payments | Mollie Dashboard |
+| `ENCRYPTION_KEY` | Exact 64-karakter string voor AES-256 token encryptie | Local generation |
 
-## Database Setup (Supabase)
-Run SQL migrations in order from `supabase/migrations`:
+## Database Setup
+1. Creeer of start je locale Supabase project: `supabase start`
+2. Run database migrations gelokaliseerd in de map `/supabase/migrations/`
+3. Push via: `supabase db push` (of run queries manueel in het SQL dashboard). Let op dat `010_negotiation_offer_rpc.sql` correct is aangeslagen.
 
-1. `001_create_merchants.sql`
-2. `002_create_customers.sql`
-3. `003_create_conversations.sql`
-4. `004_create_messages.sql`
-5. `005_create_orders.sql`
-6. `006_create_negotiations.sql`
-7. `007_create_refund_logs.sql`
-8. `008_create_knowledge_base.sql`
-9. `009_create_rls_policies.sql`
-10. `010_negotiation_offer_rpc.sql`
+## Scripts & Commando's
+- `pnpm dev` → Start Next.js development server (localhost)
+- `pnpm build` → Start optimalisatie naar de productieschijf (Vercel run-alike)
+- `pnpm test` → Start de Vitest / E2E mock integratie tests  
+- `pnpm lint` → Evalueert en normaliseert code styling  
+- `pnpm typecheck` → Voert tsc zero-emit TypeScript validation run uit
 
-Use Supabase SQL Editor or migration tooling in that sequence.
+## Structuur
+- `/src/app/api/` → Volledig ingerichte Next Server API route controllers & webhooks
+- `/src/components/` → Shadcn styling hooks en visuele React Dashboard elementen
+- `/src/dal/` → Database Access Layer (strict filter logica m.b.t Supabase querying)
+- `/src/services/` → Abstracte business rules, AI logic proxy allocatie
+- `/src/lib/` → Externe SDK instanties & validators (Zod/OpenAI/Auth sessies)
+- `/src/types/` → Strikte database row mapping interface exports  
+- `/src/hooks/` → React statemanagement helpers en UI wrappers  
+- `/src/config/` → Site-wide metadata, themeroutes en standaard constanten  
+- `/supabase/` → Alle SQL migratiefiles om database tables, joins en RPC routines af te dwingen  
+- `/docs/` → Uitgebreide documentatie over AI implementaties en abstracte Architectuur flows
 
-## Useful Commands
-```bash
-pnpm dev
-pnpm build
-pnpm test
-pnpm lint
-pnpm typecheck
-```
+## Deployment
+Dit project draait native op **Vercel** (`vercel.json` aanwezig) als Edge netwerk. Zodra master commits via Github op de repo vallen, triggert een Vercel hook automatisch de deploy pipelines, controleert de TypeScript code op corruptie, en stuurt deze naar edge servers live uit.
 
-## Folder Structure
-- `src/app` -> Next.js app routes, pages, and API route handlers
-- `src/components` -> UI and feature components
-- `src/services` -> business orchestration layer
-- `src/dal` -> database access layer (Supabase queries only)
-- `src/lib` -> adapters/utilities (Shopify, SES, OpenAI, auth, encryption)
-- `src/types` -> shared domain/API type definitions
-- `src/tests` -> integration/service tests
-- `supabase/migrations` -> schema, RLS, triggers, and SQL functions
-- `docs` -> architecture and operational documentation
-
-## Deployment (Vercel)
-- `vercel.json` is configured with:
-  - `framework: nextjs`
-  - `installCommand: pnpm install`
-  - `buildCommand: pnpm build`
-- Add the same environment variables from `.env.local` in Vercel Project Settings.
-- Deploy preview/prod with Vercel CLI or Git integration.
+---
+**License**: Proprietary (Closed-Source)
