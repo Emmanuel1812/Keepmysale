@@ -5,9 +5,11 @@ import { getMerchantFromSession } from "@/lib/auth";
 
 export async function GET() {
   let merchantId = "";
+  let shopName: string | null = null;
   try {
     const merchant = await getMerchantFromSession();
     merchantId = merchant.id;
+    shopName = merchant.shopName;
   } catch {
     return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
@@ -16,5 +18,5 @@ export async function GET() {
   const analyticsService = new AnalyticsService(supabase);
   const summary = await analyticsService.getSummary(merchantId);
 
-  return apiResponse({ ...summary, shopName: merchant.shopName });
+  return apiResponse({ ...summary, shopName });
 }
