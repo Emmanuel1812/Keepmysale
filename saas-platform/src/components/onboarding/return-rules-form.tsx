@@ -15,10 +15,12 @@ export function ReturnRulesForm() {
   const [step2Percentage, setStep2Percentage] = useState(35);
   const [step3Percentage, setStep3Percentage] = useState(50);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function submitConfiguration() {
     if (!merchantName || !shopDomain || !supportEmail || saving) return;
     setSaving(true);
+    setErrorMessage(null);
     try {
       const response = await fetch("/api/merchant/onboarding", {
         method: "POST",
@@ -32,11 +34,20 @@ export function ReturnRulesForm() {
           step3Percentage,
         }),
       });
-      const payload = (await response.json()) as { success: boolean };
+      const payload = (await response.json()) as {
+        success: boolean;
+        error?: { message?: string };
+      };
       if (payload.success) {
-        await fetch("/api/shopify/sync-orders", { method: "POST" });
-        router.push("/dashboard");
+        // Redirect immediately after onboarding success; order sync runs best-effort.
+        void fetch("/api/shopify/sync-orders", { method: "POST" });
+        router.replace("/dashboard");
+        router.refresh();
+        return;
       }
+      setErrorMessage(payload.error?.message ?? "Could not save configuration.");
+    } catch {
+      setErrorMessage("Could not save configuration.");
     } finally {
       setSaving(false);
     }
@@ -102,6 +113,7 @@ export function ReturnRulesForm() {
         <Button className="w-fit" onClick={submitConfiguration} disabled={saving}>
           {saving ? "Saving..." : "Save configuration"}
         </Button>
+        {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
       </CardContent>
     </Card>
   );
