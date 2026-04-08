@@ -4,6 +4,7 @@ import { getMerchantFromSession } from "@/lib/auth";
 import { decryptAes256 } from "@/lib/encryption";
 import { OrderService } from "@/services/order-service";
 import { CustomerService } from "@/services/customer-service";
+import { MerchantService } from "@/services/merchant-service";
 
 function isLikelyValidShopifyToken(token: string): boolean {
   const trimmed = token.trim();
@@ -31,6 +32,7 @@ export async function POST() {
   const supabase = createSupabaseServiceClient();
   const orderService = new OrderService(supabase);
   const customerService = new CustomerService(supabase);
+  const merchantService = new MerchantService(supabase);
   let accessToken = "";
   try {
     accessToken = decryptAes256(merchant.shopifyAccessTokenEncrypted);
@@ -57,11 +59,15 @@ export async function POST() {
   if (!response.ok) {
     const upstreamBody = await response.text();
     if (response.status === 401 || response.status === 403) {
+      await merchantService.update(merchant.id, {
+        shopifyAccessTokenEncrypted: null,
+      });
       return apiError(
         "SHOPIFY_AUTH_FAILED",
         "Shopify rejected the token/scopes. Reconnect Shopify and try again.",
         401,
         {
+          reconnectUrl: "/api/shopify/install",
           shopDomain,
           upstreamStatus: response.status,
           upstreamBody: upstreamBody.slice(0, 300),

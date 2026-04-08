@@ -29,6 +29,7 @@ export default function DashboardPage() {
   });
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   async function loadOrders() {
     const response = await fetch("/api/orders", { cache: "no-store" });
@@ -41,8 +42,21 @@ export default function DashboardPage() {
   async function syncOrders() {
     if (syncing) return;
     setSyncing(true);
+    setSyncError(null);
     try {
-      await fetch("/api/shopify/sync-orders", { method: "POST" });
+      const response = await fetch("/api/shopify/sync-orders", { method: "POST" });
+      const payload = (await response.json()) as {
+        success: boolean;
+        error?: { code?: string; message?: string; details?: { reconnectUrl?: string } };
+      };
+      if (!response.ok || !payload.success) {
+        if (payload.error?.code === "SHOPIFY_AUTH_FAILED" && payload.error?.details?.reconnectUrl) {
+          window.location.href = payload.error.details.reconnectUrl;
+          return;
+        }
+        setSyncError(payload.error?.message ?? "Sync failed. Please try again.");
+        return;
+      }
       await loadOrders();
     } finally {
       setSyncing(false);
@@ -69,6 +83,7 @@ export default function DashboardPage() {
           {syncing ? "Syncing..." : "Sync Orders"}
         </Button>
       </div>
+      {syncError ? <p className="text-sm text-red-600">{syncError}</p> : null}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>Open conversations: {summary.openConversations}</Card>
         <Card>Resolved today: {summary.resolvedToday}</Card>
