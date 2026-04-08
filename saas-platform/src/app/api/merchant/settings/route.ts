@@ -35,13 +35,13 @@ export async function PATCH(request: NextRequest) {
     const merchantService = new MerchantService(supabase);
 
     // Merge existing settings with new settings
-    const existingSettings = (merchant.settings as Record<string, unknown>) ?? {};
+    const existingSettings = (merchant.settings as unknown as Record<string, unknown>) ?? {};
     const newSettings = settings ? { ...existingSettings, ...settings } : existingSettings;
 
     const updatedMerchant = await merchantService.update(merchant.id, {
       shopName: shopName !== undefined ? shopName : merchant.shopName,
       email: email !== undefined ? email : merchant.email,
-      settings: newSettings,
+      settings: newSettings as any,
     });
 
     return apiResponse({
