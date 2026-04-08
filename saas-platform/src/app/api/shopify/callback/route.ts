@@ -7,6 +7,12 @@ import { encryptAes256 } from "@/lib/encryption";
 import { MerchantService } from "@/services/merchant-service";
 import { ShopifyService } from "@/services/shopify-service";
 
+function normalizeShopDomain(shopDomain: string): string {
+  const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
+  return withoutAdmin.split("/")[0];
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const adminSupabase = createSupabaseAdminClient();
@@ -17,8 +23,9 @@ export async function GET(request: Request) {
 
   try {
     const { shop, code } = shopifyService.validateOAuthCallback(url.searchParams);
+    const normalizedShop = normalizeShopDomain(shop);
 
-    const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    const tokenResponse = await fetch(`https://${normalizedShop}/admin/oauth/access_token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -41,7 +48,7 @@ export async function GET(request: Request) {
       throw new Error("Shopify token exchange returned no access token");
     }
 
-    const shopResponse = await fetch(`https://${shop}/admin/api/2025-01/shop.json`, {
+    const shopResponse = await fetch(`https://${normalizedShop}/admin/api/2025-01/shop.json`, {
       headers: {
         "X-Shopify-Access-Token": accessToken,
         "Content-Type": "application/json",
@@ -55,15 +62,15 @@ export async function GET(request: Request) {
     const shopPayload = (await shopResponse.json()) as {
       shop?: { name?: string; email?: string; domain?: string };
     };
-    const shopName = shopPayload.shop?.name ?? shop;
-    const shopEmail = shopPayload.shop?.email ?? `owner@${shop}`;
+    const shopName = shopPayload.shop?.name ?? normalizedShop;
+    const shopEmail = shopPayload.shop?.email ?? `owner@${normalizedShop}`;
     const encryptedToken = encryptAes256(accessToken);
 
     const {
       data: { user: sessionUser },
     } = await serverSupabase.auth.getUser();
 
-    const authEmail = shopEmail || `owner@${shop}`;
+    const authEmail = shopEmail || `owner@${normalizedShop}`;
     let supabaseUserId = sessionUser?.id ?? null;
     if (!supabaseUserId) {
       const existingUsers = await adminSupabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -74,7 +81,7 @@ export async function GET(request: Request) {
         const createdUser = await adminSupabase.auth.admin.createUser({
           email: authEmail,
           email_confirm: true,
-          user_metadata: { shop_domain: shop },
+          user_metadata: { shop_domain: normalizedShop },
         });
         if (createdUser.error || !createdUser.data.user) {
           throw createdUser.error ?? new Error("Failed to create Supabase user");
@@ -83,18 +90,18 @@ export async function GET(request: Request) {
       }
     }
 
-    const existingMerchant = await merchantService.findByShopDomain(shop);
+    const existingMerchant = await merchantService.findByShopDomain(normalizedShop);
     let merchant = existingMerchant
       ? await merchantService.update(existingMerchant.id, {
           supabaseUserId,
-          shopDomain: shop,
+          shopDomain: normalizedShop,
           shopName,
           email: shopEmail,
           shopifyAccessTokenEncrypted: encryptedToken,
         })
       : await merchantService.create({
           supabaseUserId,
-          shopDomain: shop,
+          shopDomain: normalizedShop,
           shopName,
           email: shopEmail,
           subscriptionTier: "starter",

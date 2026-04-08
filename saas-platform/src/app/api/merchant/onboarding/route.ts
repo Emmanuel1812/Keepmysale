@@ -5,6 +5,12 @@ import { MerchantService } from "@/services/merchant-service";
 import { getMerchantFromSession } from "@/lib/auth";
 import type { IMerchantSettings } from "@/types";
 
+function normalizeShopDomain(shopDomain: string): string {
+  const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
+  return withoutAdmin.split("/")[0];
+}
+
 export async function POST(request: Request) {
   let merchantId = "";
   try {
@@ -28,7 +34,7 @@ export async function POST(request: Request) {
       return apiError("NOT_FOUND", "Merchant not found", 404);
     }
 
-    const baseSettings: IMerchantSettings = existingMerchant.settings ?? {
+    const defaultSettings: IMerchantSettings = {
       business_hours: { start: "09:00", end: "17:00" },
       timezone: "Europe/Amsterdam",
       auto_respond: true,
@@ -43,6 +49,10 @@ export async function POST(request: Request) {
       proactive_check_enabled: true,
       proactive_check_delay_hours: 48,
     };
+    const baseSettings: IMerchantSettings = {
+      ...defaultSettings,
+      ...(existingMerchant.settings ?? {}),
+    };
 
     const settings: IMerchantSettings = {
       ...baseSettings,
@@ -55,7 +65,7 @@ export async function POST(request: Request) {
 
     const merchant = await merchantService.update(merchantId, {
       shopName: parsed.data.merchantName,
-      shopDomain: parsed.data.shopDomain,
+      shopDomain: normalizeShopDomain(parsed.data.shopDomain),
       email: parsed.data.supportEmail,
       onboardingCompleted: true,
       settings,

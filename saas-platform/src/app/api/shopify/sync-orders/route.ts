@@ -7,7 +7,8 @@ import { CustomerService } from "@/services/customer-service";
 
 function normalizeShopDomain(shopDomain: string): string {
   const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  return sanitized.replace(/\/admin$/i, "");
+  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
+  return withoutAdmin.split("/")[0];
 }
 
 export async function POST() {
@@ -25,7 +26,12 @@ export async function POST() {
   const supabase = createSupabaseServiceClient();
   const orderService = new OrderService(supabase);
   const customerService = new CustomerService(supabase);
-  const accessToken = decryptAes256(merchant.shopifyAccessTokenEncrypted);
+  let accessToken = "";
+  try {
+    accessToken = decryptAes256(merchant.shopifyAccessTokenEncrypted);
+  } catch {
+    return apiError("CONFIG_ERROR", "Could not decrypt Shopify token", 500);
+  }
   const shopDomain = normalizeShopDomain(merchant.shopDomain);
 
   const response = await fetch(`https://${shopDomain}/admin/api/2025-01/orders.json?limit=50&status=any`, {
@@ -37,7 +43,17 @@ export async function POST() {
   });
 
   if (!response.ok) {
-    return apiError("UPSTREAM_ERROR", `Shopify sync failed with status ${response.status}`, 502);
+    const upstreamBody = await response.text();
+    return apiError(
+      "UPSTREAM_ERROR",
+      `Shopify sync failed with status ${response.status}`,
+      502,
+      {
+        shopDomain,
+        upstreamStatus: response.status,
+        upstreamBody: upstreamBody.slice(0, 300),
+      },
+    );
   }
 
   const payload = (await response.json()) as { orders?: Array<Record<string, unknown>> };
