@@ -26,7 +26,9 @@ export async function POST() {
   }
 
   if (!merchant.shopifyAccessTokenEncrypted) {
-    return apiError("VALIDATION_ERROR", "Merchant has no Shopify token configured", 400);
+    return apiError("VALIDATION_ERROR", "Merchant has no Shopify token configured", 400, {
+      reconnectUrl: `/api/shopify/install?shop=${encodeURIComponent(normalizeShopDomain(merchant.shopDomain))}`,
+    });
   }
 
   const supabase = createSupabaseServiceClient();

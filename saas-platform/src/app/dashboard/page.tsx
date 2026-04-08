@@ -50,7 +50,7 @@ export default function DashboardPage() {
         error?: { code?: string; message?: string; details?: { reconnectUrl?: string } };
       };
       if (!response.ok || !payload.success) {
-        if (payload.error?.code === "SHOPIFY_AUTH_FAILED" && payload.error?.details?.reconnectUrl) {
+        if (payload.error?.details?.reconnectUrl) {
           window.location.href = payload.error.details.reconnectUrl;
           return;
         }
