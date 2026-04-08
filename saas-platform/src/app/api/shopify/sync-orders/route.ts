@@ -65,10 +65,9 @@ export async function POST() {
     if (response.status === 403) {
       return apiError(
         "SHOPIFY_MISSING_SCOPES",
-        "Shopify rejected the request because the app is missing 'read_orders' scope. Please update the scopes in your .env and reconnect.",
+        `Shopify 403 Forbidden. The app doesn't have permissions to read orders. Detail: ${upstreamBody.slice(0, 300)}`,
         403,
         {
-          reconnectUrl: `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`,
           shopDomain,
           upstreamStatus: response.status,
           upstreamBody: upstreamBody.slice(0, 300),

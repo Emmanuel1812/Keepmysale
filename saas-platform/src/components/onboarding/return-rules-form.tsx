@@ -42,7 +42,6 @@ export function ReturnRulesForm() {
         // Redirect immediately after onboarding success; order sync runs best-effort.
         void fetch("/api/shopify/sync-orders", { method: "POST" });
         router.replace("/dashboard");
-        router.refresh();
         return;
       }
       setErrorMessage(payload.error?.message ?? "Could not save configuration.");
