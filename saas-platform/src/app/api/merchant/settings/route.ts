@@ -11,6 +11,7 @@ export async function GET() {
       id: merchant.id,
       shopName: merchant.shopName,
       email: merchant.email,
+      googleEmail: merchant.googleEmail,
       settings: merchant.settings ?? {},
     });
   } catch (error) {

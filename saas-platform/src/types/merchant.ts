@@ -30,6 +30,9 @@ export interface IMerchant {
   whatsappPhoneNumber: string | null;
   sesVerifiedDomain: string | null;
   mollieCustomerId: string | null;
+  googleAccessTokenEncrypted: string | null;
+  googleRefreshTokenEncrypted: string | null;
+  googleEmail: string | null;
   subscriptionTier: "trial" | "starter" | "growth" | "scale";
   subscriptionStatus: "trial" | "active" | "past_due" | "cancelled";
   trialEndsAt: string | null;
@@ -51,6 +54,9 @@ export interface IMerchantCreate {
   trialEndsAt?: string | null;
   onboardingCompleted?: boolean;
   settings?: IMerchantSettings;
+  googleAccessTokenEncrypted?: string | null;
+  googleRefreshTokenEncrypted?: string | null;
+  googleEmail?: string | null;
 }
 
 export interface IMerchantUpdate {
@@ -68,4 +74,7 @@ export interface IMerchantUpdate {
   trialEndsAt?: string | null;
   onboardingCompleted?: boolean;
   settings?: IMerchantSettings;
+  googleAccessTokenEncrypted?: string | null;
+  googleRefreshTokenEncrypted?: string | null;
+  googleEmail?: string | null;
 }

@@ -3,7 +3,7 @@ import type { IMerchant, IMerchantCreate, IMerchantUpdate } from "@/types";
 
 type MerchantRow = Record<string, unknown>;
 
-function mapMerchantRow(row: MerchantRow): IMerchant {
+export function mapMerchantRow(row: MerchantRow): IMerchant {
   return {
     id: String(row.id),
     supabaseUserId: (row.supabase_user_id as string | null) ?? null,
@@ -20,6 +20,9 @@ function mapMerchantRow(row: MerchantRow): IMerchant {
     trialEndsAt: (row.trial_ends_at as string | null) ?? null,
     onboardingCompleted: Boolean(row.onboarding_completed),
     settings: row.settings as IMerchant["settings"],
+    googleAccessTokenEncrypted: (row.google_access_token_encrypted as string | null) ?? null,
+    googleRefreshTokenEncrypted: (row.google_refresh_token_encrypted as string | null) ?? null,
+    googleEmail: (row.google_email as string | null) ?? null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -75,6 +78,9 @@ export class MerchantsDal {
       trial_ends_at: input.trialEndsAt ?? null,
       onboarding_completed: input.onboardingCompleted ?? false,
       settings: input.settings ?? null,
+      google_access_token_encrypted: input.googleAccessTokenEncrypted ?? null,
+      google_refresh_token_encrypted: input.googleRefreshTokenEncrypted ?? null,
+      google_email: input.googleEmail ?? null,
     };
     const { data, error } = await this.supabase.from("merchants").insert(payload).select("*").single();
     if (error || !data) throw error ?? new Error("Could not create merchant");
@@ -97,6 +103,9 @@ export class MerchantsDal {
       trial_ends_at: input.trialEndsAt,
       onboarding_completed: input.onboardingCompleted,
       settings: input.settings,
+      google_access_token_encrypted: input.googleAccessTokenEncrypted,
+      google_refresh_token_encrypted: input.googleRefreshTokenEncrypted,
+      google_email: input.googleEmail,
     };
     const { data, error } = await this.supabase
       .from("merchants")

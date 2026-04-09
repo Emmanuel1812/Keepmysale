@@ -41,7 +41,7 @@ export function ReturnRulesForm() {
       if (payload.success) {
         // Redirect immediately after onboarding success; order sync runs best-effort.
         void fetch("/api/shopify/sync-orders", { method: "POST" });
-        router.replace("/dashboard");
+        router.replace("/onboarding?step=email");
         return;
       }
       setErrorMessage(payload.error?.message ?? "Could not save configuration.");

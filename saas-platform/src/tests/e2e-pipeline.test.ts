@@ -157,7 +157,7 @@ describe("E2E inbound email pipeline", () => {
     );
     orderSpy.mockResolvedValue({ id: `gid://shopify/Order/e2e-${runTag}-1001`, name: "#1001", trackingNumber: "X" });
 
-    const result = await webhookService.handleSesInbound({
+    const result = await webhookService.handleInboundEmail({
       messageId: `test-1-${runTag}`,
       merchantId,
       from: "klant@test.nl",
@@ -219,7 +219,7 @@ describe("E2E inbound email pipeline", () => {
     );
     orderSpy.mockResolvedValue({ id: `gid://shopify/Order/e2e-${runTag}-1001`, name: "#1001", trackingNumber: "X" });
 
-    await webhookService.handleSesInbound({
+    await webhookService.handleInboundEmail({
       messageId: `test-2-${runTag}`,
       merchantId,
       from: "klant@test.nl",
@@ -303,14 +303,14 @@ describe("E2E inbound email pipeline", () => {
 
     const duplicateMessageId = `test-3-${runTag}`;
 
-    const first = await webhookService.handleSesInbound({
+    const first = await webhookService.handleInboundEmail({
       messageId: duplicateMessageId,
       merchantId,
       from: "klant@test.nl",
       subject: "Waar is mijn bestelling",
       textBody: "Waar is bestelling #1001?",
     });
-    const second = await webhookService.handleSesInbound({
+    const second = await webhookService.handleInboundEmail({
       messageId: duplicateMessageId,
       merchantId,
       from: "klant@test.nl",
@@ -379,7 +379,7 @@ describe("E2E inbound email pipeline", () => {
     const before = await conversationsDal.findByMerchant(merchantId);
     const existingCount = before.filter((c) => c.customerId === customerId && c.channel === "email").length;
 
-    await webhookService.handleSesInbound({
+    await webhookService.handleInboundEmail({
       messageId: `test-5-${runTag}`,
       merchantId,
       from: "klant@test.nl",

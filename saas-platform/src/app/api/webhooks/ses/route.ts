@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
   // 4. Verwerk flow and call de AI / Database
   try {
-    const result = await webhookService.handleSesInbound({
+    const result = await webhookService.handleInboundEmail({
       messageId,
       merchantId,
       from,

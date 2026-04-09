@@ -10,13 +10,16 @@ import { MessageService } from "@/services/message-service";
 import { NegotiationService } from "@/services/negotiation-service";
 import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
+import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 
-export interface ISesInboundInput {
+export interface IInboundEmailInput {
   messageId: string;
   merchantId: string;
   from: string;
   subject: string;
   textBody: string;
+  gmailThreadId?: string;
+  metadata?: Record<string, any>;
 }
 
 export class WebhookService {
@@ -38,7 +41,7 @@ export class WebhookService {
     this.orderService = new OrderService(supabase);
   }
 
-  async handleSesInbound(input: ISesInboundInput) {
+  async handleInboundEmail(input: IInboundEmailInput) {
     // TODO: Implement full AWS SNS signature verification before production.
     // Current route-level validation only checks payload shape.
 
@@ -76,7 +79,12 @@ export class WebhookService {
       channel: "email",
       content: input.textBody,
       externalMessageId: input.messageId,
-      metadata: { direction: "inbound", source: "ses_webhook" },
+      metadata: { 
+        direction: "inbound", 
+        source: input.gmailThreadId ? "gmail" : "ses",
+        threadId: input.gmailThreadId || null,
+        ...input.metadata,
+      },
     });
 
     const classification = await this.aiService.classifyIntent(input.textBody);
@@ -163,12 +171,24 @@ export class WebhookService {
       },
     });
 
-    await sendEmailViaSes({
-      to: input.from,
-      subject: `Re: ${input.subject}`,
-      html: `<p>${action.messageBody}</p>`,
-      text: action.messageBody,
-    });
+    if (merchant.googleEmail) {
+      console.log("[WEBHOOK] Sending via Gmail:", merchant.googleEmail);
+      const accessToken = await getValidAccessToken(merchant);
+      await sendGmailReply(accessToken, {
+        to: input.from,
+        subject: input.subject,
+        html: `<p>${action.messageBody}</p>`,
+        threadId: input.gmailThreadId,
+      });
+    } else {
+      console.log("[WEBHOOK] Sending via SES fallback");
+      await sendEmailViaSes({
+        to: input.from,
+        subject: `Re: ${input.subject}`,
+        html: `<p>${action.messageBody}</p>`,
+        text: action.messageBody,
+      });
+    }
 
     logger({
       level: "info",

@@ -6,7 +6,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().optional(),
-  GEMINI_API_KEY: z.string().min(1),
+  GEMINI_API_KEY: z.string().optional(),
   AWS_SES_REGION: z.string().min(1),
   AWS_SES_ACCESS_KEY_ID: z.string().min(1),
   AWS_SES_SECRET_ACCESS_KEY: z.string().min(1),
@@ -19,6 +19,9 @@ const envSchema = z.object({
   MOLLIE_API_KEY: z.string().min(1),
   SHOPIFY_WEBHOOK_SECRET: z.string().min(1),
   ENCRYPTION_KEY: z.string().length(64),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
 });
 
 let cachedEnv: z.infer<typeof envSchema> | null = null;
@@ -45,6 +48,9 @@ export function getEnv() {
     MOLLIE_API_KEY: process.env.MOLLIE_API_KEY,
     SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
   });
 
   if (!parsedEnv.success) {

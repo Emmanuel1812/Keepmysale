@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [step1Percentage, setStep1Percentage] = useState(20);
   const [step2Percentage, setStep2Percentage] = useState(35);
   const [step3Percentage, setStep3Percentage] = useState(50);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +28,7 @@ export default function SettingsPage() {
           const { shopName, email, settings } = payload.data;
           setShopName(shopName ?? "");
           setEmail(email ?? "");
+          setGoogleEmail(payload.data.googleEmail ?? null);
           
           if (settings) {
             if (typeof settings.return_negotiation_enabled === "boolean") {
@@ -82,6 +84,19 @@ export default function SettingsPage() {
       setErrorStatus("Could not save settings.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function disconnectGoogle() {
+    if (!confirm("Are you sure you want to disconnect your Google account? AI fixes will fallback to SES.")) return;
+    try {
+      const res = await fetch("/api/auth/google", { method: "DELETE" });
+      const payload = await res.json();
+      if (payload.success) {
+        setGoogleEmail(null);
+      }
+    } catch (err) {
+      setErrorStatus("Could not disconnect Google account.");
     }
   }
 
@@ -161,6 +176,40 @@ export default function SettingsPage() {
                   onChange={(e) => setStep3Percentage(Number(e.target.value))}
                 />
               </label>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Integratie</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {googleEmail ? (
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-green-100 bg-green-50 p-4 dark:border-green-900/30 dark:bg-green-900/10">
+              <div className="grid gap-0.5">
+                <p className="text-sm font-medium text-green-800 dark:text-green-400">✅ Verbonden</p>
+                <p className="text-xs text-green-700 dark:text-green-500">{googleEmail}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => void disconnectGoogle()} 
+                className="border-green-200 hover:bg-green-100 dark:border-green-800 dark:hover:bg-green-900/30 text-green-700 dark:text-green-400"
+              >
+                Disconnect
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+              <div className="grid gap-0.5">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">❌ Geen email gekoppeld</p>
+                <p className="text-xs text-zinc-500">Koppel je Gmail om antwoorden direct vanuit je eigen adres te sturen.</p>
+              </div>
+              <Button size="sm" onClick={() => window.location.href = "/api/auth/google"}>
+                Connect met Google
+              </Button>
             </div>
           )}
         </CardContent>
