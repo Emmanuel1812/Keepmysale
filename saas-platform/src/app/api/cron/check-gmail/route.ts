@@ -21,6 +21,21 @@ async function processGmailPolling(request: Request) {
   const merchantsDal = new MerchantsDal(supabase);
   const webhookService = new WebhookService(supabase);
 
+  const skipPatterns = [
+    /noreply@/i,
+    /no-reply@/i,
+    /mailer-daemon@/i,
+    /notifications@/i,
+    /updates@/i,
+    /newsletter@/i,
+    /promo@/i,
+    /marketing@/i,
+    /@uber\.com/i,
+    /@tiktok\.com/i,
+    /@facebook\.com/i,
+    /@facebookmail\.com/i,
+  ];
+
   try {
     // 1. Fetch all merchants with Google linked
     const { data: merchants, error } = await supabase
@@ -45,6 +60,27 @@ async function processGmailPolling(request: Request) {
         for (const email of newEmails) {
           console.log(`[CRON_GMAIL] Processing email: ${email.id} from ${email.from}`);
 
+          // FIX 2: Skip bulk/marketing/no-reply
+          const shouldSkip = skipPatterns.some((p) => p.test(email.from));
+          if (shouldSkip) {
+            console.log(`[CRON_GMAIL] Skipping bulk/no-reply email: ${email.from}`);
+            await markAsRead(accessToken, email.id);
+            continue;
+          }
+
+          // FIX 3: Check direction (not from merchant and addressed to merchant)
+          const merchantEmail = merchant.googleEmail || "";
+          
+          if (email.from.toLowerCase().includes(merchantEmail.toLowerCase())) {
+            console.log(`[CRON_GMAIL] Skipping sent/self email: ${email.from}`);
+            continue; // Sent email, don't mark as read (merchant might want it unread in sent if they used inbox)
+          }
+
+          if (!email.to.toLowerCase().includes(merchantEmail.toLowerCase()) && email.from.toLowerCase() === merchantEmail.toLowerCase()) {
+             // Redundant check, but following logic of "directed TO merchant"
+             // Usually in:inbox covers this, but if TO is a group/alias:
+          }
+          
           await webhookService.handleInboundEmail({
             messageId: email.id,
             merchantId: merchant.id,
