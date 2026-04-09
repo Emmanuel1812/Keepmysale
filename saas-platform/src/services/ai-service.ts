@@ -100,10 +100,9 @@ export class AiService {
         reasoning: "Gemini classification unavailable fallback.",
       };
     }
-  }
-
-  async buildAutomatedAction(input: {
+  }  async buildAutomatedAction(input: {
     incomingText: string;
+    history?: Array<{ role: "user" | "assistant"; content: string }>;
     orderNameGuess?: string;
     shopDomain: string;
     shopAccessToken: string;
@@ -176,10 +175,48 @@ export class AiService {
     }
 
     if (!resultAction && intentResult.intent === "return") {
-      resultAction = {
-        action: "offer_partial_refund",
-        messageBody: localText.negotiation,
-      };
+      // Dynamic negotiation via Gemini
+      try {
+        const model = this.geminiClient.getGenerativeModel({
+          model: "gemini-2.5-flash",
+        });
+
+        const historyContext = (input.history || [])
+          .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
+          .join("\n");
+
+        const negotiationPrompt = `
+        Je bent een klantenservice assistent. De klant wil iets retourneren.
+        Taal: ${preferredLanguage}
+        
+        Regels van de merchant:
+        - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
+        - Tone of voice: Hulpvaardig, professioneel, maar gericht op het behouden van de verkoop.
+        
+        Chatgeschiedenis:
+        ${historyContext}
+        
+        Laatste bericht van de klant:
+        ${input.incomingText}
+        
+        Opdracht: Schrijf een natuurlijk antwoord. Als we al een voorstel hebben gedaan en de klant vraagt om details of gaat akkoord, reageer daar dan inhoudelijk op. Maak het antwoord kort en krachtig (max 3-4 zinnen).
+        `;
+
+        const response = await model.generateContent(negotiationPrompt);
+        const dynamicText = response.response.text();
+
+        resultAction = {
+          action: "offer_partial_refund",
+          messageBody: dynamicText || localText.negotiation,
+        };
+      } catch (error) {
+        console.error("[AI] Dynamic negotiation error:", error);
+        // Fallback to static
+        resultAction = {
+          action: "offer_partial_refund",
+          messageBody: localText.negotiation,
+        };
+      }
     }
 
     if (!resultAction) {

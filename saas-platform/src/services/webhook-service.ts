@@ -82,6 +82,13 @@ export class WebhookService {
     const classification = await this.aiService.classifyIntent(input.textBody);
     console.log("[WEBHOOK] Classification:", JSON.stringify(classification));
 
+    const history = await this.messageService.findByConversation(conversation.id);
+    // Beperk tot laatste 10 berichten om token-limiet te besparen
+    const recentHistory = history.slice(-10).map((m) => ({
+      role: m.sender === "customer" ? ("user" as const) : ("assistant" as const),
+      content: m.content,
+    }));
+
     const decryptedShopifyAccessToken = merchant.shopifyAccessTokenEncrypted
       ? decryptAes256(merchant.shopifyAccessTokenEncrypted)
       : "";
@@ -117,6 +124,7 @@ export class WebhookService {
 
     const action = await this.aiService.buildAutomatedAction({
       incomingText: input.textBody,
+      history: recentHistory,
       orderNameGuess: classification.extracted_order_number ?? undefined,
       shopDomain: merchant.shopDomain,
       shopAccessToken: decryptedShopifyAccessToken,
