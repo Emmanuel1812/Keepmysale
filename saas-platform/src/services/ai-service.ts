@@ -4,8 +4,8 @@ import { format } from "date-fns";
 import { OrderService } from "@/services/order-service";
 import type { ActionResult } from "@/types/domain";
 import type { IMerchantSettings } from "@/types/merchant";
-import { createOpenAiClient } from "@/lib/openai/client";
-import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/openai/prompts";
+import { createGeminiClient } from "@/lib/gemini/client";
+import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -21,7 +21,7 @@ const returnPatterns = [/return/i, /refund/i, /damaged/i, /troca/i, /devolver/i]
 
 export class AiService {
   private readonly orderService: OrderService;
-  private readonly openAiClient = createOpenAiClient();
+  private readonly geminiClient = createGeminiClient();
 
   constructor(private readonly supabase: SupabaseClient) {
     this.orderService = new OrderService(supabase);
@@ -68,18 +68,16 @@ export class AiService {
     }
 
     try {
-      const completion = await this.openAiClient.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: INTENT_SYSTEM_PROMPT },
-          { role: "system", content: INTENT_STRUCTURED_PROMPT },
-          { role: "user", content: text },
-        ],
+      const model = this.geminiClient.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
       });
-      const raw = completion.choices[0]?.message?.content ?? "{}";
+
+      const prompt = `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}`;
+      const result = await model.generateContent(prompt);
+      const raw = result.response.text() || "{}";
       const parsed = JSON.parse(raw) as IIntentStructuredResult;
+
       console.log("[AI] Classification result:", JSON.stringify(parsed));
       return {
         intent: parsed.intent,
@@ -88,7 +86,7 @@ export class AiService {
         language_detected: parsed.language_detected ?? "other",
         sentiment: parsed.sentiment ?? "neutral",
         requires_human: parsed.requires_human ?? false,
-        reasoning: parsed.reasoning ?? "Model classification output.",
+        reasoning: parsed.reasoning ?? "Gemini classification output.",
       };
     } catch (error) {
       console.error("[AI] Classification error:", error);
@@ -99,7 +97,7 @@ export class AiService {
         language_detected: "other",
         sentiment: "neutral",
         requires_human: true,
-        reasoning: "OpenAI classification unavailable fallback.",
+        reasoning: "Gemini classification unavailable fallback.",
       };
     }
   }
