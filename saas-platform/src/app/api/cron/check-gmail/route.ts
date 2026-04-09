@@ -3,6 +3,8 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { WebhookService } from "@/services/webhook-service";
 import { getValidAccessToken, fetchNewEmails, markAsRead } from "@/lib/gmail/client";
 import { MerchantsDal, mapMerchantRow } from "@/dal/merchants";
+import { getEnv } from "@/lib/env";
+import { apiError } from "@/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,57 +16,73 @@ export async function POST(request: Request) {
   return await processGmailPolling(request);
 }
 
-async function processGmailPolling(request: Request) {
-  // TODO: Add CRON_SECRET verification for security in production
+function shouldProcessEmail(email: any, merchantEmail: string) {
+  // Skip als geen subject
+  if (!email.subject || email.subject.trim() === "") return false;
   
-  const supabase = createSupabaseServiceClient();
-  const merchantsDal = new MerchantsDal(supabase);
-  const webhookService = new WebhookService(supabase);
-
-  // Uitgebreide skip patterns
-  const skipPatterns = [
-    /noreply@/i,
-    /no-reply@/i,  
-    /mailer-daemon@/i,
-    /notifications?@/i,
-    /updates?@/i,
-    /newsletter@/i,
-    /promo@/i,
-    /marketing@/i,
-    /support@.*\.amazonaws\.com/i,
-    /^.+@.*uber/i,
-    /^.+@.*tiktok/i,
-    /^.+@.*facebook/i,
-    /^.+@.*facebookmail/i,
-    /^.+@.*instagram/i,
-    /^.+@.*twitter/i,
-    /^.+@.*linkedin/i,
-    /^.+@.*pinterest/i,
-    /^.+@.*shopify\.com/i,
-    /^.+@.*google\.com/i,
-    /^.+@.*amazon/i,
-    /^.+@.*aws\./i,
-    /^.+@.*klaviyo/i,
-    /^.+@.*mailchimp/i,
-    /^.+@.*sendgrid/i,
-    /^.+@.*dropship/i,
-    /^.+@.*kopy/i,
+  // Skip als FROM is merchant zelf
+  if (email.from.toLowerCase().includes(merchantEmail.toLowerCase())) return false;
+  
+  // Skip bekende automated senders
+  const skipDomains = [
+    "noreply", "no-reply", "mailer-daemon",
+    "notifications", "newsletter", "promo",
+    "marketing", "updates", "support@shopify",
+    "uber.com", "tiktok.com", "facebook.com",
+    "facebookmail.com", "instagram.com", 
+    "twitter.com", "linkedin.com", "pinterest.com",
+    "google.com", "amazonaws.com", "aws.amazon.com",
+    "klaviyo.com", "mailchimp.com", "sendgrid.net",
+    "netlify.com", "vercel.com", "github.com",
+    "belastingdienst", "mollie.com", "stripe.com",
+    "paypal.com", "bank", "payment",
   ];
-
-  // Extra: skip als subject bulk-achtig is
+  
+  const fromLower = email.from.toLowerCase();
+  if (skipDomains.some(d => fromLower.includes(d))) return false;
+  
+  // Skip bulk subject patterns
   const bulkSubjects = [
+    /automatic reply/i,
+    /auto-?reply/i,
+    /out of office/i,
     /unsubscribe/i,
-    /subscription/i,
-    /billing information/i,
+    /inkomstenbelasting/i,
+    /your (account|projects?|subscription)/i,
+    /billing/i,
     /verify your/i,
     /welcome to/i,
     /setup success/i,
-    /get \d+ free/i,
-    /% off/i,
-    /sale ends/i,
+    /\d+% (off|korting)/i,
+    /free (shipping|trial)/i,
     /last chance/i,
     /limited time/i,
+    /buy \d+.*get \d+/i,
+    /suspended/i,
+    /credit limit/i,
   ];
+  
+  if (bulkSubjects.some(p => p.test(email.subject))) return false;
+  
+  return true;
+}
+
+async function processGmailPolling(request: Request) {
+  const env = getEnv();
+
+  // AUTH CHECK
+  const isVercelCron = request.headers.get("x-vercel-cron") === "true";
+  const authHeader = request.headers.get("authorization");
+  const hasSecret = authHeader === `Bearer ${env.CRON_SECRET}`;
+
+  if (!isVercelCron && !hasSecret) {
+    console.error("[CRON_GMAIL] Unauthorized access attempt.");
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
+  }
+
+  const supabase = createSupabaseServiceClient();
+  const merchantsDal = new MerchantsDal(supabase);
+  const webhookService = new WebhookService(supabase);
 
   try {
     // 1. Fetch all merchants with Google linked
@@ -80,38 +98,24 @@ async function processGmailPolling(request: Request) {
 
     for (const rawMerchant of (merchants || [])) {
       const merchant = mapMerchantRow(rawMerchant as any); 
+      const merchantEmail = merchant.googleEmail || "";
       
-      console.log(`[CRON_GMAIL] Checking merchant: ${merchant.shopDomain} (${merchant.googleEmail})`);
+      console.log(`[CRON_GMAIL] Checking merchant: ${merchant.shopDomain} (${merchantEmail})`);
 
       try {
         const accessToken = await getValidAccessToken(merchant);
         const newEmails = await fetchNewEmails(accessToken);
 
         for (const email of newEmails) {
-          console.log(`[CRON_GMAIL] Processing email: ${email.id} from ${email.from}`);
+          console.log(`[CRON_GMAIL] Evaluating email: ${email.id} | From: ${email.from} | Subj: ${email.subject}`);
 
-          // FIX 2: Skip bulk/marketing/no-reply
-          const isSkipAddr = skipPatterns.some((p) => p.test(email.from));
-          const isSkipSubj = bulkSubjects.some((p) => p.test(email.subject));
-          
-          if (isSkipAddr || isSkipSubj) {
-            console.log(`[CRON_GMAIL] Skipping automated email: From: ${email.from}, Subj: ${email.subject}`);
+          if (!shouldProcessEmail(email, merchantEmail)) {
+            console.log(`[CRON_GMAIL] Skipping automated/bulk email: ${email.subject}`);
             await markAsRead(accessToken, email.id);
             continue;
           }
 
-          // FIX 3: Check direction (not from merchant and addressed to merchant)
-          const merchantEmail = merchant.googleEmail || "";
-          
-          if (email.from.toLowerCase().includes(merchantEmail.toLowerCase())) {
-            console.log(`[CRON_GMAIL] Skipping sent/self email: ${email.from}`);
-            continue; // Sent email, don't mark as read (merchant might want it unread in sent if they used inbox)
-          }
-
-          if (!email.to.toLowerCase().includes(merchantEmail.toLowerCase()) && email.from.toLowerCase() === merchantEmail.toLowerCase()) {
-             // Redundant check, but following logic of "directed TO merchant"
-             // Usually in:inbox covers this, but if TO is a group/alias:
-          }
+          console.log(`[CRON_GMAIL] Processing legitimate email: ${email.id}`);
           
           await webhookService.handleInboundEmail({
             messageId: email.id,

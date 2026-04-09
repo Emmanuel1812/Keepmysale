@@ -74,8 +74,8 @@ export async function fetchNewEmails(accessToken: string) {
 
   const response = await gmail.users.messages.list({
     userId: "me",
-    q: "is:unread in:inbox category:primary",
-    maxResults: 10,
+    q: "is:unread in:inbox category:primary newer_than:1d",
+    maxResults: 5,
   });
 
   const messages = response.data.messages || [];

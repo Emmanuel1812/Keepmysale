@@ -22,6 +22,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
 });
 
 let cachedEnv: z.infer<typeof envSchema> | null = null;
@@ -51,6 +52,7 @@ export function getEnv() {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
+    CRON_SECRET: process.env.CRON_SECRET,
   });
 
   if (!parsedEnv.success) {
