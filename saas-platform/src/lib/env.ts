@@ -54,8 +54,10 @@ export function getEnv() {
   });
 
   if (!parsedEnv.success) {
+    const errorDetails = JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2);
+    console.error("❌ Invalid environment variables:", errorDetails);
     throw new Error(
-      `Invalid environment variables: ${JSON.stringify(parsedEnv.error.flatten().fieldErrors)}`,
+      `Invalid environment variables. Please check your Vercel/local .env settings. Details: ${errorDetails}`,
     );
   }
 

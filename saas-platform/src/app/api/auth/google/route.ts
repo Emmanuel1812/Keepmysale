@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
+import { getMerchantFromSession } from "@/lib/auth";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { MerchantService } from "@/services/merchant-service";
+import { apiResponse, apiError } from "@/lib/api-helpers";
 
 export async function GET() {
   const env = getEnv();
@@ -32,11 +36,6 @@ export async function GET() {
 
 export async function DELETE() {
   try {
-    const { getMerchantFromSession } = await import("@/lib/auth");
-    const { createSupabaseServiceClient } = await import("@/lib/supabase/server");
-    const { MerchantService } = await import("@/services/merchant-service");
-    const { apiResponse, apiError } = await import("@/lib/api-helpers");
-
     const merchant = await getMerchantFromSession();
     const supabase = createSupabaseServiceClient();
     const merchantService = new MerchantService(supabase);
@@ -50,7 +49,6 @@ export async function DELETE() {
     return apiResponse({ disconnected: true });
   } catch (error) {
     console.error("[GOOGLE_DISCONNECT_ERROR]", error);
-    const { apiError } = await import("@/lib/api-helpers");
     return apiError("INTERNAL_ERROR", "Could not disconnect Google account", 500);
   }
 }
