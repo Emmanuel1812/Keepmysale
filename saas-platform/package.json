@@ -21,6 +21,7 @@
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.102.1",
     "date-fns": "^4.1.0",
+    "googleapis": "^171.4.0",
     "mailparser": "^3.9.8",
     "next": "16.2.2",
     "openai": "^6.33.0",
