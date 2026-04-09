@@ -6,6 +6,7 @@ import { NEGOTIATION_MAX_STEPS } from "@/lib/constants";
 import { NegotiationsDal } from "@/dal/negotiations";
 import { RefundLogsDal } from "@/dal/refund-logs";
 import { OrdersDal } from "@/dal/orders";
+import { ConversationsDal } from "@/dal/conversations";
 import { RefundService } from "@/services/refund-service";
 
 export type TCustomerNegotiationInput =
@@ -100,12 +101,14 @@ export class NegotiationService {
   private readonly negotiationsDal: NegotiationsDal;
   private readonly refundLogsDal: RefundLogsDal;
   private readonly ordersDal: OrdersDal;
+  private readonly conversationsDal: ConversationsDal;
   private readonly refundService: RefundService;
 
   constructor(private readonly supabase: SupabaseClient) {
     this.negotiationsDal = new NegotiationsDal(supabase);
     this.refundLogsDal = new RefundLogsDal(supabase);
     this.ordersDal = new OrdersDal(supabase);
+    this.conversationsDal = new ConversationsDal(supabase);
     this.refundService = new RefundService(supabase);
   }
 
@@ -274,6 +277,13 @@ export class NegotiationService {
           to_status: transition.nextStatus,
           customer_input: customerInput,
         },
+      });
+    }
+
+    if (transition.nextStatus === "completed" || transition.nextStatus === "return_initiated") {
+      await this.conversationsDal.update(updated.conversationId, {
+        status: "resolved",
+        resolvedAt: new Date().toISOString(),
       });
     }
 

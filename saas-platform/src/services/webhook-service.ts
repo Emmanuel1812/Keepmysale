@@ -132,6 +132,20 @@ export class WebhookService {
     });
     console.log("[WEBHOOK] Action:", action.action);
     console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
+    console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);
+
+    // Sync negotiation status if requested by AI
+    const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
+    const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
+
+    if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
+      console.log("[WEBHOOK] Updating negotiation status to:", action.negotiationDecision);
+      await this.negotiationService.processCustomerResponse(
+        activeNeg.id,
+        action.negotiationDecision === "accept" ? "accept_offer" : "reject_offer",
+        merchant.settings,
+      );
+    }
 
     await this.messageService.create({
       conversationId: conversation.id,
@@ -145,6 +159,7 @@ export class WebhookService {
         intent: classification.intent,
         confidence: classification.confidence,
         requires_human: classification.requires_human,
+        negotiation_decision: action.negotiationDecision,
       },
     });
 

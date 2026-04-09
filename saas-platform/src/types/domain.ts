@@ -54,4 +54,5 @@ export interface ActionResult {
     | "request_human_review"
     | "send_general_reply";
   messageBody: string;
+  negotiationDecision?: "accept" | "reject" | "continue";
 }

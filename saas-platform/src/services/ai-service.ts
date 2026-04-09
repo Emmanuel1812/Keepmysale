@@ -179,6 +179,7 @@ export class AiService {
       try {
         const model = this.geminiClient.getGenerativeModel({
           model: "gemini-2.5-flash",
+          generationConfig: { responseMimeType: "application/json" },
         });
 
         const historyContext = (input.history || [])
@@ -186,7 +187,7 @@ export class AiService {
           .join("\n");
 
         const negotiationPrompt = `
-        Je bent een klantenservice assistent. De klant wil iets retourneren.
+        Je bent een klantenservice assistent. De klant wil iets retourneren of is in gesprek over een retour.
         Taal: ${preferredLanguage}
         
         Regels van de merchant:
@@ -199,15 +200,25 @@ export class AiService {
         Laatste bericht van de klant:
         ${input.incomingText}
         
-        Opdracht: Schrijf een natuurlijk antwoord. Als we al een voorstel hebben gedaan en de klant vraagt om details of gaat akkoord, reageer daar dan inhoudelijk op. Maak het antwoord kort en krachtig (max 3-4 zinnen).
+        Opdracht: 
+        1. Analyseer of de klant akkoord gaat met een aanbod, het afwijst, of dat we gewoon door moeten praten.
+        2. Schrijf een natuurlijk antwoord. Als we al een voorstel hebben gedaan en de klant vraagt om details of gaat akkoord, reageer daar dan inhoudelijk op. Maak het antwoord kort en krachtig (max 3-4 zinnen).
+        
+        Return ONLY valid JSON with this shape:
+        {
+          "messageBody": "jouw antwoord tekst hier",
+          "negotiationDecision": "accept" | "reject" | "continue"
+        }
         `;
 
         const response = await model.generateContent(negotiationPrompt);
-        const dynamicText = response.response.text();
+        const raw = response.response.text();
+        const parsed = JSON.parse(raw) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
 
         resultAction = {
           action: "offer_partial_refund",
-          messageBody: dynamicText || localText.negotiation,
+          messageBody: parsed.messageBody || localText.negotiation,
+          negotiationDecision: parsed.negotiationDecision || "continue",
         };
       } catch (error) {
         console.error("[AI] Dynamic negotiation error:", error);
@@ -215,6 +226,7 @@ export class AiService {
         resultAction = {
           action: "offer_partial_refund",
           messageBody: localText.negotiation,
+          negotiationDecision: "continue",
         };
       }
     }
