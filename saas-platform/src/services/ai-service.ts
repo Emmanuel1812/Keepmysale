@@ -28,6 +28,8 @@ export class AiService {
   }
 
   async classifyIntent(text: string): Promise<IIntentStructuredResult> {
+    console.log("[AI] Classifying text:", text.substring(0, 200));
+
     if (resendPatterns.some((pattern) => pattern.test(text))) {
       return {
         intent: "resend_confirmation",
@@ -78,6 +80,7 @@ export class AiService {
       });
       const raw = completion.choices[0]?.message?.content ?? "{}";
       const parsed = JSON.parse(raw) as IIntentStructuredResult;
+      console.log("[AI] Classification result:", JSON.stringify(parsed));
       return {
         intent: parsed.intent,
         confidence: parsed.confidence,
@@ -87,7 +90,8 @@ export class AiService {
         requires_human: parsed.requires_human ?? false,
         reasoning: parsed.reasoning ?? "Model classification output.",
       };
-    } catch {
+    } catch (error) {
+      console.error("[AI] Classification error:", error);
       return {
         intent: "other",
         confidence: 0.2,
@@ -147,38 +151,47 @@ export class AiService {
           ? messagesByLanguage.pt
           : messagesByLanguage.nl;
 
+    console.log("[AI] Building action for intent:", intentResult.intent);
+
+    let resultAction: ActionResult | null = null;
+
     if (intentResult.intent === "resend_confirmation") {
-      return {
+      resultAction = {
         action: "send_confirmation",
         messageBody: localText.resend,
       };
     }
 
     const orderNumberCandidate = input.orderNameGuess ?? intentResult.extracted_order_number ?? undefined;
-    if (intentResult.intent === "wismo" && orderNumberCandidate) {
+    if (!resultAction && intentResult.intent === "wismo" && orderNumberCandidate) {
       const order = await this.orderService.fetchShopifyOrderByName(
         input.shopDomain,
         input.shopAccessToken,
         orderNumberCandidate,
       );
       if (order?.trackingNumber) {
-        return {
+        resultAction = {
           action: "send_tracking_status",
           messageBody: localText.tracking(order.name, order.trackingNumber),
         };
       }
     }
 
-    if (intentResult.intent === "return") {
-      return {
+    if (!resultAction && intentResult.intent === "return") {
+      resultAction = {
         action: "offer_partial_refund",
         messageBody: localText.negotiation,
       };
     }
 
-    return {
-      action: "send_general_reply",
-      messageBody: localText.general,
-    };
+    if (!resultAction) {
+      resultAction = {
+        action: "send_general_reply",
+        messageBody: localText.general,
+      };
+    }
+
+    console.log("[AI] Action result:", resultAction.action, resultAction.messageBody?.substring(0, 200));
+    return resultAction;
   }
 }

@@ -80,6 +80,8 @@ export class WebhookService {
     });
 
     const classification = await this.aiService.classifyIntent(input.textBody);
+    console.log("[WEBHOOK] Classification:", JSON.stringify(classification));
+
     const decryptedShopifyAccessToken = merchant.shopifyAccessTokenEncrypted
       ? decryptAes256(merchant.shopifyAccessTokenEncrypted)
       : "";
@@ -120,6 +122,8 @@ export class WebhookService {
       shopAccessToken: decryptedShopifyAccessToken,
       merchantSettings: merchant.settings,
     });
+    console.log("[WEBHOOK] Action:", action.action);
+    console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
 
     await this.messageService.create({
       conversationId: conversation.id,
