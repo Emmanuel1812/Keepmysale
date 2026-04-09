@@ -1,8 +1,7 @@
-import { zSesWebhookPayload } from "@/lib/validators";
-import { parseSesInboundPayload } from "@/lib/ses/parser";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { apiError, apiResponse } from "@/lib/api-helpers";
 import { WebhookService } from "@/services/webhook-service";
+import { simpleParser } from "mailparser";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
   try {
     snsPayload = JSON.parse(rawBody);
   } catch {
-    return apiError("VALIDATION_ERROR", "Invalid JSON", 400);
+    return apiError("VALIDATION_ERROR", "Invalid JSON wrapper", 400);
   }
 
   // Handle SNS subscription confirmation
@@ -23,53 +22,63 @@ export async function POST(request: Request) {
     return apiResponse({ confirmed: true });
   }
 
-  console.log("[SES_WEBHOOK] Payload type:", snsPayload.Type);
-  console.log("[SES_WEBHOOK] Payload keys:", Object.keys(snsPayload));
-  
-  if (snsPayload.Type === "Notification") {
-    const rawMessage = snsPayload.Message as string;
-    console.log("[SES_WEBHOOK] Message preview:", 
-      rawMessage?.substring(0, 1000));
+  // Zorg dat we alleen SES Notifications verwerken
+  if (snsPayload.Type !== "Notification") {
+    return apiResponse({ handled: true, type: snsPayload.Type });
   }
 
-  // Tijdelijk: als het een Notification is, parse 
-  // het Message veld en log de structuur
-  if (snsPayload.Type === "Notification" && snsPayload.Message) {
+  let sesNotification: any;
+  try {
+    sesNotification = JSON.parse(snsPayload.Message as string);
+  } catch {
+    return apiError("VALIDATION_ERROR", "SNS Message parameter block is not valid JSON", 400);
+  }
+
+  const mailNode = sesNotification?.mail;
+  if (!mailNode) {
+    return apiError("VALIDATION_ERROR", "Missing .mail node in SES notification", 400);
+  }
+
+  // 1. Extraheer basic fields out of AWS wrapper
+  const messageId = mailNode.messageId || "unknown-id";
+  const from = mailNode.source || (mailNode.commonHeaders?.from && mailNode.commonHeaders.from[0]) || "unknown-from";
+  const subject = mailNode.commonHeaders?.subject || "No Subject";
+  
+  // 2. Parsen van de base64/raw MIME content string om human tekst te destilleren
+  let textBody = "";
+  if (sesNotification.content) {
     try {
-      const innerMessage = JSON.parse(snsPayload.Message as string);
-      console.log("[SES_WEBHOOK] Inner message keys:", 
-        Object.keys(innerMessage));
-      console.log("[SES_WEBHOOK] Inner message:", 
-        JSON.stringify(innerMessage).substring(0, 2000));
+      const parsedMail = await simpleParser(sesNotification.content);
+      textBody = parsedMail.text || "";
     } catch (e) {
-      console.log("[SES_WEBHOOK] Message is not JSON:", 
-        (snsPayload.Message as string)?.substring(0, 500));
+      console.error("[SES_WEBHOOK] Failed to parse MIME content via mailparser", e);
     }
   }
 
-  const parsed = zSesWebhookPayload.safeParse(snsPayload);
+  // 3. Selecteer de global Merchant 
+  // Omdat er (voor nu) één platform merchant is zoeken we direct diegene die ge-onboard is.
+  const supabase = createSupabaseServiceClient();
+  const { data: merchants, error: merchantError } = await supabase
+    .from("merchants")
+    .select("id")
+    .eq("onboarding_completed", true)
+    .limit(1);
 
-  if (!parsed.success) {
-    console.log("[SES_WEBHOOK] Zod validation failed:", 
-      JSON.stringify(parsed.error.flatten()));
-    // Tijdelijk 200 om SNS retries te stoppen
-    return apiResponse({ 
-      debug: true, 
-      zodError: parsed.error.flatten() 
-    });
+  if (merchantError || !merchants || merchants.length === 0) {
+    return apiError("NOT_FOUND", "No active merchant found for email routing", 404);
   }
 
-  const inbound = parseSesInboundPayload(parsed.data);
-  const supabase = createSupabaseServiceClient();
+  const merchantId = merchants[0].id;
   const webhookService = new WebhookService(supabase);
 
+  // 4. Verwerk flow and call de AI / Database
   try {
     const result = await webhookService.handleSesInbound({
-      messageId: inbound.messageId,
-      merchantId: inbound.merchantId,
-      from: inbound.from,
-      subject: inbound.subject,
-      textBody: inbound.textBody,
+      messageId,
+      merchantId,
+      from,
+      subject,
+      textBody,
     });
     return apiResponse({ handled: true, ...result });
   } catch (error) {
