@@ -21,19 +21,49 @@ async function processGmailPolling(request: Request) {
   const merchantsDal = new MerchantsDal(supabase);
   const webhookService = new WebhookService(supabase);
 
+  // Uitgebreide skip patterns
   const skipPatterns = [
     /noreply@/i,
-    /no-reply@/i,
+    /no-reply@/i,  
     /mailer-daemon@/i,
-    /notifications@/i,
-    /updates@/i,
+    /notifications?@/i,
+    /updates?@/i,
     /newsletter@/i,
     /promo@/i,
     /marketing@/i,
-    /@uber\.com/i,
-    /@tiktok\.com/i,
-    /@facebook\.com/i,
-    /@facebookmail\.com/i,
+    /support@.*\.amazonaws\.com/i,
+    /^.+@.*uber/i,
+    /^.+@.*tiktok/i,
+    /^.+@.*facebook/i,
+    /^.+@.*facebookmail/i,
+    /^.+@.*instagram/i,
+    /^.+@.*twitter/i,
+    /^.+@.*linkedin/i,
+    /^.+@.*pinterest/i,
+    /^.+@.*shopify\.com/i,
+    /^.+@.*google\.com/i,
+    /^.+@.*amazon/i,
+    /^.+@.*aws\./i,
+    /^.+@.*klaviyo/i,
+    /^.+@.*mailchimp/i,
+    /^.+@.*sendgrid/i,
+    /^.+@.*dropship/i,
+    /^.+@.*kopy/i,
+  ];
+
+  // Extra: skip als subject bulk-achtig is
+  const bulkSubjects = [
+    /unsubscribe/i,
+    /subscription/i,
+    /billing information/i,
+    /verify your/i,
+    /welcome to/i,
+    /setup success/i,
+    /get \d+ free/i,
+    /% off/i,
+    /sale ends/i,
+    /last chance/i,
+    /limited time/i,
   ];
 
   try {
@@ -61,9 +91,11 @@ async function processGmailPolling(request: Request) {
           console.log(`[CRON_GMAIL] Processing email: ${email.id} from ${email.from}`);
 
           // FIX 2: Skip bulk/marketing/no-reply
-          const shouldSkip = skipPatterns.some((p) => p.test(email.from));
-          if (shouldSkip) {
-            console.log(`[CRON_GMAIL] Skipping bulk/no-reply email: ${email.from}`);
+          const isSkipAddr = skipPatterns.some((p) => p.test(email.from));
+          const isSkipSubj = bulkSubjects.some((p) => p.test(email.subject));
+          
+          if (isSkipAddr || isSkipSubj) {
+            console.log(`[CRON_GMAIL] Skipping automated email: From: ${email.from}, Subj: ${email.subject}`);
             await markAsRead(accessToken, email.id);
             continue;
           }
