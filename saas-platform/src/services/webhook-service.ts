@@ -173,7 +173,7 @@ export class WebhookService {
     });
 
     const template = formatEmailResponse({
-      customerName: customer.firstName || "klant",
+      customerName: customer.name || "klant",
       body: action.messageBody,
       storeName: merchant.shopDomain.replace(".myshopify.com", ""), // Fallback if shopName missing
       supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,

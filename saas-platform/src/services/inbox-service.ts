@@ -40,9 +40,8 @@ export class InboxService {
       metadata: { source: "inbox_reply_api" },
     });
 
-    if (conversation.channel === "email" && customer?.email) {
       const template = formatEmailResponse({
-        customerName: customer.firstName || "klant",
+        customerName: customer.name || "klant",
         body: params.content,
         storeName: merchant.shopDomain.replace(".myshopify.com", ""),
         supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,
