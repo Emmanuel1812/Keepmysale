@@ -6,6 +6,7 @@ export interface IShopifyOrderSummary {
   trackingNumber: string | null;
   totalPrice: string;
   currency: string;
+  lineItems?: Array<any>;
 }
 
 export interface IShopifyOauthCallbackPayload {

@@ -32,6 +32,7 @@ export async function fetchOrderByName(params: {
         null),
     totalPrice: String(order.total_price ?? ""),
     currency: String(order.currency ?? "EUR"),
+    lineItems: (order.line_items as Array<any>) ?? [],
   };
 }
 

@@ -11,6 +11,7 @@ import { NegotiationService } from "@/services/negotiation-service";
 import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
+import { formatEmailResponse } from "@/lib/email/template";
 
 export interface IInboundEmailInput {
   messageId: string;
@@ -171,13 +172,20 @@ export class WebhookService {
       },
     });
 
+    const template = formatEmailResponse({
+      customerName: customer.firstName || "klant",
+      body: action.messageBody,
+      storeName: merchant.shopDomain.replace(".myshopify.com", ""), // Fallback if shopName missing
+      supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,
+    });
+
     if (merchant.googleEmail) {
       console.log("[WEBHOOK] Sending via Gmail:", merchant.googleEmail);
       const accessToken = await getValidAccessToken(merchant);
       await sendGmailReply(accessToken, {
         to: input.from,
         subject: input.subject,
-        html: `<p>${action.messageBody}</p>`,
+        html: template.html,
         threadId: input.gmailThreadId,
       });
     } else {
@@ -185,8 +193,8 @@ export class WebhookService {
       await sendEmailViaSes({
         to: input.from,
         subject: `Re: ${input.subject}`,
-        html: `<p>${action.messageBody}</p>`,
-        text: action.messageBody,
+        html: template.html,
+        text: template.text,
       });
     }
 

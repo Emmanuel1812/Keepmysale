@@ -28,13 +28,15 @@ export class AutomationService {
       let processedCount = 0;
 
       for (const email of newEmails) {
-        if (!this.shouldProcessEmail(email, merchantEmail)) {
-          console.log(`[AutomationService] Skipping automated/bulk email: ${email.subject}`);
+        const isLegit = this.shouldProcessEmail(email, merchantEmail);
+        
+        if (!isLegit) {
+          console.log(`[AutomationService] BLOCKED: ${email.subject} | From: ${email.from}`);
           await markAsRead(accessToken, email.id);
           continue;
         }
 
-        console.log(`[AutomationService] Processing email: ${email.id} from ${email.from}`);
+        console.log(`[AutomationService] ALLOWED: ${email.subject} | From: ${email.from}`);
         
         await this.webhookService.handleInboundEmail({
           messageId: email.id,
@@ -84,6 +86,8 @@ export class AutomationService {
       "netlify.com", "vercel.com", "github.com",
       "belastingdienst", "mollie.com", "stripe.com",
       "paypal.com", "bank", "payment",
+      "ing.com", "ing.nl", "rabobank.nl", "abnamro.nl",
+      "bunq.com", "knab.nl", "triodos.nl", "revolut.com"
     ];
     
     const fromLower = email.from.toLowerCase();
@@ -107,6 +111,9 @@ export class AutomationService {
       /buy \d+.*get \d+/i,
       /suspended/i,
       /credit limit/i,
+      /webwinkel vakdagen/i,
+      /automatic reply.*:/i,
+      /auto.*reply.*:/i,
     ];
     
     if (bulkSubjects.some(p => p.test(email.subject))) return false;

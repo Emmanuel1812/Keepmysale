@@ -4,6 +4,7 @@ import { MessageService } from "@/services/message-service";
 import { CustomerService } from "@/services/customer-service";
 import { MerchantService } from "@/services/merchant-service";
 import { sendEmailViaSes } from "@/lib/ses/client";
+import { formatEmailResponse } from "@/lib/email/template";
 
 export class InboxService {
   private readonly conversationService: ConversationService;
@@ -40,11 +41,18 @@ export class InboxService {
     });
 
     if (conversation.channel === "email" && customer?.email) {
+      const template = formatEmailResponse({
+        customerName: customer.firstName || "klant",
+        body: params.content,
+        storeName: merchant.shopDomain.replace(".myshopify.com", ""),
+        supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,
+      });
+
       await sendEmailViaSes({
         to: customer.email,
         subject: conversation.subject ? `Re: ${conversation.subject}` : "Support update",
-        html: `<p>${params.content}</p>`,
-        text: params.content,
+        html: template.html,
+        text: template.text,
       });
     }
 

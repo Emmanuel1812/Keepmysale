@@ -172,12 +172,16 @@ export class AiService {
       );
 
       if (order) {
+        const lineItemsStr = (order.lineItems || [])
+          .map((item: any) => `${item.quantity}x ${item.title}`)
+          .join(", ");
+
         orderContext = `
           Order ${order.shopifyOrderNumber || order.name}:
           - Status: ${order.financialStatus}
           - Fulfillment: ${order.fulfillmentStatus}
           - Tracking: ${order.trackingNumber || "geen"}
-          - Producten: ${JSON.stringify(order.lineItems)}
+          - Producten: ${lineItemsStr}
           - Totaal: ${order.totalPrice} ${order.currency}
         `;
       }
@@ -206,8 +210,11 @@ export class AiService {
         Wees behulpzaam en kort.
         
         Taal: ${preferredLanguage}
+        
         Order Context:
         ${orderContext}
+        
+        BELANGRIJK: Als de klant vraagt naar de inhoud van de order of welke producten erin zitten, som dan ALTIJD de producten op die je ziet bij 'Producten' in de context hierboven.
         
         Klantvraag: ${input.incomingText}
         
@@ -260,6 +267,8 @@ export class AiService {
         
         Order Context:
         ${orderContext}
+
+        BELANGRIJK: Als de klant vraagt naar de inhoud van de order of welke producten erin zitten, som dan ALTIJD de producten op die je ziet bij 'Producten' in de context hierboven.
 
         Regels van de merchant:
         - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
