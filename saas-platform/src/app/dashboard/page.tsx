@@ -40,7 +40,9 @@ export default function DashboardPage() {
   });
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [emailSyncing, setEmailSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
 
   async function loadOrders() {
     const response = await fetch("/api/orders", { cache: "no-store" });
@@ -54,6 +56,7 @@ export default function DashboardPage() {
     if (syncing) return;
     setSyncing(true);
     setSyncError(null);
+    setSyncSuccess(null);
     try {
       const response = await fetch("/api/shopify/sync-orders", { method: "POST" });
       const payload = (await response.json()) as {
@@ -68,9 +71,32 @@ export default function DashboardPage() {
         setSyncError(payload.error?.message ?? "Sync failed. Please try again.");
         return;
       }
+      setSyncSuccess("Orders synced successfully!");
       await loadOrders();
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function syncEmails() {
+    if (emailSyncing) return;
+    setEmailSyncing(true);
+    setSyncError(null);
+    setSyncSuccess(null);
+    try {
+      const response = await fetch("/api/automation/sync-emails", { method: "POST" });
+      const payload = (await response.json()) as {
+        success: boolean;
+        data?: { processedCount: number; foundCount: number };
+        error?: { message: string };
+      };
+      if (!response.ok || !payload.success) {
+        setSyncError(payload.error?.message ?? "Email sync failed. Please try again.");
+        return;
+      }
+      setSyncSuccess(`Emails synced successfully! Processed ${payload.data?.processedCount} new messages.`);
+    } finally {
+      setEmailSyncing(false);
     }
   }
 
@@ -92,11 +118,17 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-semibold">
           {summary.shopName ? `Welcome, ${summary.shopName}!` : "Dashboard Overview"}
         </h1>
-        <Button onClick={() => void syncOrders()} disabled={syncing}>
-          {syncing ? "Syncing..." : "Sync Orders"}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => void syncEmails()} disabled={emailSyncing}>
+            {emailSyncing ? "Syncing Emails..." : "Sync Emails"}
+          </Button>
+          <Button onClick={() => void syncOrders()} disabled={syncing}>
+            {syncing ? "Syncing Orders..." : "Sync Orders"}
+          </Button>
+        </div>
       </div>
       {syncError ? <p className="text-sm text-red-600">{syncError}</p> : null}
+      {syncSuccess ? <p className="text-sm text-green-600">{syncSuccess}</p> : null}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="flex flex-col gap-1 p-4">
           <span className="text-sm font-medium text-zinc-500">Total orders</span>
