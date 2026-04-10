@@ -1,0 +1,17 @@
+# --- ADD after computing `email_text`, `sender_email`, `service`, etc. ---
+try:
+    from resend_confirmation_addon import handle_resend_confirmation_flow
+    # Use the Gmail account as fallback sender (the store inbox)
+    profile = service.users().getProfile(userId='me').execute()
+    fallback_sender_email = profile.get("emailAddress", "owner@alma-de-lisboa.com")
+    action = handle_resend_confirmation_flow(service, sender_email, email_text, msg_id, fallback_sender_email)
+    if action.get("acted") and action.get("result") == "resent_to_customer":
+        # Confirm to the customer (PT-PT) that we resent to their address
+        target = action.get("email")
+        confirmation_reply = f"Olá! ✅ Reenviámos agora a confirmação da sua encomenda para {target}. " \
+                             "Se não aparecer nos próximos minutos, por favor verifique o seu spam/promotions. Obrigado!"
+        send_reply(service, sender, subject, confirmation_reply)
+        mark_as_read(service, msg_id)
+        continue  # we've handled this message
+except Exception as e:
+    print("Resend confirmation flow error:", e)

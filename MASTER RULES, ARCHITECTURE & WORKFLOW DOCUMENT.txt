@@ -1,0 +1,1373 @@
+top dankjewel, en nu even wat details over hoe en wat we alles gaan bouwen, we gaan het namelijk grotendeels door ai laten maken. Kunnen we het beste een vaste Shopify app maken die je in de side bar kan openen of dat we gewoon een eigen webapplicatie bouwen die we vervolgens aan de specifieke shopify store koppelen.
+
+
+Thought Process
+expand
+🏗️ Shopify Embedded App vs Standalone Web App
+Dit Is Een CRUCIALE Architectuurbeslissing
+De Twee Opties
+Optie A: Shopify Embedded App
+text
+WAT IS HET:
+→ App draait BINNEN het Shopify Admin dashboard
+→ Gebruikt Shopify App Bridge + Polaris UI componenten
+→ Merchant opent jouw app via de Shopify sidebar
+→ Gedistribueerd via de Shopify App Store
+→ Shopify handelt authenticatie af (OAuth ingebouwd)
+
+ZO ZIET HET ERUIT:
+┌─────────────────────────────────┐
+│ Shopify Admin                    │
+│ ┌──────┐ ┌────────────────────┐ │
+│ │Sidebar│ │  JOUW APP          │ │
+│ │      │ │  (embedded iframe)  │ │
+│ │Orders │ │  Inbox, Analytics,  │ │
+│ │Produc │ │  Return Config...   │ │
+│ │Apps ● │ │                     │ │
+│ │      │ │                     │ │
+│ └──────┘ └────────────────────┘ │
+└─────────────────────────────────┘
+Optie B: Standalone Web App
+text
+WAT IS HET:
+→ Eigen Next.js app op eigen domein (jouwmerk.com)
+→ Merchant logt in op JOUW platform
+→ Koppelt Shopify via OAuth (net als Gorgias doet)
+→ Eigen dashboard, eigen design, eigen ervaring
+→ KAN ook in Shopify App Store staan (als externe link)
+
+ZO ZIET HET ERUIT:
+┌─────────────────────────────────┐
+│ jouwmerk.com/dashboard           │
+│                                  │
+│  ┌─────────────────────────────┐ │
+│  │  JOUW VOLLEDIGE DASHBOARD   │ │
+│  │                             │ │
+│  │  Inbox │ Analytics │ Config │ │
+│  │  WhatsApp + Email threads   │ │
+│  │  Return Negotiation Panel   │ │
+│  │  Full-screen experience     │ │
+│  │                             │ │
+│  └─────────────────────────────┘ │
+└─────────────────────────────────┘
+Vergelijking
+text
+                        EMBEDDED APP    STANDALONE
+                        ────────────    ──────────
+Shopify App Store:      ✅ Native       ⚠️ External link
+Distributie:            ✅ Ingebouwd    ❌ Zelf regelen
+Installatie merchant:   ✅ 1-klik       ⚠️ OAuth flow nodig
+Vertrouwen merchant:    ✅ "Shopify-app" ⚠️ "Externe tool"
+Design vrijheid:        ❌ Beperkt      ✅ Volledig vrij
+                        (Polaris UI     (eigen design)
+                        verplicht)       
+Schermruimte:           ❌ Klein iframe  ✅ Full-screen
+                        (sidebar = krap) 
+WhatsApp inbox view:    ❌ Lastig       ✅ Perfect
+                        (te weinig      (hele scherm
+                        ruimte)          beschikbaar)
+Email threads:          ❌ Beperkt      ✅ Perfect
+Multi-channel inbox:    ❌ Niet ideaal  ✅ Ideaal
+Complexiteit bouwen:    ⚠️ Medium       ✅ Makkelijker
+                        (App Bridge     (gewoon Next.js)
+                        leren)
+AI-tools (Cursor):      ⚠️ Minder      ✅ Meer voorbeelden
+                        voorbeelden     en templates
+Buiten Shopify:         ❌ Nee          ✅ Ja (Bol.com,
+                                        WooCommerce later)
+Onafhankelijkheid:      ❌ 100% afhank  ✅ Eigen platform
+                        elijk van       
+                        Shopify         
+App Store review:       ❌ Weken wachten ✅ Direct live
+App Store commissie:    ❌ Shopify neemt ✅ 0% commissie
+                        mogelijk % 
+Snelheid naar markt:    ⚠️ Langzamer   ✅ Sneller
+                        (review proces) (direct deployen)
+🏆 Mijn Aanbeveling: HYBRID Aanpak
+Dit is wat Gorgias, Tidio, en alle succesvolle tools doen:
+text
+BOUW EEN STANDALONE WEB APP
+DIE OOK EEN SHOPIFY APP HEEFT
+
+Zo werkt het:
+
+1. STANDALONE DASHBOARD (jouwmerk.com)
+   → Dit is je HOOFDPRODUCT
+   → Full-screen ervaring
+   → Unified inbox (WhatsApp + Email)
+   → Return negotiation configuratie
+   → Analytics dashboard
+   → Alles wat ruimte nodig heeft
+
+2. SHOPIFY APP (voor installatie + distributie)
+   → Shopify App Store listing (voor vindbaarheid)
+   → 1-klik installatie (OAuth + permissions)
+   → Na installatie → redirect naar jouwmerk.com
+   → Klein embedded panel in Shopify sidebar
+     voor snelle acties (optioneel, later)
+
+3. HOE DE FLOW WERKT:
+
+   Merchant vindt je in Shopify App Store
+              ↓
+   Klikt "Install" (Shopify OAuth)
+              ↓
+   Shopify permissions worden gegeven
+   (orders lezen, refunds uitvoeren, etc.)
+              ↓
+   Redirect naar jouwmerk.com/onboarding
+              ↓
+   Merchant koppelt WhatsApp (Bird)
+   Upload FAQ/beleid documenten
+   Configureert return percentages
+              ↓
+   Dashboard op jouwmerk.com is nu live
+              ↓
+   AI begint met afhandelen van tickets
+Waarom Hybrid de BESTE Keuze Is
+Reden 1: Je Product Past NIET in een Sidebar
+text
+Jouw product heeft nodig:
+→ Multi-channel inbox (WhatsApp + Email threads)
+→ Lange conversatie-geschiedenissen
+→ Return negotiation configuratiepaneel
+→ Analytics grafieken en tabellen
+→ Knowledge base upload interface
+→ Uitgebreide instellingen
+
+Dit past NIET in een klein Shopify iframe.
+Een unified inbox MOET full-screen zijn.
+
+Gorgias doet dit ook zo:
+→ Shopify App Store voor installatie
+→ Eigen dashboard op gorgias.com voor het echte werk
+Reden 2: Shopify App Store = Gratis Distributie
+text
+53,193 Shopify stores in Nederland
+Duizenden zoeken dagelijks naar apps
+
+Als je NIET in de App Store staat:
+→ Je mist het grootste distributiekanaal
+→ Merchants vertrouwen App Store apps meer
+→ Je concurrent Gorgias WEL in App Store
+
+ALS je WEL in de App Store staat:
+→ Merchants vinden je organisch
+→ 1-klik installatie = lage drempel
+→ Reviews bouwen social proof
+→ Shopify SEO voor "return management",
+  "AI customer support", "Gorgias alternative"
+Reden 3: Toekomstbestendig
+text
+ALLEEN Shopify embedded:
+→ Locked-in bij Shopify
+→ Kan NOOIT Bol.com, WooCommerce, etc. toevoegen
+→ Beperkt door Shopify's regels en UI
+
+STANDALONE + Shopify koppeling:
+→ Vandaag: Shopify integratie
+→ Maand 6: Bol.com integratie toevoegen
+→ Maand 9: WooCommerce integratie
+→ Maand 12: Elke e-commerce platform
+→ Je platform groeit mee
+
+Dit is hoe ALLE grote spelers het doen:
+Gorgias, Zendesk, Tidio, Intercom = 
+standalone platforms die integreren met Shopify.
+Niet Shopify apps die integreren met de wereld.
+Reden 4: Makkelijker te Bouwen met AI (Cursor)
+text
+SHOPIFY EMBEDDED APP:
+→ Shopify App Bridge = extra complexiteit
+→ Polaris UI components = specifieke library
+→ Shopify-specifieke routing en session handling
+→ Minder voorbeelden in Cursor's training data
+→ Meer debugging, minder AI hulp
+
+STANDALONE NEXT.JS APP:
+→ Standaard Next.js (enorm veel voorbeelden)
+→ Tailwind CSS + Shadcn UI (Cursor kent dit perfect)
+→ Supabase auth (standaard, goed gedocumenteerd)
+→ Gewone API routes voor webhooks
+→ Cursor kan 80%+ van de code genereren
+
+Voor een solo developer met AI tools:
+Standalone is SIGNIFICANT sneller te bouwen.
+🏗️ De Architectuur (Hybrid)
+text
+┌──────────────────────────────────────────────┐
+│              SHOPIFY APP STORE                 │
+│                                                │
+│   Merchant klikt "Install"                     │
+│              ↓                                 │
+│   Shopify OAuth (permissions)                  │
+│              ↓                                 │
+│   Redirect → jouwmerk.com/onboarding          │
+└──────────────────────────────────────────────┘
+                    ↓
+┌──────────────────────────────────────────────┐
+│          JOUW STANDALONE PLATFORM              │
+│          (jouwmerk.com)                        │
+│                                                │
+│  ┌─────────────┐  ┌────────────────────────┐  │
+│  │   Auth       │  │   Merchant Dashboard   │  │
+│  │   (Supabase) │  │   - Unified Inbox      │  │
+│  │              │  │   - Return Config       │  │
+│  │              │  │   - Analytics           │  │
+│  │              │  │   - Knowledge Base      │  │
+│  └─────────────┘  └────────────────────────┘  │
+│                                                │
+│  ┌──────────────────────────────────────────┐  │
+│  │          BACKEND API ROUTES               │  │
+│  │                                           │  │
+│  │  /api/webhooks/whatsapp  (Bird incoming)  │  │
+│  │  /api/webhooks/email     (SES incoming)   │  │
+│  │  /api/webhooks/shopify   (order updates)  │  │
+│  │  /api/shopify/orders     (order lookup)   │  │
+│  │  /api/shopify/refund     (execute refund) │  │
+│  │  /api/ai/classify        (intent detect)  │  │
+│  │  /api/ai/negotiate       (return logic)   │  │
+│  │  /api/ai/respond         (generate reply) │  │
+│  └──────────────────────────────────────────┘  │
+│                                                │
+│  ┌──────────────────────────────────────────┐  │
+│  │          DATABASE (Supabase)              │  │
+│  │                                           │  │
+│  │  merchants    → store config, API keys    │  │
+│  │  customers    → unified ID across channels│  │
+│  │  conversations→ threads (WA + email)      │  │
+│  │  messages     → individual messages       │  │
+│  │  orders       → synced from Shopify       │  │
+│  │  negotiations → return offer states       │  │
+│  │  refund_logs  → audit trail for EU comp   │  │
+│  └──────────────────────────────────────────┘  │
+│                                                │
+│  ┌──────────────────────────────────────────┐  │
+│  │     EXTERNE SERVICES                      │  │
+│  │                                           │  │
+│  │  Bird API ←→ WhatsApp berichten           │  │
+│  │  Amazon SES ←→ Email verzenden/ontvangen  │  │
+│  │  OpenAI API ←→ AI intent + responses      │  │
+│  │  Shopify API ←→ Orders, refunds, inventory│  │
+│  │  Mollie ←→ Subscription betalingen        │  │
+│  └──────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
+📋 Wat We Gaan Bouwen (Volgorde)
+text
+FASE 1: STANDALONE WEB APP (Week 1-8)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Next.js app op Vercel
+→ Supabase database + auth
+→ Shopify OAuth koppeling
+→ WhatsApp integratie (Bird)
+→ Email integratie (Amazon SES)
+→ AI engine (OpenAI)
+→ Return negotiation engine
+→ Merchant dashboard
+→ Dit is je CORE PRODUCT
+
+FASE 2: SHOPIFY APP STORE LISTING (Week 9-10)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Maak een "thin" Shopify app
+→ Doet alleen: OAuth installatie + redirect
+→ Na install → stuurt merchant naar jouwmerk.com
+→ Submit naar Shopify App Store
+→ Dit is je DISTRIBUTIE KANAAL
+
+FASE 3: EMBEDDED PANEL (Optioneel, Maand 4+)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Klein Shopify sidebar panel
+→ Toont: aantal open tickets, snelle stats
+→ Klik → opent full dashboard in nieuw tabblad
+→ Nice-to-have, niet essentieel voor launch
+🤖 Bouwen met AI (Cursor IDE Strategie)
+text
+HOE WE CURSOR GAAN GEBRUIKEN:
+
+1. CURSOR COMPOSER (voor hele features)
+   → "Build me a Next.js API route that receives 
+     Bird WhatsApp webhooks and stores messages 
+     in Supabase"
+   → Cursor genereert complete files
+
+2. CURSOR CHAT (voor specifieke problemen)
+   → "How do I implement Shopify OAuth in Next.js 
+     App Router with Supabase session storage?"
+   → Cursor geeft code + uitleg
+
+3. CURSOR TAB (voor autocomplete)
+   → Terwijl je typt, vult Cursor de rest aan
+   → Vooral handig voor repetitieve patterns
+
+4. V0.DEV (voor UI componenten)
+   → "Build a unified inbox component showing 
+     WhatsApp and email threads side by side"
+   → Genereert React + Tailwind componenten
+   → Copy-paste naar je project
+
+WAT CURSOR GOED KAN:
+✅ Next.js API routes
+✅ Supabase queries en auth
+✅ React componenten met Tailwind
+✅ Webhook handlers
+✅ OpenAI API integratie
+✅ Database schema's
+✅ TypeScript types
+
+WAT JIJ MOET DOEN:
+→ Architectuurbeslissingen (die hebben we nu)
+→ Business logica voor return negotiation
+→ Prompt engineering voor de AI agent
+→ Testen en edge cases afvangen
+→ Shopify API specifieke flows
+✅ Beslissing
+text
+ANTWOORD: Bouw een STANDALONE WEB APP
+          met een SHOPIFY APP STORE LISTING
+          voor distributie.
+
+DIT IS WAT GORGIAS DOET.
+DIT IS WAT TIDIO DOET.
+DIT IS WAT ZENDESK DOET.
+ER IS EEN REDEN WAAROM ZE HET ALLEMAAL ZO DOEN.
+
+Voordelen voor jou:
+✅ Full-screen dashboard (nodig voor inbox)
+✅ Shopify App Store distributie (gratis traffic)
+✅ Makkelijker bouwen met Cursor
+✅ Toekomstbestendig (Bol.com, WooCommerce later)
+✅ Onafhankelijk platform
+✅ Sneller naar markt (geen App Store review wachten 
+  voor je core product — alleen voor de "thin" app)
+Zullen we beginnen met het database schema en de folder structuur? Dan kan je meteen in Cursor aan de slag. 💻🔥
+
+Claude Opus 4.6
+Okay I will use google antigravity though to let multiple agents work on the project at the same time. before that we need to make a file could just be txt or markdown. with rules and workflows on how the project is going to work. we need to ensure that all the agents work in and build the application in such a way that every piece fits together perfecty and the application works seamlesly.
+
+
+Thought Process
+expand
+📜 Master Project Rules & Architecture Document
+This Is THE Single Source of Truth for All Agents
+markdown
+# ══════════════════════════════════════════════════════════
+# PROJECT: [PRODUCT_NAME] — AI E-Commerce Support SaaS
+# MASTER RULES, ARCHITECTURE & WORKFLOW DOCUMENT
+# Version: 1.0
+# Last Updated: 2026-XX-XX
+# ══════════════════════════════════════════════════════════
+
+## TABLE OF CONTENTS
+1. Project Overview
+2. Golden Rules (ALL Agents MUST Follow)
+3. Tech Stack (Exact Versions)
+4. Environment Variables
+5. Project Folder Structure
+6. Database Schema (Supabase/PostgreSQL)
+7. TypeScript Type Definitions
+8. API Route Contracts
+9. Authentication & Authorization Flow
+10. External API Integration Specs
+11. AI/LLM Integration Rules
+12. Return Negotiation State Machine
+13. Multi-Channel Message Flow
+14. Frontend Component Architecture
+15. Error Handling Standards
+16. Testing Standards
+17. Deployment & CI/CD
+18. Agent Workflow Rules
+
+---
+
+## 1. PROJECT OVERVIEW
+
+### What We Are Building
+An AI-powered multi-channel (WhatsApp + Email) customer
+support SaaS for Shopify e-commerce merchants. The core
+differentiator is a "Smart Return Negotiation" engine that
+proactively intercepts return requests and negotiates
+partial refunds via conversational AI, saving merchants
+reverse logistics costs.
+
+### Architecture Pattern
+- Standalone Next.js web application (NOT embedded Shopify app)
+- Shopify App Store listing as thin OAuth installer
+- Multi-tenant SaaS (one codebase, many merchants)
+- Serverless API routes on Vercel
+- Real-time webhooks from Bird (WhatsApp) and Amazon SES (Email)
+- AI processing via OpenAI API
+- PostgreSQL database via Supabase
+- Payments via Mollie
+
+### Core User Flows
+1. Merchant installs via Shopify App Store → OAuth → Onboarding
+2. Customer sends WhatsApp/Email message → AI classifies intent
+3. WISMO: AI fetches order status from Shopify → auto-responds
+4. Return request: AI triggers negotiation state machine
+5. Merchant views all conversations in unified inbox dashboard
+6. Analytics show tickets resolved, returns prevented, money saved
+
+---
+
+## 2. GOLDEN RULES (ALL AGENTS MUST FOLLOW)
+
+### Code Standards
+- Language: TypeScript ONLY. No plain JavaScript. Ever.
+- Strict mode enabled in tsconfig.json
+- All functions must have explicit return types
+- All function parameters must be typed (no `any` type)
+- Use `interface` for object shapes, `type` for unions/intersections
+- Use `const` by default, `let` only when reassignment needed
+- No `var` keyword. Ever.
+- Async/await only. No .then() chains.
+- All API responses must use the standardized response helper
+- All errors must be caught and logged using the error handler
+- No console.log in production code — use the logger utility
+- Maximum function length: 50 lines. Extract helpers if longer.
+- All database queries go through the data access layer (DAL)
+  Never write raw SQL in API routes or components.
+
+### Naming Conventions
+- Files: kebab-case (e.g., `return-negotiation.ts`)
+- Components: PascalCase (e.g., `UnifiedInbox.tsx`)
+- Functions: camelCase (e.g., `calculateRefundOffer()`)
+- Constants: SCREAMING_SNAKE_CASE (e.g., `MAX_NEGOTIATION_STEPS`)
+- Database tables: snake_case plural (e.g., `conversations`)
+- Database columns: snake_case (e.g., `created_at`)
+- API routes: kebab-case (e.g., `/api/shopify/verify-webhook`)
+- TypeScript interfaces: PascalCase with `I` prefix (e.g., `IMerchant`)
+- TypeScript types: PascalCase with `T` prefix (e.g., `TMessageChannel`)
+- Enums: PascalCase name, SCREAMING_SNAKE values
+- Environment variables: SCREAMING_SNAKE_CASE with service prefix
+  (e.g., `SHOPIFY_API_KEY`, `BIRD_API_KEY`, `OPENAI_API_KEY`)
+
+### Import Order (Enforced in Every File)
+```typescript
+// 1. External libraries
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+// 2. Internal types
+import type { IMerchant, IConversation } from '@/types'
+
+// 3. Internal utilities
+import { logger } from '@/lib/logger'
+import { apiResponse, apiError } from '@/lib/api-helpers'
+
+// 4. Internal services/DAL
+import { MerchantService } from '@/services/merchant-service'
+
+// 5. Internal components (frontend only)
+import { InboxThread } from '@/components/inbox/inbox-thread'
+Git Commit Convention
+text
+feat: add return negotiation escalation logic
+fix: resolve WhatsApp webhook timeout on large payloads
+refactor: extract shopify order lookup into service layer
+docs: update API route documentation
+test: add unit tests for refund calculation
+chore: update dependencies
+3. TECH STACK (Exact Versions)
+json
+{
+  "runtime": "Node.js 20 LTS",
+  "framework": "Next.js 14.x (App Router ONLY — NO Pages Router)",
+  "language": "TypeScript 5.x (strict mode)",
+  "styling": "Tailwind CSS 3.x",
+  "ui_components": "shadcn/ui (Radix primitives)",
+  "database": "PostgreSQL 15 via Supabase",
+  "orm": "Supabase JS Client v2 (NOT Prisma, NOT Drizzle)",
+  "auth": "Supabase Auth + custom Shopify OAuth",
+  "ai": "OpenAI API (gpt-4o model) via openai npm package v4.x",
+  "vector_db": "Supabase pgvector extension",
+  "whatsapp": "Bird API (formerly MessageBird)",
+  "email_outbound": "Amazon SES via @aws-sdk/client-ses v3",
+  "email_inbound": "Amazon SES + S3 + SNS webhook",
+  "payments": "Mollie API via @mollie/api-client",
+  "ecommerce": "Shopify Admin API (GraphQL) via @shopify/shopify-api v9+",
+  "hosting": "Vercel (Edge and Serverless Functions)",
+  "package_manager": "pnpm (NOT npm, NOT yarn)",
+  "linting": "ESLint + Prettier",
+  "testing": "Vitest for unit tests"
+}
+CRITICAL: Do NOT use these
+text
+❌ Pages Router (use App Router ONLY)
+❌ Prisma or Drizzle (use Supabase client directly)
+❌ Express.js (use Next.js API routes)
+❌ MongoDB (use PostgreSQL)
+❌ Twilio (use Bird for WhatsApp)
+❌ SendGrid (use Amazon SES)
+❌ Stripe (use Mollie — Dutch market)
+❌ npm or yarn (use pnpm)
+❌ CSS modules or styled-components (use Tailwind)
+❌ Redux or Zustand (use React Server Components + URL state)
+4. ENVIRONMENT VARIABLES
+env
+# ═══ APP ═══
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_NAME=ProductName
+NODE_ENV=development|production
+
+# ═══ SUPABASE ═══
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxxx
+SUPABASE_SERVICE_ROLE_KEY=eyJxxxx
+
+# ═══ SHOPIFY ═══
+SHOPIFY_API_KEY=your_api_key
+SHOPIFY_API_SECRET=your_api_secret
+SHOPIFY_SCOPES=read_orders,write_orders,read_products,read_customers,write_payment_terms
+SHOPIFY_APP_URL=https://yourdomain.com
+SHOPIFY_WEBHOOK_SECRET=your_webhook_secret
+
+# ═══ OPENAI ═══
+OPENAI_API_KEY=sk-xxxxx
+OPENAI_MODEL=gpt-4o
+OPENAI_MAX_TOKENS=1024
+OPENAI_TEMPERATURE=0.3
+
+# ═══ BIRD (WhatsApp) ═══
+BIRD_API_KEY=your_bird_api_key
+BIRD_WORKSPACE_ID=your_workspace_id
+BIRD_CHANNEL_ID=your_whatsapp_channel_id
+BIRD_WEBHOOK_SECRET=your_webhook_signing_secret
+
+# ═══ AMAZON SES (Email) ═══
+AWS_SES_REGION=eu-west-1
+AWS_SES_ACCESS_KEY_ID=AKIAxxxxx
+AWS_SES_SECRET_ACCESS_KEY=xxxxx
+AWS_SES_FROM_EMAIL=support@yourdomain.com
+AWS_SNS_WEBHOOK_SECRET=your_sns_signing_secret
+
+# ═══ MOLLIE (Payments) ═══
+MOLLIE_API_KEY=live_xxxxx
+MOLLIE_WEBHOOK_URL=https://yourdomain.com/api/webhooks/mollie
+
+# ═══ ENCRYPTION ═══
+ENCRYPTION_KEY=32_byte_hex_string_for_encrypting_tokens
+Rules for Environment Variables
+NEVER hardcode secrets in source code
+NEVER commit .env files to git
+All external API tokens stored in Supabase merchant_credentials
+table, encrypted with ENCRYPTION_KEY
+NEXT_PUBLIC_ prefix ONLY for variables needed client-side
+Validate ALL env vars on app startup using a schema validator
+5. PROJECT FOLDER STRUCTURE
+text
+/
+├── .env.local                    # Local env vars (git-ignored)
+├── .env.example                  # Template showing required vars
+├── .eslintrc.json
+├── .prettierrc
+├── next.config.js
+├── tailwind.config.ts
+├── tsconfig.json
+├── package.json
+├── pnpm-lock.yaml
+│
+├── /public/                      # Static assets
+│   ├── logo.svg
+│   └── favicon.ico
+│
+├── /src/
+│   │
+│   ├── /app/                     # Next.js App Router
+│   │   ├── layout.tsx            # Root layout
+│   │   ├── page.tsx              # Landing/marketing page
+│   │   ├── globals.css           # Tailwind imports
+│   │   │
+│   │   ├── /auth/                # Auth pages
+│   │   │   ├── /login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── /signup/
+│   │   │   │   └── page.tsx
+│   │   │   └── /callback/
+│   │   │       └── page.tsx      # OAuth callback handler
+│   │   │
+│   │   ├── /onboarding/          # Post-install onboarding
+│   │   │   ├── page.tsx          # Step 1: Welcome
+│   │   │   ├── /connect-shopify/
+│   │   │   │   └── page.tsx      # Step 2: Shopify OAuth
+│   │   │   ├── /connect-whatsapp/
+│   │   │   │   └── page.tsx      # Step 3: WhatsApp setup
+│   │   │   ├── /configure/
+│   │   │   │   └── page.tsx      # Step 4: Return rules
+│   │   │   └── /done/
+│   │   │       └── page.tsx      # Step 5: Ready to go
+│   │   │
+│   │   ├── /dashboard/           # Main merchant dashboard
+│   │   │   ├── layout.tsx        # Dashboard shell + sidebar
+│   │   │   ├── page.tsx          # Dashboard overview/home
+│   │   │   │
+│   │   │   ├── /inbox/           # Unified inbox
+│   │   │   │   ├── page.tsx      # Conversation list
+│   │   │   │   └── /[id]/
+│   │   │   │       └── page.tsx  # Single conversation view
+│   │   │   │
+│   │   │   ├── /returns/         # Return management
+│   │   │   │   ├── page.tsx      # Active negotiations list
+│   │   │   │   └── /[id]/
+│   │   │   │       └── page.tsx  # Single negotiation detail
+│   │   │   │
+│   │   │   ├── /analytics/       # Analytics & reporting
+│   │   │   │   └── page.tsx
+│   │   │   │
+│   │   │   ├── /settings/        # Merchant settings
+│   │   │   │   ├── page.tsx      # General settings
+│   │   │   │   ├── /channels/
+│   │   │   │   │   └── page.tsx  # WhatsApp + Email config
+│   │   │   │   ├── /returns/
+│   │   │   │   │   └── page.tsx  # Return negotiation rules
+│   │   │   │   ├── /knowledge-base/
+│   │   │   │   │   └── page.tsx  # FAQ/policy upload
+│   │   │   │   ├── /billing/
+│   │   │   │   │   └── page.tsx  # Subscription management
+│   │   │   │   └── /team/
+│   │   │   │       └── page.tsx  # Team members (future)
+│   │   │   │
+│   │   │   └── /shopify/         # Shopify-specific pages
+│   │   │       └── /install/
+│   │   │           └── page.tsx  # Shopify OAuth initiation
+│   │   │
+│   │   └── /api/                 # API Routes (serverless)
+│   │       │
+│   │       ├── /webhooks/        # Inbound webhooks
+│   │       │   ├── /whatsapp/
+│   │       │   │   └── route.ts  # Bird WhatsApp webhook
+│   │       │   ├── /email/
+│   │       │   │   └── route.ts  # Amazon SES/SNS webhook
+│   │       │   ├── /shopify/
+│   │       │   │   └── route.ts  # Shopify webhook handler
+│   │       │   └── /mollie/
+│   │       │       └── route.ts  # Mollie payment webhook
+│   │       │
+│   │       ├── /shopify/         # Shopify API interactions
+│   │       │   ├── /auth/
+│   │       │   │   └── route.ts  # OAuth start
+│   │       │   ├── /callback/
+│   │       │   │   └── route.ts  # OAuth callback
+│   │       │   ├── /orders/
+│   │       │   │   └── route.ts  # Order lookup
+│   │       │   └── /refund/
+│   │       │       └── route.ts  # Execute refund
+│   │       │
+│   │       ├── /ai/              # AI processing
+│   │       │   ├── /classify/
+│   │       │   │   └── route.ts  # Intent classification
+│   │       │   ├── /respond/
+│   │       │   │   └── route.ts  # Generate AI response
+│   │       │   └── /negotiate/
+│   │       │       └── route.ts  # Return negotiation logic
+│   │       │
+│   │       ├── /conversations/   # Conversation CRUD
+│   │       │   ├── route.ts      # List / Create
+│   │       │   └── /[id]/
+│   │       │       └── route.ts  # Get / Update
+│   │       │
+│   │       ├── /merchants/       # Merchant management
+│   │       │   ├── route.ts
+│   │       │   └── /[id]/
+│   │       │       └── route.ts
+│   │       │
+│   │       └── /analytics/       # Analytics endpoints
+│   │           └── route.ts
+│   │
+│   ├── /components/              # React components
+│   │   ├── /ui/                  # shadcn/ui base components
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── toast.tsx
+│   │   │   └── ... (other shadcn components)
+│   │   │
+│   │   ├── /layout/              # Layout components
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── header.tsx
+│   │   │   ├── nav-item.tsx
+│   │   │   └── mobile-nav.tsx
+│   │   │
+│   │   ├── /inbox/               # Inbox-specific components
+│   │   │   ├── conversation-list.tsx
+│   │   │   ├── conversation-item.tsx
+│   │   │   ├── message-thread.tsx
+│   │   │   ├── message-bubble.tsx
+│   │   │   ├── channel-badge.tsx
+│   │   │   ├── reply-composer.tsx
+│   │   │   └── customer-sidebar.tsx
+│   │   │
+│   │   ├── /returns/             # Return negotiation components
+│   │   │   ├── negotiation-card.tsx
+│   │   │   ├── negotiation-timeline.tsx
+│   │   │   ├── offer-configurator.tsx
+│   │   │   └── savings-calculator.tsx
+│   │   │
+│   │   ├── /analytics/           # Analytics components
+│   │   │   ├── stats-overview.tsx
+│   │   │   ├── ticket-chart.tsx
+│   │   │   ├── returns-saved-chart.tsx
+│   │   │   └── roi-calculator.tsx
+│   │   │
+│   │   ├── /onboarding/          # Onboarding components
+│   │   │   ├── step-indicator.tsx
+│   │   │   ├── shopify-connect.tsx
+│   │   │   ├── whatsapp-connect.tsx
+│   │   │   └── return-rules-form.tsx
+│   │   │
+│   │   └── /shared/              # Shared/reusable components
+│   │       ├── loading-spinner.tsx
+│   │       ├── empty-state.tsx
+│   │       ├── error-boundary.tsx
+│   │       ├── page-header.tsx
+│   │       └── confirm-dialog.tsx
+│   │
+│   ├── /lib/                     # Core utilities & config
+│   │   ├── supabase/
+│   │   │   ├── client.ts         # Browser Supabase client
+│   │   │   ├── server.ts         # Server Supabase client
+│   │   │   └── admin.ts          # Service role client (webhooks)
+│   │   ├── shopify/
+│   │   │   ├── client.ts         # Shopify API client factory
+│   │   │   ├── auth.ts           # OAuth helper functions
+│   │   │   └── webhooks.ts       # Webhook verification
+│   │   ├── bird/
+│   │   │   ├── client.ts         # Bird API client
+│   │   │   └── webhooks.ts       # Webhook verification
+│   │   ├── ses/
+│   │   │   ├── client.ts         # Amazon SES client
+│   │   │   └── parser.ts         # Inbound email parser
+│   │   ├── openai/
+│   │   │   ├── client.ts         # OpenAI client
+│   │   │   ├── prompts.ts        # System prompt templates
+│   │   │   └── classifier.ts     # Intent classification
+│   │   ├── mollie/
+│   │   │   └── client.ts         # Mollie payment client
+│   │   ├── api-helpers.ts        # Standardized API responses
+│   │   ├── logger.ts             # Structured logging utility
+│   │   ├── encryption.ts         # Token encryption/decryption
+│   │   ├── constants.ts          # App-wide constants
+│   │   ├── validators.ts         # Zod schemas for validation
+│   │   └── utils.ts              # General utility functions
+│   │
+│   ├── /services/                # Business logic layer
+│   │   ├── merchant-service.ts   # Merchant CRUD + config
+│   │   ├── conversation-service.ts # Conversation management
+│   │   ├── message-service.ts    # Send/receive messages
+│   │   ├── customer-service.ts   # Unified customer identity
+│   │   ├── order-service.ts      # Shopify order operations
+│   │   ├── negotiation-service.ts # Return negotiation logic
+│   │   ├── refund-service.ts     # Refund execution + audit
+│   │   ├── analytics-service.ts  # Analytics aggregation
+│   │   ├── ai-service.ts         # AI orchestration layer
+│   │   └── knowledge-base-service.ts # RAG document mgmt
+│   │
+│   ├── /dal/                     # Data Access Layer
+│   │   ├── merchants.ts          # merchants table queries
+│   │   ├── conversations.ts      # conversations table queries
+│   │   ├── messages.ts           # messages table queries
+│   │   ├── customers.ts          # customers table queries
+│   │   ├── orders.ts             # orders table queries
+│   │   ├── negotiations.ts       # negotiations table queries
+│   │   ├── refund-logs.ts        # refund_logs table queries
+│   │   └── knowledge-base.ts     # knowledge_base table queries
+│   │
+│   ├── /types/                   # TypeScript type definitions
+│   │   ├── index.ts              # Re-exports all types
+│   │   ├── merchant.ts           # Merchant-related types
+│   │   ├── conversation.ts       # Conversation types
+│   │   ├── message.ts            # Message types
+│   │   ├── customer.ts           # Customer types
+│   │   ├── order.ts              # Order types
+│   │   ├── negotiation.ts        # Negotiation state types
+│   │   ├── refund.ts             # Refund types
+│   │   ├── ai.ts                 # AI/LLM related types
+│   │   ├── shopify.ts            # Shopify API types
+│   │   ├── bird.ts               # Bird/WhatsApp types
+│   │   ├── ses.ts                # Email types
+│   │   └── api.ts                # API request/response types
+│   │
+│   ├── /hooks/                   # Custom React hooks
+│   │   ├── use-conversations.ts
+│   │   ├── use-merchant.ts
+│   │   ├── use-analytics.ts
+│   │   ├── use-realtime.ts       # Supabase realtime subscriptions
+│   │   └── use-toast.ts
+│   │
+│   └── /config/                  # App configuration
+│       ├── navigation.ts         # Sidebar nav items
+│       ├── onboarding-steps.ts   # Onboarding flow config
+│       └── negotiation-defaults.ts # Default return percentages
+│
+├── /supabase/                    # Supabase local config
+│   ├── /migrations/              # SQL migration files
+│   │   ├── 001_create_merchants.sql
+│   │   ├── 002_create_customers.sql
+│   │   ├── 003_create_conversations.sql
+│   │   ├── 004_create_messages.sql
+│   │   ├── 005_create_orders.sql
+│   │   ├── 006_create_negotiations.sql
+│   │   ├── 007_create_refund_logs.sql
+│   │   ├── 008_create_knowledge_base.sql
+│   │   └── 009_create_rls_policies.sql
+│   └── seed.sql                  # Development seed data
+│
+└── /docs/                        # Documentation
+    ├── ARCHITECTURE.md
+    ├── API_ROUTES.md
+    ├── DATABASE_SCHEMA.md
+    └── DEPLOYMENT.md
+6. DATABASE SCHEMA (PostgreSQL/Supabase)
+CRITICAL RULES:
+All tables MUST have id (UUID), created_at, updated_at
+All foreign keys MUST have ON DELETE CASCADE or SET NULL (specify per table)
+All tables MUST have Row Level Security (RLS) enabled
+All merchant-owned data MUST include merchant_id column
+Timestamps MUST be timestamptz (with timezone)
+Use UUID v4 for all primary keys
+NEVER store raw API tokens — always encrypt
+Table: merchants
+sql
+CREATE TABLE merchants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  supabase_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  shop_domain TEXT UNIQUE NOT NULL,           -- "store.myshopify.com"
+  shop_name TEXT,
+  email TEXT NOT NULL,
+  shopify_access_token_encrypted TEXT,         -- AES-256 encrypted
+  bird_channel_id TEXT,                        -- Bird WhatsApp channel
+  whatsapp_phone_number TEXT,                  -- "+31612345678"
+  ses_verified_domain TEXT,                    -- Verified SES domain
+  mollie_customer_id TEXT,                     -- Mollie subscription
+  subscription_tier TEXT DEFAULT 'starter'
+    CHECK (subscription_tier IN ('trial','starter','growth','scale')),
+  subscription_status TEXT DEFAULT 'trial'
+    CHECK (subscription_status IN ('trial','active','past_due','cancelled')),
+  trial_ends_at TIMESTAMPTZ,
+  onboarding_completed BOOLEAN DEFAULT FALSE,
+  settings JSONB DEFAULT '{
+    "business_hours": {"start": "09:00", "end": "17:00"},
+    "timezone": "Europe/Amsterdam",
+    "auto_respond": true,
+    "language": "nl",
+    "return_negotiation_enabled": true,
+    "negotiation_offers": [
+      {"step": 1, "type": "partial_refund", "percentage": 20},
+      {"step": 2, "type": "partial_refund", "percentage": 35},
+      {"step": 3, "type": "store_credit", "percentage": 50}
+    ],
+    "escalation_email": null,
+    "proactive_check_enabled": true,
+    "proactive_check_delay_hours": 48
+  }'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+Table: customers
+sql
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  email TEXT,
+  phone TEXT,                                  -- E.164 format "+31612345678"
+  name TEXT,
+  shopify_customer_id TEXT,
+  language TEXT DEFAULT 'nl',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(merchant_id, email),
+  UNIQUE(merchant_id, phone)
+);
+CREATE INDEX idx_customers_merchant ON customers(merchant_id);
+CREATE INDEX idx_customers_email ON customers(merchant_id, email);
+CREATE INDEX idx_customers_phone ON customers(merchant_id, phone);
+Table: conversations
+sql
+CREATE TYPE conversation_status AS ENUM (
+  'open', 'pending_ai', 'pending_human',
+  'negotiating', 'resolved', 'closed'
+);
+CREATE TYPE conversation_channel AS ENUM (
+  'whatsapp', 'email'
+);
+
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE NOT NULL,
+  channel conversation_channel NOT NULL,
+  status conversation_status DEFAULT 'open',
+  subject TEXT,
+  intent TEXT,                                 -- 'wismo','return','exchange','faq','complaint','other'
+  assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ai_resolved BOOLEAN DEFAULT FALSE,
+  shopify_order_id TEXT,                       -- Linked Shopify order if applicable
+  last_message_at TIMESTAMPTZ DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_conversations_merchant ON conversations(merchant_id);
+CREATE INDEX idx_conversations_status ON conversations(merchant_id, status);
+CREATE INDEX idx_conversations_customer ON conversations(customer_id);
+Table: messages
+sql
+CREATE TYPE message_sender AS ENUM (
+  'customer', 'ai', 'human_agent', 'system'
+);
+
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE NOT NULL,
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  sender message_sender NOT NULL,
+  channel conversation_channel NOT NULL,
+  content TEXT NOT NULL,
+  content_html TEXT,                           -- Rich HTML for email
+  external_message_id TEXT,                    -- Bird msg ID or SES msg ID
+  attachments JSONB DEFAULT '[]',
+  ai_confidence FLOAT,                        -- 0.0 to 1.0
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_merchant ON messages(merchant_id);
+Table: orders (synced from Shopify)
+sql
+CREATE TABLE orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  shopify_order_id TEXT NOT NULL,
+  shopify_order_number TEXT,                   -- "#1001"
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  email TEXT,
+  financial_status TEXT,                       -- 'paid','partially_refunded','refunded'
+  fulfillment_status TEXT,                     -- 'fulfilled','partial','unfulfilled'
+  total_price DECIMAL(10,2),
+  currency TEXT DEFAULT 'EUR',
+  line_items JSONB DEFAULT '[]',
+  tracking_number TEXT,
+  tracking_url TEXT,
+  tracking_company TEXT,
+  delivered_at TIMESTAMPTZ,
+  proactive_check_sent BOOLEAN DEFAULT FALSE,
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(merchant_id, shopify_order_id)
+);
+CREATE INDEX idx_orders_merchant ON orders(merchant_id);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_shopify_id ON orders(merchant_id, shopify_order_id);
+Table: negotiations
+sql
+CREATE TYPE negotiation_status AS ENUM (
+  'initiated', 'offer_sent', 'offer_accepted',
+  'offer_rejected', 'escalated', 'return_initiated',
+  'completed', 'expired'
+);
+
+CREATE TABLE negotiations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE NOT NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE NOT NULL,
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  status negotiation_status DEFAULT 'initiated',
+  current_step INTEGER DEFAULT 1,
+  max_steps INTEGER DEFAULT 3,
+  offers JSONB DEFAULT '[]',
+  /*
+    offers structure:
+    [
+      {
+        "step": 1,
+        "type": "partial_refund",
+        "percentage": 20,
+        "amount": 8.00,
+        "currency": "EUR",
+        "offered_at": "2026-01-15T10:30:00Z",
+        "response": "rejected|accepted|pending",
+        "responded_at": "2026-01-15T10:35:00Z"
+      }
+    ]
+  */
+  product_cost DECIMAL(10,2),                  -- Wholesale cost of item
+  estimated_return_cost DECIMAL(10,2),         -- Est. reverse logistics cost
+  final_refund_amount DECIMAL(10,2),
+  final_refund_type TEXT,                      -- 'partial_refund','store_credit','full_refund','exchange'
+  shopify_refund_id TEXT,                      -- Shopify refund ID after execution
+  return_reason TEXT,
+  customer_feedback TEXT,
+  savings DECIMAL(10,2),                       -- Money saved vs full return
+  audit_pdf_url TEXT,                          -- S3/Supabase Storage URL
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_negotiations_merchant ON negotiations(merchant_id);
+CREATE INDEX idx_negotiations_conversation ON negotiations(conversation_id);
+CREATE INDEX idx_negotiations_status ON negotiations(merchant_id, status);
+Table: refund_logs (EU Compliance Audit Trail)
+sql
+CREATE TABLE refund_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  negotiation_id UUID REFERENCES negotiations(id) ON DELETE SET NULL,
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+    -- 'partial_refund_offered','partial_refund_accepted',
+    -- 'store_credit_issued','full_refund_processed',
+    -- 'return_label_generated','withdrawal_acknowledged'
+  amount DECIMAL(10,2),
+  currency TEXT DEFAULT 'EUR',
+  shopify_refund_id TEXT,
+  shopify_transaction_id TEXT,
+  channel conversation_channel,
+  customer_consent_recorded BOOLEAN DEFAULT FALSE,
+  audit_details JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_refund_logs_merchant ON refund_logs(merchant_id);
+CREATE INDEX idx_refund_logs_negotiation ON refund_logs(negotiation_id);
+Table: knowledge_base
+sql
+CREATE TABLE knowledge_base (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  content_embedding VECTOR(1536),              -- OpenAI embedding
+  category TEXT,                               -- 'returns','shipping','sizing','general'
+  language TEXT DEFAULT 'nl',
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_kb_merchant ON knowledge_base(merchant_id);
+CREATE INDEX idx_kb_embedding ON knowledge_base
+  USING ivfflat (content_embedding vector_cosine_ops);
+7. API ROUTE CONTRACTS
+Standardized Response Format
+ALL API routes MUST return this structure:
+
+typescript
+// Success
+{
+  "success": true,
+  "data": { ... },
+  "meta": { "page": 1, "total": 100 }  // optional
+}
+
+// Error
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Human readable message",
+    "details": { ... }  // optional
+  }
+}
+API Response Helper (use in ALL routes)
+typescript
+// src/lib/api-helpers.ts
+export function apiResponse<T>(data: T, status = 200) {
+  return NextResponse.json({ success: true, data }, { status })
+}
+
+export function apiError(
+  code: string,
+  message: string,
+  status = 400,
+  details?: unknown
+) {
+  return NextResponse.json(
+    { success: false, error: { code, message, details } },
+    { status }
+  )
+}
+8. RETURN NEGOTIATION STATE MACHINE
+text
+STATES AND TRANSITIONS:
+
+[Customer sends return intent message]
+              ↓
+    ┌─── INITIATED ───┐
+    │                  │
+    ↓                  │
+[AI calculates optimal offer based on:        │
+ - product_cost                                │
+ - estimated_return_cost                       │
+ - customer LTV                                │
+ - merchant configured percentages]            │
+    ↓                                          │
+  OFFER_SENT (Step 1: e.g., 20% partial)      │
+    ↓                                          │
+  ┌──────────┬──────────┐                      │
+  ↓          ↓          ↓                      │
+ACCEPTED   REJECTED   NO_RESPONSE (48h)        │
+  ↓          ↓          ↓                      │
+COMPLETED  OFFER_SENT  ESCALATED               │
+           (Step 2:    (to human)              │
+            35% partial)                       │
+              ↓                                │
+  ┌──────────┬──────────┐                      │
+  ↓          ↓          ↓                      │
+ACCEPTED   REJECTED   NO_RESPONSE              │
+  ↓          ↓          ↓                      │
+COMPLETED  OFFER_SENT  ESCALATED               │
+           (Step 3:                            │
+            50% credit)                        │
+              ↓                                │
+  ┌──────────┬──────────┐                      │
+  ↓          ↓          ↓                      │
+ACCEPTED   REJECTED   NO_RESPONSE              │
+  ↓          ↓          ↓                      │
+COMPLETED  RETURN_     ESCALATED               │
+           INITIATED                           │
+           (full return                        │
+            process)                           │
+
+RULES:
+- Maximum 3 negotiation steps (configurable per merchant)
+- Each offer has 48h expiry before auto-escalation
+- If customer explicitly demands full return at ANY step
+  → skip remaining offers → RETURN_INITIATED
+- NEVER block or delay a customer's right to return
+- All state transitions logged in refund_logs table
+- PDF audit trail generated on COMPLETED or RETURN_INITIATED
+9. MULTI-CHANNEL MESSAGE FLOW
+text
+INBOUND FLOW:
+
+WhatsApp Message (via Bird webhook)
+  → POST /api/webhooks/whatsapp
+  → Verify Bird signature
+  → Parse message payload
+  → Find or create customer (by phone number)
+  → Find or create conversation
+  → Store message in messages table
+  → Route to AI Service:
+    → Classify intent
+    → If WISMO → fetch order → auto-respond
+    → If RETURN → check for active negotiation
+      → If none → initiate negotiation
+      → If active → process response to current offer
+    → If FAQ → RAG search → auto-respond
+    → If COMPLEX → escalate to human
+  → Send response via Bird API
+
+Email Message (via SES → SNS → webhook)
+  → POST /api/webhooks/email
+  → Verify SNS signature
+  → Parse email (from, subject, body, attachments)
+  → Find or create customer (by email address)
+  → Find or create conversation
+  → Store message in messages table
+  → Route to SAME AI Service as WhatsApp
+  → Send response via Amazon SES
+
+OUTBOUND FLOW:
+
+AI generates response
+  → Check conversation channel
+  → If WhatsApp → send via Bird API
+  → If Email → send via Amazon SES
+  → Store outbound message in messages table
+  → Update conversation.last_message_at
+
+CROSS-CHANNEL LINKING:
+  → When creating customer, check if phone OR email
+    matches existing customer for this merchant
+  → If match → merge into single customer record
+  → All conversations from both channels visible
+    under one customer profile in the inbox
+10. AI/LLM INTEGRATION RULES
+System Prompt Template
+text
+EVERY AI call MUST include this system prompt structure:
+
+"You are a customer support AI assistant for {shop_name},
+a {shop_description} store. You communicate in {language}.
+
+YOUR PERSONALITY:
+- Professional but warm and empathetic
+- Direct and helpful (Dutch communication style)
+- Never defensive or argumentative
+- Always acknowledge the customer's frustration first
+
+YOUR CAPABILITIES:
+- Look up order status and tracking information
+- Answer questions about store policies
+- Handle return and refund requests
+- Offer exchanges for wrong sizes/colors
+- Escalate complex issues to human agents
+
+YOUR STRICT RULES:
+- NEVER invent tracking numbers or order details
+- NEVER promise delivery dates you cannot verify
+- NEVER make up store policies
+- ONLY use information from the provided context
+- If unsure, say: 'Ik ga dit even voor u nakijken 
+  bij mijn collega' and escalate
+- ALWAYS respect the customer's right to return
+- NEVER pressure or manipulate customers
+- If customer explicitly demands full return, 
+  process it immediately without further offers
+
+CURRENT CONTEXT:
+{order_details_if_available}
+{knowledge_base_results_if_relevant}
+{negotiation_state_if_active}
+{conversation_history_last_10_messages}
+"
+CRITICAL AI SAFETY RULES:
+text
+1. NEVER send customer data to OpenAI that isn't needed
+   → Strip unnecessary PII before API call
+   → Only include: first name, order number, product names
+   → NEVER include: full address, payment details, BSN
+
+2. Set temperature to 0.3 (low creativity, high accuracy)
+
+3. Always validate AI output before sending:
+   → Check for hallucinated order numbers
+   → Check for promises AI cannot keep
+   → Check for refund amounts exceeding order total
+
+4. Rate limit: max 100 AI calls per merchant per hour
+
+5. Fallback: if OpenAI is down, queue message and 
+   notify merchant for manual handling. NEVER drop messages.
+
+6. Log ALL AI inputs and outputs for debugging
+   (sanitized of PII in production)
+11. ERROR HANDLING STANDARDS
+typescript
+// ALL API routes must follow this pattern:
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. Validate input
+    const body = await req.json()
+    const validated = MySchema.safeParse(body)
+    if (!validated.success) {
+      return apiError('VALIDATION_ERROR', 
+        'Invalid input', 400, validated.error.flatten())
+    }
+
+    // 2. Authenticate
+    const merchant = await getMerchantFromRequest(req)
+    if (!merchant) {
+      return apiError('UNAUTHORIZED', 
+        'Authentication required', 401)
+    }
+
+    // 3. Business logic (via service layer)
+    const result = await SomeService.doThing(validated.data)
+
+    // 4. Return success
+    return apiResponse(result)
+
+  } catch (error) {
+    // 5. Log and return generic error
+    logger.error('POST /api/route failed', { error })
+    return apiError('INTERNAL_ERROR', 
+      'An unexpected error occurred', 500)
+  }
+}
+12. AGENT WORKFLOW RULES
+How Multiple AI Coding Agents Should Collaborate
+text
+RULE 1: NEVER modify another agent's files without 
+        declaring the dependency in your task description.
+
+RULE 2: ALL agents must read THIS document before 
+        starting ANY task.
+
+RULE 3: Each agent owns a SPECIFIC layer:
+        
+  AGENT A: Database + DAL (/supabase, /src/dal)
+  AGENT B: Services + Business Logic (/src/services)
+  AGENT C: API Routes (/src/app/api)
+  AGENT D: Frontend Components (/src/components)
+  AGENT E: External Integrations (/src/lib)
+
+RULE 4: Communication between layers ONLY through 
+        defined interfaces:
+  → API Routes call Services
+  → Services call DAL
+  → DAL calls Supabase
+  → Components call API Routes (via fetch or hooks)
+  → NEVER skip layers (no component calling DAL directly)
+
+RULE 5: When creating a new feature:
+  1. First: Define types in /src/types/
+  2. Then: Create DAL functions in /src/dal/
+  3. Then: Create Service in /src/services/
+  4. Then: Create API Route in /src/app/api/
+  5. Last: Create UI Component in /src/components/
+  
+  This order ensures each layer can import 
+  from the previous one without circular deps.
+
+RULE 6: ALL database schema changes go through 
+        migration files in /supabase/migrations/
+        numbered sequentially. NEVER modify the 
+        database directly.
+
+RULE 7: If your task requires a type that doesn't 
+        exist yet, create it in /src/types/ FIRST, 
+        then use it. Never use inline type definitions 
+        for shared data structures.
+
+RULE 8: Run `pnpm typecheck` before marking any 
+        task as complete. Zero TypeScript errors allowed.
+
+RULE 9: Every API route must have input validation 
+        using Zod schemas defined in /src/lib/validators.ts
+
+RULE 10: NEVER install new npm packages without 
+         documenting WHY in the task description.
+         Prefer existing packages in the tech stack.
+END OF DOCUMENT
+text
+
+---
+
+## 🎯 How To Use This Document
+SAVE as PROJECT_RULES.md in your project root
+EVERY agent reads this BEFORE starting work
+Reference specific sections in agent task prompts:
+→ "Follow the database schema in Section 6"
+→ "Use the API response format from Section 7"
+→ "Follow the negotiation state machine in Section 8"
+UPDATE this document as decisions change
+This is the SINGLE SOURCE OF TRUTH
+text
+
+---
+
+**Dit document zorgt ervoor dat ELKE agent exact weet:**
+✅ Welke tech stack te gebruiken
+✅ Hoe bestanden te noemen
+✅ Welke folder structuur te volgen
+✅ Hoe de database eruitziet
+✅ Hoe API responses eruitzien
+✅ Hoe de return negotiation werkt
+✅ Hoe berichten door het systeem stromen
+✅ Hoe AI veilig te gebruiken
+✅ Hoe errors af te handelen
+✅ Welke laag welke agent bouwt
+✅ In welke volgorde features te bouwen
+
+text
+
+**Wil je dat ik de eerste taken definieer voor elke agent? Dan kan je ze allemaal tegelijk laten werken.** 🚀

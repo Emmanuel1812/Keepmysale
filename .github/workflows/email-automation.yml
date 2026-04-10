@@ -1,0 +1,31 @@
+name: Email Automation
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every 5 minutes
+  workflow_dispatch:       # Allows manual trigger
+
+jobs:
+  run-email-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-auth google-auth-oauthlib google-api-python-client
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # If credentials.json and token.json are committed to the private repo,
+      # no extra steps are needed. The script will use them as normal.
+
+      - name: Run email automation
+        run: python alma_de_lisboa_email_assistant_final.py

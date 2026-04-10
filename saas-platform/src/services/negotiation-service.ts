@@ -263,6 +263,7 @@ export class NegotiationService {
     }
 
     if (transition.shouldCreateRefundLog && transition.refundLogAction && transition.nextStatus !== "completed") {
+      const order = updated.orderId ? await this.ordersDal.findById(updated.orderId) : null;
       await this.refundLogsDal.create({
         merchantId: updated.merchantId,
         negotiationId: updated.id,
@@ -270,7 +271,7 @@ export class NegotiationService {
         customerId: updated.customerId,
         action: transition.refundLogAction,
         amount: updated.finalRefundAmount,
-        currency: "EUR",
+        currency: order?.currency ?? "EUR",
         customerConsentRecorded: customerInput === "accept_offer",
         auditDetails: {
           from_status: current.status,

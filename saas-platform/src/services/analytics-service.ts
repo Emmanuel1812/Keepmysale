@@ -29,10 +29,12 @@ export class AnalyticsService {
     const conversations = await this.conversationsDal.findByMerchant(merchantId);
     const negotiations = await this.negotiationsDal.findByMerchant(merchantId);
     const openConversations = conversations.filter((item) => item.status === "open").length;
-    const today = new Date().toISOString().slice(0, 10);
-    const resolvedToday = conversations.filter(
-      (item) => item.status === "resolved" && item.updatedAt.slice(0, 10) === today,
-    ).length;
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const resolvedToday = conversations.filter((item) => {
+      if (item.status !== "resolved" || !item.resolvedAt) return false;
+      return item.resolvedAt.slice(0, 10) === todayStr;
+    }).length;
     const activeNegotiations = negotiations.filter((item) =>
       ["initiated", "offer_sent", "offer_rejected"].includes(item.status),
     ).length;

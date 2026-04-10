@@ -160,17 +160,80 @@ export class AiService {
     }
 
     const orderNumberCandidate = input.orderNameGuess ?? intentResult.extracted_order_number ?? undefined;
-    if (!resultAction && intentResult.intent === "wismo" && orderNumberCandidate) {
-      const order = await this.orderService.fetchShopifyOrderByName(
+
+    let orderContext = "Geen order gevonden.";
+    let order: any = null;
+
+    if (orderNumberCandidate) {
+      order = await this.orderService.fetchShopifyOrderByName(
         input.shopDomain,
         input.shopAccessToken,
         orderNumberCandidate,
       );
-      if (order?.trackingNumber) {
+
+      if (order) {
+        orderContext = `
+          Order ${order.shopifyOrderNumber || order.name}:
+          - Status: ${order.financialStatus}
+          - Fulfillment: ${order.fulfillmentStatus}
+          - Tracking: ${order.trackingNumber || "geen"}
+          - Producten: ${JSON.stringify(order.lineItems)}
+          - Totaal: ${order.totalPrice} ${order.currency}
+        `;
+      }
+    }
+
+    if (intentResult.intent === "resend_confirmation") {
+      resultAction = {
+        action: "send_confirmation",
+        messageBody: localText.resend,
+      };
+    }
+
+    // Dynamic handling for WISMO or General if we have order context
+    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other")) {
+      try {
+        const model = this.geminiClient.getGenerativeModel({
+          model: "gemini-2.0-flash", // Use 2.0 flash as requested in settings or standard
+          generationConfig: { responseMimeType: "application/json" },
+        });
+
+        const prompt = `
+        Je bent een klantenservice medewerker. 
+        Beantwoord de vraag op basis van de order info.
+        Als de klant vraagt naar producten, toon de line items. 
+        Als de klant vraagt naar tracking, toon het trackingnummer. 
+        Wees behulpzaam en kort.
+        
+        Taal: ${preferredLanguage}
+        Order Context:
+        ${orderContext}
+        
+        Klantvraag: ${input.incomingText}
+        
+        Return ONLY valid JSON:
+        {
+          "messageBody": "jouw antwoord tekst hier"
+        }
+        `;
+
+        const response = await model.generateContent(prompt);
+        const raw = response.response.text();
+        const parsed = JSON.parse(raw);
+
         resultAction = {
-          action: "send_tracking_status",
-          messageBody: localText.tracking(order.name, order.trackingNumber),
+          action: intentResult.intent === "wismo" ? "send_tracking_status" : "send_general_reply",
+          messageBody: parsed.messageBody,
         };
+      } catch (error) {
+        console.error("[AI] Dynamic reply error:", error);
+        // Fallback to static if it was wismo and we have tracking
+        if (intentResult.intent === "wismo" && order?.trackingNumber) {
+          resultAction = {
+            action: "send_tracking_status",
+            messageBody: localText.tracking(order.name, order.trackingNumber),
+          };
+        }
       }
     }
 
@@ -188,11 +251,25 @@ export class AiService {
 
         const negotiationPrompt = `
         Je bent een klantenservice assistent. De klant wil iets retourneren of is in gesprek over een retour.
+        Beantwoord de vraag op basis van de order info.
+        ${orderContext ? "Als de klant vraagt naar producten, toon de line items. Als de klant vraagt naar tracking, toon het trackingnummer." : "LET OP: Je hebt GEEN orderinformatie kunnen vinden. Vraag de klant vriendelijk om hun ordernummer (bijv. #1234) zodat je ze verder kunt helpen met hun retourverzoek."}
+        Wees behulpzaam en kort.
+
+
         Taal: ${preferredLanguage}
         
+        Order Context:
+        ${orderContext}
+
         Regels van de merchant:
         - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
         - Tone of voice: Hulpvaardig, professioneel, maar gericht op het behouden van de verkoop.
+        - De merchant heeft de volgende stappen ingesteld voor kortingen:
+        ${(input.merchantSettings.negotiation_offers || [])
+          .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
+          .join("\n")}
+        - BELANGRIJK: Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant erom vraagt. Begin met een algemeen voorstel voor een gedeeltelijke terugbetaling om te zien of ze openstaan voor een alternatief voor retourneren.
+
         
         Chatgeschiedenis:
         ${historyContext}
