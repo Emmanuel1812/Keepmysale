@@ -40,6 +40,7 @@ export class InboxService {
       metadata: { source: "inbox_reply_api" },
     });
 
+    if (conversation.channel === "email" && customer?.email) {
       const template = formatEmailResponse({
         customerName: customer.name || "klant",
         body: params.content,
