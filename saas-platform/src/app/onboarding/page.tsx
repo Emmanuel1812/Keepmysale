@@ -1,9 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { StepIndicator } from "@/components/onboarding/step-indicator";
 import { ShopifyConnectCard } from "@/components/onboarding/shopify-connect";
 import { ReturnRulesForm } from "@/components/onboarding/return-rules-form";
 import { EmailConnectStep } from "@/components/onboarding/email-connect";
-import { getMerchantFromSession } from "@/lib/auth";
 
 export default async function OnboardingPage({ 
   searchParams 
@@ -26,9 +26,6 @@ export default async function OnboardingPage({
   if (currentStep === "rules") activeIndex = 1;
   if (currentStep === "email") activeIndex = 2;
 
-  // Validation: Some steps might require an active session
-  // But for now we rely on the components themselves or the redirect flow.
-
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-[#f8fafb] pt-20">
       <main className="mx-auto flex w-full max-w-[640px] flex-col gap-6 px-6">
@@ -42,9 +39,11 @@ export default async function OnboardingPage({
         </div>
 
         <div className="w-full">
-          {currentStep === "shopify" && <ShopifyConnectCard />}
-          {currentStep === "rules" && <ReturnRulesForm />}
-          {currentStep === "email" && <EmailConnectStep />}
+          <Suspense fallback={<div className="p-12 text-center text-zinc-500 font-medium">Loading step...</div>}>
+            {currentStep === "shopify" && <ShopifyConnectCard />}
+            {currentStep === "rules" && <ReturnRulesForm />}
+            {currentStep === "email" && <EmailConnectStep />}
+          </Suspense>
         </div>
       </main>
     </div>

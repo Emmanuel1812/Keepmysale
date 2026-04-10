@@ -1,0 +1,36 @@
+
+> saas-platform@0.1.0 build C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\eoude\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\pnpm-workspace.yaml
+
+▲ Next.js 16.2.2 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.7s
+  Running TypeScript ...
+  Finished TypeScript in 22.4s ...
+  Collecting page data using 19 workers ...
+  Generating static pages using 19 workers (0/30) ...
+  Generating static pages using 19 workers (7/30) 
+⨯ useSearchParams() should be wrapped in a suspense boundary at page "/dashboard/inbox". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at S (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\.next\server\chunks\ssr\0n9g_next_0iono11._.js:2:2692)
+    at r (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\.next\server\chunks\ssr\0n9g_next_0iono11._.js:4:6758)
+    at C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\.next\server\chunks\ssr\Desktop_PersonalProjects_email automation_saas-platform_0l_18o3._.js:3:3902
+    at C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\.next\server\chunks\ssr\Desktop_PersonalProjects_email automation_saas-platform_0l_18o3._.js:3:4029
+    at an (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84267)
+    at ai (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86086)
+    at ai (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:104615)
+    at al (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:107860)
+    at ao (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:105275)
+    at am (C:\Users\eoude\Desktop\PersonalProjects\email automation\saas-platform\node_modules\.pnpm\next@16.2.2_@babel+core@7.2_adfc5978a423a2af819d8e4d2c5f7ae4\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:112789)
+Error occurred prerendering page "/dashboard/inbox". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /dashboard/inbox/page: /dashboard/inbox, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
