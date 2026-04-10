@@ -9,9 +9,13 @@ export async function GET() {
     const merchant = await getMerchantFromSession();
     return apiResponse({
       id: merchant.id,
+      shopDomain: merchant.shopDomain,
       shopName: merchant.shopName,
       email: merchant.email,
       googleEmail: merchant.googleEmail,
+      isShopifyConnected: !!merchant.shopifyAccessTokenEncrypted,
+      subscriptionTier: merchant.subscriptionTier,
+      subscriptionStatus: merchant.subscriptionStatus,
       settings: merchant.settings ?? {},
     });
   } catch (error) {

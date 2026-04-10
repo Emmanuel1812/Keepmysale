@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeepMySale — AI Customer Service & Return Prevention for Shopify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f2e;
+            --bg-card-hover: #222839;
+            --accent: #10b981;
+            --accent-light: #34d399;
+            --accent-glow: rgba(16, 185, 129, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-light: rgba(255, 255, 255, 0.1);
+            --radius: 12px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --max-width: 1200px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -30px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes counter-flow {
+            from {
+                background-position: 200% center;
+            }
+
+            to {
+                background-position: -200% center;
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s var(--transition), transform 0.8s var(--transition);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 {
+            transition-delay: 0.1s;
+        }
+
+        .reveal-delay-2 {
+            transition-delay: 0.2s;
+        }
+
+        .reveal-delay-3 {
+            transition-delay: 0.3s;
+        }
+
+        .reveal-delay-4 {
+            transition-delay: 0.4s;
+        }
+
+        .reveal-delay-5 {
+            transition-delay: 0.5s;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 0 24px;
+            transition: var(--transition);
+        }
+
+        .navbar.scrolled {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .navbar-inner {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 36px;
+        }
+
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color var(--transition);
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .nav-cta {
+            padding: 9px 20px;
+            font-size: 0.85rem;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .mobile-toggle span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text-primary);
+            margin: 5px 0;
+            transition: var(--transition);
+            border-radius: 2px;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 120px 24px 80px;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .hero-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .hero-orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.2), transparent 70%);
+            top: -200px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .hero-orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(52, 211, 153, 0.1), transparent 70%);
+            bottom: -150px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+
+        .hero-orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.12), transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse-glow 6s ease-in-out infinite;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 820px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-light);
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .hero-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.8rem, 7vw, 5rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light), #6ee7b7);
+            background-size: 200% 200%;
+            animation: gradient-shift 5s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .hero-buttons .btn-primary {
+            padding: 14px 32px;
+            font-size: 1rem;
+        }
+
+        .hero-buttons .btn-secondary {
+            padding: 14px 32px;
+            font-size: 1rem;
+        }
+
+        .hero-meta {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .hero-meta span {
+            margin: 0 6px;
+        }
+
+        .hero-trust {
+            margin-top: 56px;
+            animation: fadeInUp 0.8s ease 0.5s both;
+        }
+
+        .hero-trust p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .trust-avatars {
+            display: flex;
+            margin-right: 4px;
+        }
+
+        .trust-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-primary);
+            margin-left: -8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .trust-avatar:first-child {
+            margin-left: 0;
+        }
+
+        .trust-avatar:nth-child(1) {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .trust-avatar:nth-child(2) {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .trust-avatar:nth-child(3) {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .trust-avatar:nth-child(4) {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        /* ===== SOCIAL PROOF BAR ===== */
+        .social-proof {
+            padding: 48px 24px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .social-proof-inner {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .social-proof-label {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .social-proof-logos {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .proof-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            font-size: 1rem;
+            opacity: 0.5;
+            transition: opacity var(--transition);
+        }
+
+        .proof-logo:hover {
+            opacity: 0.8;
+        }
+
+        .proof-logo svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* ===== SECTION COMMON ===== */
+        .section {
+            padding: 120px 24px;
+        }
+
+        .section-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.15;
+            margin-bottom: 20px;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.7;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 72px;
+        }
+
+        .section-header .section-subtitle {
+            margin: 0 auto;
+        }
+
+        /* ===== PROBLEM ===== */
+        .problem {
+            background: var(--bg-secondary);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .problem-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px 32px;
+            text-align: center;
+            transition: all var(--transition);
+        }
+
+        .problem-card:hover {
+            border-color: rgba(239, 68, 68, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .problem-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .problem-stat {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ef4444;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .problem-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ===== HOW IT WORKS ===== */
+        .how-it-works {
+            background: var(--bg-primary);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 52px;
+            left: calc(16.666% + 32px);
+            right: calc(16.666% + 32px);
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light), var(--accent));
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 104px;
+            height: 104px;
+            margin: 0 auto 28px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-number::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-glow), transparent);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .step:hover .step-number::before {
+            opacity: 1;
+        }
+
+        .step-num-label {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .step h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        .step p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        .step-offers {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .step-offer {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .step-offer-arrow {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+
+        .savings-stat {
+            text-align: center;
+            margin-top: 80px;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .savings-stat-number {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: -2px;
+            margin-bottom: 4px;
+        }
+
+        .savings-stat-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== FEATURES ===== */
+        .features {
+            background: var(--bg-secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px 28px;
+            transition: all var(--transition);
+        }
+
+        .feature-card:hover {
+            border-color: rgba(16, 185, 129, 0.2);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            background: var(--accent-glow);
+            border: 1px solid rgba(16, 185, 129, 0.12);
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.2px;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        /* ===== ROI CALCULATOR ===== */
+        .calculator {
+            background: var(--bg-primary);
+        }
+
+        .calc-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 56px 48px;
+        }
+
+        .calc-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 48px;
+        }
+
+        .calc-field label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .calc-field .calc-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-secondary);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+            border: 3px solid var(--bg-card);
+            transition: transform var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+            border: 3px solid var(--bg-card);
+        }
+
+        .calc-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+        }
+
+        .calc-result {
+            text-align: center;
+            padding: 28px 16px;
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .calc-result.highlight {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.04));
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .calc-result-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+
+        .calc-result-value.red {
+            color: #ef4444;
+        }
+
+        .calc-result-value.green {
+            color: var(--accent);
+        }
+
+        .calc-result-value.accent {
+            color: var(--accent-light);
+        }
+
+        .calc-result-label {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .calc-cta {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        /* ===== PRICING ===== */
+        .pricing {
+            background: var(--bg-secondary);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 44px 36px;
+            position: relative;
+            transition: all var(--transition);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .pricing-card.popular {
+            border-color: var(--accent);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), var(--bg-card) 50%);
+            transform: scale(1.04);
+            z-index: 1;
+        }
+
+        .pricing-card.popular:hover {
+            transform: scale(1.04) translateY(-4px);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 5px 18px;
+            border-radius: var(--radius-full);
+        }
+
+        .pricing-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 4px;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            letter-spacing: 0;
+        }
+
+        .pricing-desc {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 32px;
+        }
+
+        .pricing-features {
+            margin-bottom: 36px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .pricing-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .pricing-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .pricing-check svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--accent);
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 0.95rem;
+            border-radius: var(--radius);
+        }
+
+        .pricing-card .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .pricing-note {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+        }
+
+        /* ===== TESTIMONIALS ===== */
+        .testimonials {
+            background: var(--bg-primary);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px 28px;
+            transition: all var(--transition);
+        }
+
+        .testimonial-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-4px);
+        }
+
+        .testimonial-stars {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 3px;
+        }
+
+        .star {
+            color: #f59e0b;
+            font-size: 1rem;
+        }
+
+        .testimonial-text {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #000;
+        }
+
+        .testimonial-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .testimonial-info p {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        /* ===== FAQ ===== */
+        .faq {
+            background: var(--bg-secondary);
+        }
+
+        .faq-list {
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color var(--transition);
+        }
+
+        .faq-item.active {
+            border-color: var(--border-light);
+        }
+
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 22px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            cursor: pointer;
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: left;
+            transition: color var(--transition);
+        }
+
+        .faq-question:hover {
+            color: var(--accent-light);
+        }
+
+        .faq-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all var(--transition);
+        }
+
+        .faq-item.active .faq-icon {
+            background: var(--accent-glow);
+            transform: rotate(45deg);
+        }
+
+        .faq-icon svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text-secondary);
+            transition: stroke var(--transition);
+        }
+
+        .faq-item.active .faq-icon svg {
+            stroke: var(--accent);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .faq-answer-inner {
+            padding: 0 28px 24px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ===== FINAL CTA ===== */
+        .final-cta {
+            padding: 140px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+
+        .final-cta-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .final-cta-orb {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            filter: blur(120px);
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse-glow 6s ease-in-out infinite;
+        }
+
+        .final-cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .final-cta .section-subtitle {
+            margin: 0 auto 40px;
+            text-align: center;
+        }
+
+        .final-cta .btn-primary {
+            padding: 16px 40px;
+            font-size: 1.1rem;
+        }
+
+        .final-cta-meta {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 72px 24px 40px;
+        }
+
+        .footer-inner {
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .footer-top {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 56px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            line-height: 1.6;
+            max-width: 280px;
+        }
+
+        .footer-col h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 20px;
+        }
+
+        .footer-col a {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 5px 0;
+            transition: color var(--transition);
+        }
+
+        .footer-col a:hover {
+            color: var(--text-primary);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-bottom p {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        .footer-bottom-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-bottom-links a {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            transition: color var(--transition);
+        }
+
+        .footer-bottom-links a:hover {
+            color: var(--text-secondary);
+        }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 1024px) {
+            .steps::before {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-inner {
+                height: 64px;
+            }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(10, 10, 10, 0.97);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                justify-content: center;
+                gap: 32px;
+                z-index: 999;
+            }
+
+            .nav-links.open {
+                display: flex;
+            }
+
+            .nav-links a {
+                font-size: 1.3rem;
+            }
+
+            .mobile-toggle {
+                display: block;
+                z-index: 1001;
+            }
+
+            .mobile-toggle.open span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+
+            .mobile-toggle.open span:nth-child(2) {
+                opacity: 0;
+            }
+
+            .mobile-toggle.open span:nth-child(3) {
+                transform: rotate(-45deg) translate(5px, -5px);
+            }
+
+            .hero {
+                padding: 100px 24px 60px;
+                min-height: auto;
+                padding-top: 140px;
+            }
+
+            .hero h1 {
+                letter-spacing: -1px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+            }
+
+            .social-proof-inner {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .social-proof-logos {
+                gap: 24px;
+            }
+
+            .problem-grid,
+            .steps,
+            .features-grid,
+            .pricing-grid,
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .pricing-card.popular {
+                transform: none;
+            }
+
+            .pricing-card.popular:hover {
+                transform: translateY(-4px);
+            }
+
+            .calc-container {
+                padding: 32px 24px;
+            }
+
+            .calc-inputs {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .calc-results {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .footer-top {
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+
+            .footer-brand {
+                grid-column: 1 / -1;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .section {
+                padding: 80px 24px;
+            }
+
+            .section-header {
+                margin-bottom: 48px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer-top {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-inner">
+            <a href="#" class="logo"><span>Keep</span>MySale</a>
+            <div class="nav-links" id="navLinks">
+                <a href="#features" onclick="closeNav()">Features</a>
+                <a href="#how-it-works" onclick="closeNav()">How it Works</a>
+                <a href="#pricing" onclick="closeNav()">Pricing</a>
+                <a href="#faq" onclick="closeNav()">FAQ</a>
+                <a href="#" class="btn btn-primary nav-cta" onclick="closeNav()">Start Free Trial</a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle" onclick="toggleNav()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-orb hero-orb-1"></div>
+            <div class="hero-orb hero-orb-2"></div>
+            <div class="hero-orb hero-orb-3"></div>
+            <div class="hero-grid"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="hero-badge-dot"></span>
+                Your AI helpdesk that handles tickets AND saves you thousands on returns
+            </div>
+            <h1>Stop Losing Money<br>on <span class="gradient-text">Returns</span></h1>
+            <p class="hero-sub">AI-powered customer service that handles your tickets and saves thousands by preventing
+                returns. Your customers keep the product, you keep the revenue.</p>
+            <div class="hero-buttons">
+                <a href="#" class="btn btn-primary">Start Free Trial
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </a>
+                <a href="#how-it-works" class="btn btn-secondary">See How It Works</a>
+            </div>
+            <p class="hero-meta">No credit card required <span>·</span> 14-day free trial <span>·</span> Cancel anytime
+            </p>
+            <div class="hero-trust">
+                <p>
+                    <span class="trust-avatars">
+                        <span class="trust-avatar">S</span>
+                        <span class="trust-avatar">M</span>
+                        <span class="trust-avatar">L</span>
+                        <span class="trust-avatar">A</span>
+                    </span>
+                    Trusted by 50+ Shopify stores
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="social-proof">
+        <div class="social-proof-inner">
+            <span class="social-proof-label">Integrates with</span>
+            <div class="social-proof-logos">
+                <div class="proof-logo">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M15.34 3.41L13.79 5.77L10.95 1L7.54 6.6L6.04 4.77L1 14.5H3.55L6.1 9.75L7.6 11.5L10.95 5.93L13.79 10.7L15.29 8.39L19.53 14.5H22L15.34 3.41Z" />
+                        <path d="M1 16.5H22V18H1V16.5Z" />
+                    </svg>
+                    Shopify
+                </div>
+                <div class="proof-logo">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 18h-2V9.25L12 13 6 9.25V18H4V6h1.2l6.8 4.25L18.8 6H20v12z" />
+                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"
+                            fill="none" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                    Gmail
+                </div>
+                <div class="proof-logo">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                    </svg>
+                    OpenAI
+                </div>
+                <div class="proof-logo">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l7 3.5v7.64l-7 3.5-7-3.5V7.68l7-3.5z" />
+                    </svg>
+                    Gorgias
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="section problem" id="problem">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">The Problem</p>
+                <h2 class="section-title">Returns Are Killing Your Margins</h2>
+                <p class="section-subtitle">Every return costs you money — shipping, handling, depreciation. Most
+                    merchants just accept it. You don't have to.</p>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card reveal reveal-delay-1">
+                    <div class="problem-icon">📦</div>
+                    <p class="problem-stat">€15–25</p>
+                    <p class="problem-desc">per return in shipping & handling costs that eat directly into your margins
+                    </p>
+                </div>
+                <div class="problem-card reveal reveal-delay-2">
+                    <div class="problem-icon">📉</div>
+                    <p class="problem-stat">20–50%</p>
+                    <p class="problem-desc">of product value lost on every return due to depreciation and restocking</p>
+                </div>
+                <div class="problem-card reveal reveal-delay-3">
+                    <div class="problem-icon">⏰</div>
+                    <p class="problem-stat">Hours/week</p>
+                    <p class="problem-desc">spent on repetitive customer support emails instead of growing your business
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">How It Works</p>
+                <h2 class="section-title">How KeepMySale Saves Your Revenue</h2>
+                <p class="section-subtitle">Three simple steps to turn costly returns into saved revenue — fully
+                    automated.</p>
+            </div>
+            <div class="steps">
+                <div class="step reveal reveal-delay-1">
+                    <div class="step-number">
+                        <span class="step-num-label">Step 1</span>
+                        📨
+                    </div>
+                    <h3>Customer Emails About a Return</h3>
+                    <p>A customer reaches out wanting to return a product. KeepMySale instantly picks it up.</p>
+                </div>
+                <div class="step reveal reveal-delay-2">
+                    <div class="step-number">
+                        <span class="step-num-label">Step 2</span>
+                        🤝
+                    </div>
+                    <h3>AI Negotiates a Partial Refund</h3>
+                    <p>The AI offers the customer a partial refund to keep the product, escalating intelligently.</p>
+                    <div class="step-offers">
+                        <span class="step-offer">20%</span>
+                        <span class="step-offer-arrow">→</span>
+                        <span class="step-offer">35%</span>
+                        <span class="step-offer-arrow">→</span>
+                        <span class="step-offer">50%</span>
+                    </div>
+                </div>
+                <div class="step reveal reveal-delay-3">
+                    <div class="step-number">
+                        <span class="step-num-label">Step 3</span>
+                        ✅
+                    </div>
+                    <h3>Everyone Wins</h3>
+                    <p>Customer keeps the product with a discount. You save on shipping, handling, and depreciation.</p>
+                </div>
+            </div>
+            <div class="savings-stat reveal">
+                <p class="savings-stat-number">€35</p>
+                <p class="savings-stat-label">Average saving per prevented return</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section features" id="features">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">Features</p>
+                <h2 class="section-title">Everything You Need</h2>
+                <p class="section-subtitle">One platform to handle customer service and prevent returns — so you can
+                    focus on growing your store.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI Customer Service</h3>
+                    <p>Answers WISMO, product questions, and complaints automatically — in your customer's language.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-icon">💰</div>
+                    <h3>Smart Return Negotiation</h3>
+                    <p>Offers escalating partial refunds to prevent costly returns and keep your revenue intact.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-icon">📧</div>
+                    <h3>Gmail Integration</h3>
+                    <p>Connect with Google in 1 click. Replies come from YOUR email address — seamless and professional.
+                    </p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-time Dashboard</h3>
+                    <p>Track savings, conversations, and negotiations in one beautiful, real-time dashboard.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Shopify Integration</h3>
+                    <p>Syncs orders, tracking info, and processes refunds automatically. Setup takes under 5 minutes.
+                    </p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-icon">🌍</div>
+                    <h3>Multilingual Support</h3>
+                    <p>Supports Dutch, English, Portuguese and more — reply to customers in their native language.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROI CALCULATOR -->
+    <section class="section calculator" id="calculator">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">ROI Calculator</p>
+                <h2 class="section-title">Calculate Your Savings</h2>
+                <p class="section-subtitle">See how much KeepMySale can save your store every single month.</p>
+            </div>
+            <div class="calc-container reveal">
+                <div class="calc-inputs">
+                    <div class="calc-field">
+                        <label>Monthly Returns</label>
+                        <div class="calc-value" id="returnsValue">50</div>
+                        <input type="range" id="returnsSlider" min="10" max="500" value="50" step="5">
+                    </div>
+                    <div class="calc-field">
+                        <label>Average Order Value</label>
+                        <div class="calc-value" id="aovValue">€75</div>
+                        <input type="range" id="aovSlider" min="20" max="300" value="75" step="5">
+                    </div>
+                </div>
+                <div class="calc-results">
+                    <div class="calc-result">
+                        <div class="calc-result-value red" id="calcWithout">€1,625</div>
+                        <div class="calc-result-label">Lost without KeepMySale</div>
+                    </div>
+                    <div class="calc-result highlight">
+                        <div class="calc-result-value green" id="calcSaved">€1,000</div>
+                        <div class="calc-result-label">Saved with KeepMySale</div>
+                    </div>
+                    <div class="calc-result">
+                        <div class="calc-result-value accent" id="calcRoi">6.7x</div>
+                        <div class="calc-result-label">Return on investment</div>
+                    </div>
+                </div>
+                <div class="calc-cta">
+                    <a href="#" class="btn btn-primary" style="margin-top: 8px;">Start Saving Today
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="section pricing" id="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">Pricing</p>
+                <h2 class="section-title">Simple, Transparent Pricing</h2>
+                <p class="section-subtitle">Start free. Upgrade when you're ready. No hidden fees, ever.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card reveal reveal-delay-1">
+                    <p class="pricing-name">Starter</p>
+                    <p class="pricing-price">€49<span>/mo</span></p>
+                    <p class="pricing-desc">Perfect for small Shopify stores</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            100 conversations/month
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            AI customer service
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Return negotiation
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Email channel
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Shopify integration
+                        </div>
+                    </div>
+                    <a href="#" class="btn btn-secondary">Start Free Trial</a>
+                </div>
+                <div class="pricing-card popular reveal reveal-delay-2">
+                    <span class="popular-badge">Most Popular</span>
+                    <p class="pricing-name">Growth</p>
+                    <p class="pricing-price">€149<span>/mo</span></p>
+                    <p class="pricing-desc">For growing e-commerce brands</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            500 conversations/month
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Everything in Starter
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Gmail integration
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Knowledge base
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Priority support
+                        </div>
+                    </div>
+                    <a href="#" class="btn btn-primary">Start Free Trial</a>
+                </div>
+                <div class="pricing-card reveal reveal-delay-3">
+                    <p class="pricing-name">Scale</p>
+                    <p class="pricing-price">€299<span>/mo</span></p>
+                    <p class="pricing-desc">For high-volume merchants</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Unlimited conversations
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Everything in Growth
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Custom AI training
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            API access
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="pricing-check"><svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l3.5 3.5L13 5" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg></span>
+                            Dedicated account manager
+                        </div>
+                    </div>
+                    <a href="#" class="btn btn-secondary">Contact Sales</a>
+                </div>
+            </div>
+            <p class="pricing-note reveal">All plans include a 14-day free trial. No credit card required.</p>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section testimonials" id="testimonials">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">Testimonials</p>
+                <h2 class="section-title">What Merchants Say</h2>
+                <p class="section-subtitle">Don't just take our word for it — hear from Shopify merchants who are saving
+                    thousands.</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card reveal reveal-delay-1">
+                    <div class="testimonial-stars">
+                        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
+                            class="star">★</span><span class="star">★</span>
+                    </div>
+                    <p class="testimonial-text">"KeepMySale saved us €2,300 in the first month alone. The AI handles 80%
+                        of our tickets without us lifting a finger."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">S
+                        </div>
+                        <div class="testimonial-info">
+                            <h4>Sarah van der Berg</h4>
+                            <p>Fashion Store Owner</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal reveal-delay-2">
+                    <div class="testimonial-stars">
+                        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
+                            class="star">★</span><span class="star">★</span>
+                    </div>
+                    <p class="testimonial-text">"Setup took 5 minutes. Our return rate dropped 40% in the first two
+                        weeks. This is a no-brainer for any Shopify store."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">M
+                        </div>
+                        <div class="testimonial-info">
+                            <h4>Mark de Vries</h4>
+                            <p>Electronics Store</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal reveal-delay-3">
+                    <div class="testimonial-stars">
+                        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
+                            class="star">★</span><span class="star">★</span>
+                    </div>
+                    <p class="testimonial-text">"Finally a tool that actually pays for itself. We saw 10x ROI in week
+                        one. The return negotiation feature is pure gold."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">L
+                        </div>
+                        <div class="testimonial-info">
+                            <h4>Lisa Ferreira</h4>
+                            <p>Home & Garden</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section faq" id="faq">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-label">FAQ</p>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Everything you need to know about KeepMySale. Can't find what you're looking
+                    for? Reach out to our team.</p>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item reveal reveal-delay-1">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How does the AI know what to say?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">KeepMySale uses advanced AI to understand customer intent and
+                            generates contextual responses based on your order data, tracking info, and store policies.
+                            It learns your brand voice and gets smarter with every interaction.</div>
+                    </div>
+                </div>
+                <div class="faq-item reveal reveal-delay-2">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Will customers know it's AI?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">No. Replies come from your own email address and sound natural and
+                            professional. Customers experience seamless, human-like support — they'll never know the
+                            difference.</div>
+                    </div>
+                </div>
+                <div class="faq-item reveal reveal-delay-3">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        What if the AI can't handle something?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">Complex cases are automatically flagged for human review. You
+                            always have full control and can jump in at any time. The AI knows its limits and escalates
+                            gracefully.</div>
+                    </div>
+                </div>
+                <div class="faq-item reveal reveal-delay-4">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How long does setup take?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">Under 5 minutes. Connect your Shopify store, connect Gmail, set
+                            your preferences — and you're live. No coding, no complicated onboarding. Just click,
+                            connect, and go.</div>
+                    </div>
+                </div>
+                <div class="faq-item reveal reveal-delay-5">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Can I customize the refund percentages?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">Yes. You have full control over the exact percentages for each
+                            negotiation step (e.g., 20% → 35% → 50%). You can also set different strategies for
+                            different product categories or order values.</div>
+                    </div>
+                </div>
+                <div class="faq-item reveal reveal-delay-5">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Is my data secure?
+                        <span class="faq-icon">
+                            <svg viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">Absolutely. All data is encrypted with AES-256. We never share
+                            your data with third parties. We're fully GDPR compliant and take your privacy seriously.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final-cta">
+        <div class="final-cta-bg">
+            <div class="final-cta-orb"></div>
+        </div>
+        <div class="final-cta-content reveal">
+            <h2>Ready to Stop Losing<br>Money on <span class="gradient-text">Returns</span>?</h2>
+            <p class="section-subtitle" style="text-align:center;margin:0 auto 40px;">Join 50+ Shopify merchants who
+                save thousands every month with AI-powered customer service and return prevention.</p>
+            <a href="#" class="btn btn-primary">Start Your Free Trial
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </a>
+            <p class="final-cta-meta">No credit card required · Setup in under 5 minutes</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="#" class="logo"><span>Keep</span>MySale</a>
+                    <p>AI-powered customer service and return prevention for Shopify stores. Save thousands,
+                        automatically.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#how-it-works">Integrations</a>
+                    <a href="#calculator">ROI Calculator</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <a href="#">About</a>
+                    <a href="#">Blog</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Careers</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">GDPR</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Connect</h4>
+                    <a href="#">Twitter / X</a>
+                    <a href="#">LinkedIn</a>
+                    <a href="#">Email Us</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 KeepMySale. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // === NAVBAR SCROLL ===
+        const navbar = document.getElementById('navbar');
+        let lastScroll = 0;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            if (currentScroll > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+            lastScroll = currentScroll;
+        });
+
+        // === MOBILE NAV ===
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            const toggle = document.getElementById('mobileToggle');
+            navLinks.classList.toggle('open');
+            toggle.classList.toggle('open');
+            document.body.style.overflow = navLinks.classList.contains('open') ? 'hidden' : '';
+        }
+
+        function closeNav() {
+            const navLinks = document.getElementById('navLinks');
+            const toggle = document.getElementById('mobileToggle');
+            navLinks.classList.remove('open');
+            toggle.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // === INTERSECTION OBSERVER FOR SCROLL ANIMATIONS ===
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px 0px -80px 0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // === FAQ ACCORDION ===
+        function toggleFaq(button) {
+            const item = button.parentElement;
+            const answer = item.querySelector('.faq-answer');
+            const isActive = item.classList.contains('active');
+
+            // Close all other items
+            document.querySelectorAll('.faq-item').forEach(faqItem => {
+                faqItem.classList.remove('active');
+                faqItem.querySelector('.faq-answer').style.maxHeight = null;
+            });
+
+            // Toggle current
+            if (!isActive) {
+                item.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+            }
+        }
+
+        // === ROI CALCULATOR ===
+        const returnsSlider = document.getElementById('returnsSlider');
+        const aovSlider = document.getElementById('aovSlider');
+        const returnsValue = document.getElementById('returnsValue');
+        const aovValue = document.getElementById('aovValue');
+        const calcWithout = document.getElementById('calcWithout');
+        const calcSaved = document.getElementById('calcSaved');
+        const calcRoi = document.getElementById('calcRoi');
+
+        function formatCurrency(num) {
+            return '€' + Math.round(num).toLocaleString('en-US');
+        }
+
+        function calculateROI() {
+            const returns = parseInt(returnsSlider.value);
+            const aov = parseInt(aovSlider.value);
+
+            returnsValue.textContent = returns;
+            aovValue.textContent = '€' + aov;
+
+            // Without KeepMySale: returns * (avg_order * 0.3 + 15)
+            const without = returns * (aov * 0.3 + 15);
+
+            // With KeepMySale: 50% of returns prevented, 30% partial refund average on those
+            const partialRefundCost = returns * 0.5 * aov * 0.3;
+            // Remaining 50% still returned, same cost
+            const remainingReturnCost = returns * 0.5 * (aov * 0.3 + 15);
+
+            const withKMS = partialRefundCost + remainingReturnCost;
+
+            // Determine pricing tier based on likely conversation count
+            let pricing = 149; // Default to Growth
+            if (returns <= 30) pricing = 49;
+            else if (returns <= 150) pricing = 149;
+            else pricing = 299;
+
+            const saved = without - withKMS - pricing;
+            const roi = saved > 0 ? (saved / pricing) : 0;
+
+            calcWithout.textContent = formatCurrency(without);
+            calcSaved.textContent = formatCurrency(Math.max(0, saved));
+            calcRoi.textContent = roi > 0 ? roi.toFixed(1) + 'x' : '—';
+        }
+
+        returnsSlider.addEventListener('input', calculateROI);
+        aovSlider.addEventListener('input', calculateROI);
+
+        // Initial calculation
+        calculateROI();
+
+        // === RANGE SLIDER TRACK FILL (visual enhancement) ===
+        function updateSliderTrack(slider) {
+            const min = slider.min;
+            const max = slider.max;
+            const val = slider.value;
+            const percentage = ((val - min) / (max - min)) * 100;
+            slider.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--bg-secondary) ${percentage}%, var(--bg-secondary) 100%)`;
+        }
+
+        [returnsSlider, aovSlider].forEach(slider => {
+            updateSliderTrack(slider);
+            slider.addEventListener('input', () => updateSliderTrack(slider));
+        });
+    </script>
+
+</body>
+
+</html>
