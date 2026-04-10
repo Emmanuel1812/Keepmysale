@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [shopName, setShopName] = useState("");
   const [email, setEmail] = useState("");
   const [autoReturnRequests, setAutoReturnRequests] = useState(true);
@@ -98,6 +101,13 @@ export default function SettingsPage() {
     } catch (err) {
       setErrorStatus("Could not disconnect Google account.");
     }
+  }
+
+  async function handleLogout() {
+    if (!confirm("Weet je zeker dat je wilt uitloggen?")) return;
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.replace("/");
   }
 
   if (loading) {
@@ -221,6 +231,14 @@ export default function SettingsPage() {
         </Button>
         {successStatus && <p className="text-sm text-green-600">{successStatus}</p>}
         {errorStatus && <p className="text-sm text-red-600">{errorStatus}</p>}
+      </div>
+
+      <div className="mt-8 border-t pt-6">
+        <h2 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Account</h2>
+        <p className="mb-4 text-xs text-zinc-500">Log uit van je KeepMySale account op dit apparaat.</p>
+        <Button variant="outline" onClick={() => void handleLogout()} className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20">
+          Uitloggen
+        </Button>
       </div>
     </div>
   );
