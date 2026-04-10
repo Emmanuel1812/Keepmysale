@@ -1,46 +1,19 @@
-"use client";
-
-import { useCallback, useEffect, useState } from "react";
-import { ConversationList } from "@/components/inbox/conversation-list";
-
-interface ApiConversation {
-  id: string;
-  status: string;
-  subject: string | null;
-}
+// --- [ICONS] ---
+const InboxEmptyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-200 mb-6">
+    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+  </svg>
+);
 
 export default function InboxPage() {
-  const [items, setItems] = useState<Array<{ id: string; customer: string; preview: string; status: string }>>(
-    [],
-  );
-
-  const loadConversations = useCallback(async () => {
-    const response = await fetch("/api/inbox/conversations", { cache: "no-store" });
-    const payload = (await response.json()) as { success: boolean; data?: { conversations: ApiConversation[] } };
-    const mapped = (payload.data?.conversations ?? []).map((conversation) => ({
-      id: conversation.id,
-      customer: "Customer",
-      preview: conversation.subject ?? "No subject",
-      status: conversation.status,
-    }));
-    setItems(mapped);
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadConversations();
-    const interval = setInterval(() => {
-      void loadConversations();
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [loadConversations]);
-
   return (
-    <div className="grid min-h-[70vh] gap-4 lg:grid-cols-[360px_1fr]">
-      <ConversationList items={items} />
-      <div className="flex items-center justify-center rounded-lg border border-zinc-200 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
-        Select a conversation to open the thread.
-      </div>
+    <div className="flex flex-col h-full w-full items-center justify-center bg-white p-8">
+      <InboxEmptyIcon />
+      <h3 className="text-lg font-semibold text-[#111827]">Select a conversation</h3>
+      <p className="mt-2 text-sm text-zinc-500 max-w-sm text-center">
+        Choose a conversation from the list to view the thread, see order details, and respond to the customer.
+      </p>
     </div>
   );
 }

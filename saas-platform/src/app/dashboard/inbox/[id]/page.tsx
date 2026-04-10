@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ReplyComposer } from "@/components/inbox/reply-composer";
 
@@ -9,45 +10,157 @@ interface ApiMessage {
   id: string;
   sender: "customer" | "ai" | "human_agent" | "system";
   content: string;
+  createdAt?: string;
+}
+
+interface ApiConversation {
+  id: string;
+  status: string;
+  subject: string | null;
+  intent: string | null;
+  aiResolved: boolean;
+  shopifyOrderId: string | null;
+  customer?: { name?: string | null; email?: string | null };
+}
+
+function IntentBadge({ intent }: { intent: string | null }) {
+  if (!intent) return null;
+  const normalized = intent.toLowerCase();
+  let colorClass = "bg-zinc-100 text-zinc-600 border border-zinc-200";
+  if (normalized === "wismo") colorClass = "bg-blue-50 text-blue-700 border border-blue-200";
+  else if (normalized === "return" || normalized === "exchange") colorClass = "bg-orange-50 text-orange-700 border border-orange-200";
+  else if (normalized === "complaint") colorClass = "bg-red-50 text-red-700 border border-red-200";
+  else if (normalized === "faq") colorClass = "bg-indigo-50 text-indigo-700 border border-indigo-200";
+
+  return (
+    <span className={`text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded-md ${colorClass} flex items-center gap-1 w-fit`}>
+      🏷️ {intent}
+    </span>
+  );
 }
 
 export default function ConversationThreadPage() {
   const params = useParams<{ id: string }>();
-  const conversationId = params.id;
+  const conversationId = params?.id;
   const [messages, setMessages] = useState<ApiMessage[]>([]);
+  const [conversation, setConversation] = useState<ApiConversation | null>(null);
 
-  const loadMessages = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!conversationId) return;
-    const response = await fetch(`/api/inbox/conversations/${conversationId}/messages`, { cache: "no-store" });
-    const payload = (await response.json()) as { success: boolean; data?: { messages: ApiMessage[] } };
-    setMessages(payload.data?.messages ?? []);
+    try {
+      // Load conversation details
+      const convRes = await fetch("/api/inbox/conversations", { cache: "no-store" });
+      const convPayload = await convRes.json();
+      if (convPayload.success) {
+        const found = convPayload.data?.conversations?.find((c: any) => c.id === conversationId);
+        if (found) setConversation(found);
+      }
+
+      // Load messages
+      const msgRes = await fetch(`/api/inbox/conversations/${conversationId}/messages`, { cache: "no-store" });
+      const msgPayload = await msgRes.json();
+      if (msgPayload.success) {
+        setMessages(msgPayload.data?.messages ?? []);
+      }
+    } catch {}
   }, [conversationId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadMessages();
+    void loadData();
     if (!conversationId) return;
-    const interval = setInterval(() => void loadMessages(), 8000);
+    const interval = setInterval(() => void loadData(), 8000);
     return () => clearInterval(interval);
-  }, [conversationId, loadMessages]);
+  }, [conversationId, loadData]);
 
   const threadMessages = useMemo(
     () =>
       messages.map((message) => ({
         id: message.id,
-        sender: (message.sender === "customer" ? "customer" : "ai") as "customer" | "ai",
+        sender: message.sender,
         body: message.content,
+        createdAt: message.createdAt,
       })),
     [messages],
   );
 
+  if (!conversation) {
+    return <div className="flex h-full items-center justify-center bg-white"><div className="animate-pulse flex items-center text-teal-600 font-semibold gap-2"><span>Loading thread...</span></div></div>;
+  }
+
+  const customerName = conversation.customer?.name || "Unknown Customer";
+  const customerEmail = conversation.customer?.email || "No email provided";
+  const isOpen = conversation.status === "open" || conversation.status.startsWith("pending");
+
   return (
-    <div className="grid min-h-[70vh] grid-rows-[1fr_auto] gap-4">
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Conversation {conversationId}</h2>
-        <MessageThread messages={threadMessages} />
+    <div className="flex flex-col h-full bg-white relative">
+      {/* Header */}
+      <div className="border-b border-zinc-200 px-6 py-4 flex flex-col gap-4 sticky top-0 bg-white/95 backdrop-blur z-10">
+        
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg">
+              {customerName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col">
+              <h2 className="text-base font-bold text-[#111827]">{customerName}</h2>
+              <span className="text-sm text-zinc-500">{customerEmail}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button className="px-3 py-1.5 text-xs font-semibold rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 shadow-sm transition-colors">
+              Assign to Me
+            </button>
+            <button className="px-3 py-1.5 text-xs font-semibold rounded-md border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors shadow-sm">
+              Mark Resolved
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-[#111827] flex items-center gap-2">
+            <span className="text-zinc-500 font-normal">Subject:</span> {conversation.subject ?? "No Subject"}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 text-sm bg-[#f8fafb] rounded-lg p-3 border border-zinc-100">
+          <div className="flex items-center gap-2 font-medium">
+            <span className="text-zinc-500">Intent:</span>
+            <IntentBadge intent={conversation.intent} />
+          </div>
+          
+          <div className="h-4 w-px bg-zinc-200" />
+          
+          <div className="flex items-center gap-2 font-medium">
+            <span className="text-zinc-500">Status:</span>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${isOpen ? "bg-teal-500" : "bg-zinc-300"}`} />
+              <span className="capitalize">{conversation.status.replace("_", " ")}</span>
+            </div>
+          </div>
+
+          {conversation.shopifyOrderId && (
+            <>
+              <div className="h-4 w-px bg-zinc-200" />
+              <div className="flex items-center gap-2 font-medium">
+                <span className="text-zinc-500">Order:</span>
+                <span>#{conversation.shopifyOrderId}</span>
+                <Link href={`/dashboard/orders/${conversation.shopifyOrderId}`} className="text-teal-600 hover:text-teal-700 ml-1 hover:underline">
+                  [View Order &rarr;]
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <ReplyComposer conversationId={conversationId} onSent={() => void loadMessages()} />
+
+      {/* Messages */}
+      <MessageThread messages={threadMessages} />
+      
+      {/* Reply Composer */}
+      <div className="sticky bottom-0 bg-white pt-2 border-t border-transparent z-10 w-full">
+        <ReplyComposer conversationId={conversationId} onSent={() => void loadData()} />
+      </div>
     </div>
   );
 }
