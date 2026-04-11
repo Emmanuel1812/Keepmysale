@@ -27,6 +27,8 @@ interface EnrichedNegotiation {
   orderValue: string;
   currency: string;
   shopifyRefundId: string | null;
+  shopifyOrderId: string | null;
+  shopDomain: string;
 }
 
 export default function ReturnsPage() {
@@ -34,21 +36,48 @@ export default function ReturnsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"All" | "Active" | "Completed" | "Expired">("All");
   const [selectedNeg, setSelectedNeg] = useState<EnrichedNegotiation | null>(null);
+  const [processingRefund, setProcessingRefund] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
+
+  async function loadNegotiations() {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/negotiations", { cache: "no-store" });
+      const payload = await response.json();
+      if (payload.success) {
+        setNegotiations(payload.data?.negotiations ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch negotiations", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleIssueRefund = async (negId: string) => {
+    if (processingRefund) return;
+    setProcessingRefund(true);
+    setRefundError(null);
+    try {
+      const response = await fetch(`/api/negotiations/${negId}/refund`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Reload list and close modal or update selected
+        await loadNegotiations();
+        setSelectedNeg(null);
+      } else {
+        setRefundError(data.error?.message || "Failed to execute refund. Ensure Shopify Payments is active.");
+      }
+    } catch (err) {
+      setRefundError("A network error occurred.");
+    } finally {
+      setProcessingRefund(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadNegotiations() {
-      try {
-        const response = await fetch("/api/negotiations", { cache: "no-store" });
-        const payload = await response.json();
-        if (payload.success) {
-          setNegotiations(payload.data?.negotiations ?? []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch negotiations", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     void loadNegotiations();
   }, []);
 
@@ -69,15 +98,17 @@ export default function ReturnsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "offer_accepted":
+        return <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Action Required ⚡</span>;
       case "offer_sent":
       case "initiated":
       case "offer_rejected":
         return <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Offer Sent</span>;
       case "completed":
-        return <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Completed ✅</span>;
+        return <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/20">Completed ✅</span>;
       case "return_initiated":
       case "escalated":
-        return <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">Return Started</span>;
+        return <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-600/20">Return Started</span>;
       case "expired":
       default:
         return <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">Expired</span>;
@@ -307,9 +338,47 @@ export default function ReturnsPage() {
               </div>
             )}
 
+            {selectedNeg.status === "offer_accepted" && (
+              <div className="mt-6 space-y-3">
+                <div className="rounded-lg bg-amber-50 border border-amber-100 p-4 dark:bg-amber-900/20 dark:border-amber-800/50">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                    ⚡ Offer Accepted by Customer
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    The customer has agreed to a partial refund of <strong>{formatCurrency(selectedNeg.offers[selectedNeg.offers.length - 1]?.amount || 0, selectedNeg.currency)}</strong>. 
+                    Click below to issue the refund via Shopify.
+                  </p>
+                  {refundError && <p className="mt-2 text-xs font-bold text-red-600">{refundError}</p>}
+                </div>
+                <button 
+                  onClick={() => handleIssueRefund(selectedNeg.id)}
+                  disabled={processingRefund}
+                  className="w-full flex items-center justify-center gap-2 rounded-md bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors disabled:opacity-50"
+                >
+                  {processingRefund ? "Processing..." : "Issue Partial Refund & Resolve"}
+                </button>
+                <div className="text-center">
+                   {selectedNeg.shopDomain && selectedNeg.shopifyOrderId ? (
+                     <a 
+                      href={`https://admin.shopify.com/store/${selectedNeg.shopDomain.split('.')[0]}/orders/${selectedNeg.shopifyOrderId.split('/').pop()}`}
+                      target="_blank"
+                      className="text-xs text-zinc-400 hover:text-teal-600 underline"
+                     >
+                      View Order in Shopify Admin &rarr;
+                     </a>
+                   ) : (
+                    <span className="text-xs text-zinc-300 italic">No Shopify order link available</span>
+                   )}
+                </div>
+              </div>
+            )}
+
             <button 
-              onClick={() => setSelectedNeg(null)}
-              className="mt-6 w-full rounded-md bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 transition-colors"
+              onClick={() => {
+                setSelectedNeg(null);
+                setRefundError(null);
+              }}
+              className="mt-4 w-full rounded-md bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700 transition-colors"
             >
               Close
             </button>

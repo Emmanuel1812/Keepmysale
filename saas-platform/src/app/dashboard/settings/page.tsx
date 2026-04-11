@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+const RefreshIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+    <path d="M3 3v5h5"/>
+  </svg>
+);
+
+
 export default function SettingsPage() {
   const router = useRouter();
   
@@ -380,13 +388,43 @@ export default function SettingsPage() {
                 <p className="text-base font-medium text-green-950 mt-1">{googleEmail}</p>
                 <p className="text-sm text-green-700/80 mt-1">Replies are sent automatically from your Gmail address.</p>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => void disconnectGoogle()} 
-                className="w-full sm:w-auto border-green-200 hover:bg-green-50/50 text-green-700 bg-white"
-              >
-                Disconnect
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  disabled={saving}
+                  onClick={async () => {
+                    setSaving(true);
+                    setSuccessStatus(null);
+                    setErrorStatus(null);
+                    try {
+                      const res = await fetch("/api/automation/sync-emails", { method: "POST" });
+                      const payload = await res.json();
+                      if (payload.success) {
+                        setSuccessStatus(`Synced ${payload.data.processedCount} new emails! ✅`);
+                      } else {
+                        setErrorStatus("Sync failed. Check Gmail permissions.");
+                      }
+                    } catch (err) {
+                      setErrorStatus("Failed to trigger sync.");
+                    } finally {
+                      setSaving(false);
+                      setTimeout(() => setSuccessStatus(null), 5000);
+                    }
+                  }}
+                  className="w-full sm:w-auto border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
+                >
+                  <RefreshIcon className="mr-2 h-4 w-4" />
+                  Sync Now
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => void disconnectGoogle()} 
+                  className="w-full sm:w-auto border-green-200 hover:bg-green-50/50 text-green-700 bg-white"
+                >
+                  Disconnect
+                </Button>
+              </div>
+
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-5">

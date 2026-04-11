@@ -23,6 +23,7 @@ export interface IAnalyticsSummary {
   activeNegotiations: number;
   aiHandled: number;
   avgResponseTime: number; // in minutes
+  pendingRefundsCount: number;
 }
 
 export class AnalyticsService {
@@ -54,6 +55,8 @@ export class AnalyticsService {
     const activeNegotiations = negotiations.filter((item) =>
       ["initiated", "offer_sent", "offer_rejected"].includes(item.status),
     ).length;
+
+    const pendingRefundsCount = negotiations.filter((item) => item.status === "offer_accepted").length;
 
     // IMPACT METRICS (Row 1)
     const completedNegotiations = negotiations.filter((item) => item.status === "completed");
@@ -121,6 +124,7 @@ export class AnalyticsService {
       activeNegotiations,
       aiHandled,
       avgResponseTime,
+      pendingRefundsCount,
     };
   }
 }

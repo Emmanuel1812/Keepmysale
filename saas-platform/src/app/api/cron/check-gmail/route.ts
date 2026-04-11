@@ -19,14 +19,20 @@ async function processGmailPolling(request: Request) {
   const env = getEnv();
 
   // AUTH CHECK
-  const isVercelCron = request.headers.get("x-vercel-cron") === "true";
+  // Vercel Cron can send X-Vercel-Cron: 1 or true depending on the environment
+  const isVercelCron = request.headers.get("x-vercel-cron");
   const authHeader = request.headers.get("authorization");
   const hasSecret = authHeader === `Bearer ${env.CRON_SECRET}`;
 
   if (!isVercelCron && !hasSecret) {
-    console.error("[CRON_GMAIL] Unauthorized access attempt.");
+    const userAgent = request.headers.get("user-agent") || "";
+    // Avoid spamming logs if it's just a browser or bot hit
+    if (!userAgent.includes("Mozilla")) {
+      console.warn(`[CRON_GMAIL] Blocked access attempt from ${userAgent}`);
+    }
     return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
+
 
   const supabase = createSupabaseServiceClient();
   const automationService = new AutomationService(supabase);

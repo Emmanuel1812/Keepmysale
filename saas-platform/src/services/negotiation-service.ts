@@ -63,7 +63,7 @@ export function transitionNegotiationState(
 
   if (input === "accept_offer") {
     return {
-      nextStatus: "completed",
+      nextStatus: "offer_accepted",
       nextStep: current.currentStep,
       shouldCreateRefundLog: true,
       refundLogAction: "partial_refund_accepted",
@@ -238,7 +238,7 @@ export class NegotiationService {
 
     let updated = await this.negotiationsDal.updateStatus(working.id, transition.nextStatus);
 
-    if (transition.nextStatus === "completed") {
+    if (transition.nextStatus === "offer_accepted" || transition.nextStatus === "completed") {
       const acceptedOffer = [...updated.offers].reverse().find((offer) => offer.response === "pending");
       const finalRefundAmount = acceptedOffer?.amount ?? null;
       const estimatedReturnCost = updated.estimatedReturnCost ?? 0;
@@ -250,10 +250,10 @@ export class NegotiationService {
         finalRefundAmount,
         finalRefundType: acceptedOffer?.type ?? "partial_refund",
         savings,
-        completedAt: new Date().toISOString(),
+        completedAt: transition.nextStatus === "completed" ? new Date().toISOString() : null,
       });
 
-      await this.refundService.executeRefund(updated.id);
+      // Automatic refund execution removed here. Now handled manually via UI.
     }
 
     if (transition.nextStatus === "return_initiated") {
@@ -281,12 +281,29 @@ export class NegotiationService {
       });
     }
 
-    if (transition.nextStatus === "completed" || transition.nextStatus === "return_initiated") {
+    if (transition.nextStatus === "completed" || transition.nextStatus === "return_initiated" || transition.nextStatus === "offer_accepted") {
       await this.conversationsDal.update(updated.conversationId, {
         status: "resolved",
         resolvedAt: new Date().toISOString(),
       });
     }
+
+    return updated;
+  async finalizeRefund(id: string): Promise<INegotiation> {
+    const negotiation = await this.negotiationsDal.findById(id);
+    if (!negotiation) throw new Error("Negotiation not found");
+    if (negotiation.status !== "offer_accepted") {
+      throw new Error(`Refund can only be finalized for 'offer_accepted' negotiations (current: ${negotiation.status})`);
+    }
+
+    // Execute the actual Shopify refund
+    await this.refundService.executeRefund(id);
+
+    // Update status to completed and set completedAt
+    const updated = await this.negotiationsDal.update(id, {
+      status: "completed",
+      completedAt: new Date().toISOString(),
+    });
 
     return updated;
   }

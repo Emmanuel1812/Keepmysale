@@ -52,9 +52,8 @@ interface Summary {
   fulfilledOrders: number;
   openConversations: number;
   resolvedToday: number;
-  activeNegotiations: number;
-  aiHandled: number;
   avgResponseTime: number;
+  pendingRefundsCount: number;
   shopName?: string;
 }
 
@@ -76,6 +75,7 @@ export default function DashboardPage() {
     moneySaved: 0, returnsPrevented: 0, partialRefunds: 0, successRate: 0,
     totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, fulfilledOrders: 0,
     openConversations: 0, resolvedToday: 0, activeNegotiations: 0, aiHandled: 0, avgResponseTime: 0,
+    pendingRefundsCount: 0,
   });
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -154,7 +154,26 @@ export default function DashboardPage() {
       </div>
       
       {syncError && <p className="text-sm text-red-600 -mt-2">{syncError}</p>}
-      {syncSuccess && <p className="text-sm text-emerald-600 -mt-2">{syncSuccess}</p>}
+      {summary.pendingRefundsCount > 0 && (
+        <div className="relative overflow-hidden rounded-xl border border-amber-100 bg-amber-50 p-4 shadow-sm dark:bg-amber-900/20 dark:border-amber-800/50 animate-in slide-in-from-top-4 duration-500">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex gap-3">
+              <div className="bg-amber-100 p-2 rounded-lg text-amber-600 dark:bg-amber-800/50 dark:text-amber-400">
+                <ZapIcon />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 italic">Action Required: {summary.pendingRefundsCount} {summary.pendingRefundsCount === 1 ? 'Customer' : 'Customers'} Accepted Offers</h3>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Please review and issue the agreed partial refunds to resolve these cases.</p>
+              </div>
+            </div>
+            <Link href="/dashboard/returns?filter=Active">
+              <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none shadow-sm whitespace-nowrap">
+                Review & Issue Refunds
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-10">
         {/* ROW 1: KeepMySale Impact */}

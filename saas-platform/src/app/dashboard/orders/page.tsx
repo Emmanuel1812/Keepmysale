@@ -19,75 +19,85 @@ interface OrderItem {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  async function loadOrders() {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/orders", { cache: "no-store" });
+      const payload = (await response.json()) as { success: boolean; data?: { orders: OrderItem[] } };
+      if (payload.success) {
+        setOrders(payload.data?.orders ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch orders", err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadOrders() {
-      try {
-        const response = await fetch("/api/orders", { cache: "no-store" });
-        const payload = (await response.json()) as { success: boolean; data?: { orders: OrderItem[] } };
-        if (payload.success) {
-          setOrders(payload.data?.orders ?? []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch orders", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     void loadOrders();
   }, []);
 
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((acc, order) => acc + (Number(order.totalPrice) || 0), 0);
-  const fulfilledOrders = orders.filter(o => o.fulfillmentStatus?.toLowerCase() === 'fulfilled').length;
-  const pendingOrders = orders.filter(o => !o.fulfillmentStatus || o.fulfillmentStatus?.toLowerCase() === 'unfulfilled').length;
+  async function handleSync() {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncStatus(null);
+    
+    try {
+      // 1. Sync Shopify Orders
+      const shopifyRes = await fetch("/api/shopify/sync-orders", { method: "POST" });
+      
+      // 2. Sync Gmail Emails
+      const gmailRes = await fetch("/api/automation/sync-emails", { method: "POST" });
+      
+      if (shopifyRes.ok && gmailRes.ok) {
+        setSyncStatus({ type: 'success', message: 'Orders and emails synced successfully!' });
+        await loadOrders();
+      } else {
+        setSyncStatus({ type: 'error', message: 'Sync completed with warnings. Some data might be missing.' });
+      }
+    } catch (err) {
+      setSyncStatus({ type: 'error', message: 'Failed to trigger sync. Please try again later.' });
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncStatus(null), 5000);
+    }
+  }
 
-  return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 pb-20 font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Orders</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Synced from Shopify</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full rounded-md border border-zinc-200 py-1.5 pl-9 pr-3 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 dark:border-zinc-800 dark:bg-zinc-900/50" 
-            />
-          </div>
-          <button className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 shadow-sm outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 transition-colors">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  const totalOrders = orders.length;
+// ...
+          <button 
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 shadow-sm outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+          >
+            <svg className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Sync Orders
+            {syncing ? "Syncing..." : "Sync All"}
           </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-          Loading orders...
+      {syncStatus && (
+        <div className={`p-3 rounded-lg text-sm font-medium ${syncStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+          {syncStatus.message}
         </div>
-      ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white py-24 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-50 mb-4 text-2xl dark:bg-zinc-800/50">
-            📦
-          </div>
-          <h3 className="mb-2 text-lg font-medium text-zinc-900 dark:text-white">No orders synced yet</h3>
-          <p className="mb-6 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
-            Connect your Shopify store and click Sync Orders to get started.
-          </p>
-          <button className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 shadow-sm transition-colors">
-            Sync Orders
+      )}
+
+      {loading ? (
+// ...
+          <button 
+            onClick={handleSync}
+            disabled={syncing}
+            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 shadow-sm transition-colors disabled:opacity-50"
+          >
+            {syncing ? "Syncing..." : "Sync Now"}
           </button>
+
         </div>
       ) : (
         <>
