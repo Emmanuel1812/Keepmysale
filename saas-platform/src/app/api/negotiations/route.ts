@@ -27,6 +27,8 @@ export async function GET() {
   const ordersMap = new Map(orders.map(o => [o.id, o]));
   
   // Combine it
+  const enrichedNegotiations = negotiations.map(neg => {
+    const order = ordersMap.get(neg.orderId || "");
     return {
       ...neg,
       orderNumber: order?.shopifyOrderNumber || order?.shopifyOrderId || "Unknown",
@@ -37,6 +39,7 @@ export async function GET() {
       shopDomain: shopDomain,
     };
   });
+
 
   return apiResponse({ 
     negotiations: enrichedNegotiations,

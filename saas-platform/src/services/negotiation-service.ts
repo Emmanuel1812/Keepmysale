@@ -289,6 +289,8 @@ export class NegotiationService {
     }
 
     return updated;
+  }
+
   async finalizeRefund(id: string): Promise<INegotiation> {
     const negotiation = await this.negotiationsDal.findById(id);
     if (!negotiation) throw new Error("Negotiation not found");

@@ -68,7 +68,19 @@ export default function OrdersPage() {
   }
 
   const totalOrders = orders.length;
-// ...
+  const totalRevenue = orders.reduce((acc, order) => acc + Number(order.totalPrice || 0), 0);
+  const fulfilledOrders = orders.filter(o => o.fulfillmentStatus === 'fulfilled').length;
+  const pendingOrders = orders.length - fulfilledOrders;
+
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 pb-20 font-sans animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#111827]">Order History</h1>
+          <p className="text-sm text-zinc-500">View and manage your recent synced orders from Shopify.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
           <button 
             onClick={handleSync}
             disabled={syncing}
@@ -89,7 +101,19 @@ export default function OrdersPage() {
       )}
 
       {loading ? (
-// ...
+        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white py-24 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-teal-600 mb-4" />
+          <p className="text-sm text-zinc-500">Loading your store data...</p>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white py-24 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-50 mb-4 text-2xl dark:bg-zinc-800/50">
+            📦
+          </div>
+          <h3 className="mb-2 text-lg font-medium text-zinc-900 dark:text-white">No orders found</h3>
+          <p className="mb-6 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+            Once you sync your Shopify store, your orders will appear here automatically.
+          </p>
           <button 
             onClick={handleSync}
             disabled={syncing}
@@ -97,7 +121,6 @@ export default function OrdersPage() {
           >
             {syncing ? "Syncing..." : "Sync Now"}
           </button>
-
         </div>
       ) : (
         <>

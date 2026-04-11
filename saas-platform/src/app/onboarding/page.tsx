@@ -34,17 +34,18 @@ export default async function OnboardingPage({
           <p className="text-sm font-medium text-zinc-500">Configureer je AI helpdesk in enkele stappen.</p>
         </div>
         
-        <div className="flex justify-center mb-2">
-          <StepIndicator steps={steps} activeIndex={activeIndex} />
-        </div>
+        <Suspense fallback={<div className="p-12 text-center text-zinc-500 font-medium">Loading onboarding...</div>}>
+          <div className="flex justify-center mb-2">
+            <StepIndicator steps={steps} activeIndex={activeIndex} />
+          </div>
 
-        <div className="w-full">
-          <Suspense fallback={<div className="p-12 text-center text-zinc-500 font-medium">Loading step...</div>}>
+          <div className="w-full">
             {currentStep === "shopify" && <ShopifyConnectCard />}
             {currentStep === "rules" && <ReturnRulesForm />}
             {currentStep === "email" && <EmailConnectStep />}
-          </Suspense>
-        </div>
+          </div>
+        </Suspense>
+
       </main>
     </div>
   );

@@ -54,6 +54,8 @@ interface Summary {
   resolvedToday: number;
   avgResponseTime: number;
   pendingRefundsCount: number;
+  activeNegotiations: number;
+  aiHandled: number;
   shopName?: string;
 }
 

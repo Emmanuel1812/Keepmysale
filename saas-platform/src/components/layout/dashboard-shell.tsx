@@ -1,7 +1,7 @@
 "use client";
 
 import { useIsEmbedded } from "@/hooks/use-is-embedded";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -9,7 +9,7 @@ interface DashboardShellProps {
   header: ReactNode;
 }
 
-export function DashboardShell({ children, sidebar, header }: DashboardShellProps) {
+function DashboardShellInner({ children, sidebar, header }: DashboardShellProps) {
   const isEmbedded = useIsEmbedded();
 
   if (isEmbedded) {
@@ -30,3 +30,12 @@ export function DashboardShell({ children, sidebar, header }: DashboardShellProp
     </div>
   );
 }
+
+export function DashboardShell(props: DashboardShellProps) {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen w-full items-center justify-center bg-[#f8fafb]" />}>
+      <DashboardShellInner {...props} />
+    </Suspense>
+  );
+}
+
