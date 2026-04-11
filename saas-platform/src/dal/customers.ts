@@ -83,7 +83,7 @@ export class CustomersDal {
       throw new Error("findOrCreate requires at least email or phone.");
     }
 
-    const { data: candidates, error } = await this.supabase
+    const findResult = await this.supabase
       .from("customers")
       .select("*")
       .eq("merchant_id", input.merchantId)
@@ -95,9 +95,10 @@ export class CustomersDal {
           .filter(Boolean)
           .join(","),
       );
-    if (error) throw error;
 
-    const existing = (candidates ?? [])[0] as CustomerRow | undefined;
+    if (findResult.error) throw findResult.error;
+
+    const existing = (findResult.data ?? [])[0] as CustomerRow | undefined;
     if (existing) {
       const merged = await this.update(String(existing.id), {
         email: (existing.email as string | null) ?? input.email ?? null,
@@ -114,6 +115,17 @@ export class CustomersDal {
       return merged;
     }
 
-    return this.create(input);
+    try {
+      return await this.create(input);
+    } catch (err: any) {
+      // Handle race condition: if another process inserted the customer in the meantime (Error 23505)
+      // Retry the search once.
+      if (err.code === "23505") {
+        console.log("[DAL] Retrying findOrCreate due to unique constraint violation (race condition).");
+        return this.findOrCreate(input);
+      }
+      throw err;
+    }
   }
+
 }

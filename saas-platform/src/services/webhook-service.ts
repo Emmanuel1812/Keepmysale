@@ -12,6 +12,7 @@ import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { formatEmailResponse } from "@/lib/email/template";
+import { extractCleanEmail } from "@/lib/email/parser";
 
 export interface IInboundEmailInput {
   messageId: string;
@@ -54,6 +55,8 @@ export class WebhookService {
       return { deduplicated: true as const };
     }
 
+    const cleanFrom = extractCleanEmail(input.from);
+
     const merchant = await this.merchantService.findById(input.merchantId);
     if (!merchant) {
       throw new Error("Merchant not found");
@@ -61,7 +64,7 @@ export class WebhookService {
 
     const customer = await this.customerService.resolveCustomer({
       merchantId: input.merchantId,
-      email: input.from,
+      email: cleanFrom,
       language: merchant.settings.language,
     });
 
