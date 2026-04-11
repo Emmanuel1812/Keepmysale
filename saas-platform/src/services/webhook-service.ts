@@ -11,7 +11,7 @@ import { NegotiationService } from "@/services/negotiation-service";
 import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
-import { formatEmailResponse } from "@/lib/email/template";
+import { formatEmailResponse } from "@/lib/utils/email-formatter";
 import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
 
 export interface IInboundEmailInput {
@@ -115,6 +115,13 @@ export class WebhookService {
           orderNameGuess,
         );
         if (shopifyOrder) {
+          // Extract customer name from Shopify order if missing
+          if (!customer.name && (shopifyOrder as any).customer) {
+            const firstName = (shopifyOrder as any).customer.first_name;
+            const lastName = (shopifyOrder as any).customer.last_name;
+            customer.name = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : null;
+          }
+
           const existingOrders = await this.orderService.findByMerchant(input.merchantId);
           const matched = existingOrders.find((o) => o.shopifyOrderId === shopifyOrder.id);
           if (matched) {
@@ -178,11 +185,23 @@ export class WebhookService {
       },
     });
 
+    // Enhanced customer name extraction if still missing
+    let finalCustomerName = customer.name;
+    if (!finalCustomerName) {
+      if (input.from.includes("<")) {
+        const displayName = input.from.split("<")[0].replace(/"/g, "").trim();
+        if (displayName) finalCustomerName = displayName;
+      }
+    }
+    if (!finalCustomerName) {
+      finalCustomerName = cleanFrom.split("@")[0];
+    }
+
     const template = formatEmailResponse({
-      customerName: customer.name || "klant",
-      body: action.messageBody,
-      storeName: merchant.shopDomain.replace(".myshopify.com", ""), // Fallback if shopName missing
-      supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,
+      customerName: finalCustomerName,
+      aiResponse: action.messageBody,
+      storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
+      language: merchant.settings?.language || "nl",
     });
 
     if (merchant.googleEmail) {
@@ -192,6 +211,7 @@ export class WebhookService {
         to: input.from,
         subject: input.subject,
         html: template.html,
+        text: template.text,
         threadId: input.gmailThreadId,
       });
     } else {

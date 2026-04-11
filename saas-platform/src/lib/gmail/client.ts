@@ -67,7 +67,17 @@ export async function getValidAccessToken(merchant: IMerchant) {
   }
 }
 
-export async function fetchNewEmails(accessToken: string) {
+export interface GmailMessage {
+  id: string;
+  threadId: string;
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  headers: Array<{ name: string; value: string }>;
+}
+
+export async function fetchNewEmails(accessToken: string): Promise<GmailMessage[]> {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({ access_token: accessToken });
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
@@ -79,7 +89,7 @@ export async function fetchNewEmails(accessToken: string) {
   });
 
   const messages = response.data.messages || [];
-  const results = [];
+  const results: GmailMessage[] = [];
 
   for (const msg of messages) {
     const detail = await gmail.users.messages.get({
@@ -88,7 +98,7 @@ export async function fetchNewEmails(accessToken: string) {
       format: "full",
     });
 
-    const headers = detail.data.payload?.headers || [];
+    const headers = (detail.data.payload?.headers || []) as Array<{ name: string; value: string }>;
     const from = headers.find((h) => h.name === "From")?.value || "";
     const to = headers.find((h) => h.name === "To")?.value || "";
     const subject = headers.find((h) => h.name === "Subject")?.value || "";
@@ -110,13 +120,14 @@ export async function fetchNewEmails(accessToken: string) {
       to,
       subject,
       body,
+      headers, // Include all headers for filtering
     });
   }
 
   return results;
 }
 
-export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, threadId?: string }) {
+export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, text: string, threadId?: string }) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({ access_token: accessToken });
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
@@ -128,16 +139,33 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
   const subject = params.subject.startsWith("Re:") ? params.subject : `Re: ${params.subject}`;
 
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
+  const boundary = `__NextPart_${Date.now().toString(16)}__`;
+  
+  const textBase64 = Buffer.from(params.text, 'utf-8').toString('base64');
+  const htmlBase64 = Buffer.from(params.html, 'utf-8').toString('base64');
+
   const messageParts = [
     `From: ${merchantEmail}`,
     `To: ${params.to}`,
-    `Content-Type: text/html; charset=utf-8`,
-    `MIME-Version: 1.0`,
     `Subject: ${utf8Subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
     ``,
-    params.html,
+    `--${boundary}`,
+    `Content-Type: text/plain; charset=utf-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    textBase64,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=utf-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    htmlBase64,
+    ``,
+    `--${boundary}--`,
   ];
-  const message = messageParts.join("\n");
+  const message = messageParts.join("\r\n");
 
   const encodedMessage = Buffer.from(message)
     .toString("base64")

@@ -21,10 +21,10 @@ export async function sendEmailViaSes(params: {
     Destination: { ToAddresses: [params.to] },
     Content: {
       Simple: {
-        Subject: { Data: params.subject },
+        Subject: { Data: params.subject, Charset: "utf-8" },
         Body: {
-          Html: { Data: params.html },
-          Text: { Data: params.text ?? "" },
+          Html: { Data: params.html, Charset: "utf-8" },
+          Text: { Data: params.text || "", Charset: "utf-8" },
         },
       },
     },

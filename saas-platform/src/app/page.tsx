@@ -11,9 +11,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect("/dashboard");
-  }
 
   return <Homepage2Client />;
 }

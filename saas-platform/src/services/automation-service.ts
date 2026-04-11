@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { WebhookService } from "@/services/webhook-service";
 import { getValidAccessToken, fetchNewEmails, markAsRead } from "@/lib/gmail/client";
 import type { IMerchant } from "@/types";
+import { EmailFilterService } from "@/lib/services/email-filter";
 
 export interface SyncResult {
   shopDomain: string;
@@ -13,9 +14,11 @@ export interface SyncResult {
 
 export class AutomationService {
   private readonly webhookService: WebhookService;
+  private readonly emailFilter: EmailFilterService;
 
   constructor(private readonly supabase: SupabaseClient) {
     this.webhookService = new WebhookService(supabase);
+    this.emailFilter = new EmailFilterService(supabase);
   }
 
   async pollMerchantEmails(merchant: IMerchant): Promise<SyncResult> {
@@ -28,15 +31,20 @@ export class AutomationService {
       let processedCount = 0;
 
       for (const email of newEmails) {
-        const isLegit = this.shouldProcessEmail(email, merchantEmail);
+        // Pass headers for Layer 3 filtering
+        const filterResult = await this.emailFilter.shouldProcessEmail(
+          email, 
+          email.headers || [], 
+          merchant.id
+        );
         
-        if (!isLegit) {
-          console.log(`[AutomationService] BLOCKED: ${email.subject} | From: ${email.from}`);
+        if (!filterResult.shouldProcess) {
+          console.log(`[AutomationService] SKIPPED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
           await markAsRead(accessToken, email.id);
           continue;
         }
 
-        console.log(`[AutomationService] ALLOWED: ${email.subject} | From: ${email.from}`);
+        console.log(`[AutomationService] ALLOWED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
         
         await this.webhookService.handleInboundEmail({
           messageId: email.id,
@@ -70,65 +78,4 @@ export class AutomationService {
     }
   }
 
-  private shouldProcessEmail(email: any, merchantEmail: string): boolean {
-    if (!email.subject || email.subject.trim() === "") return false;
-    if (email.from.toLowerCase().includes(merchantEmail.toLowerCase())) return false;
-    
-    const skipDomains = [
-      "noreply", "no-reply", "mailer-daemon",
-      "notifications", "newsletter", "promo",
-      "marketing", "updates", "support@shopify",
-      "uber.com", "tiktok.com", "facebook.com",
-      "facebookmail.com", "instagram.com", 
-      "twitter.com", "linkedin.com", "pinterest.com",
-      "google.com", "amazonaws.com", "aws.amazon.com",
-      "klaviyo.com", "mailchimp.com", "sendgrid.net",
-      "netlify.com", "vercel.com", "github.com",
-      "belastingdienst", "mollie.com", "stripe.com",
-      "paypal.com", "bank", "payment",
-      "ing.com", "ing.nl", "rabobank.nl", "abnamro.nl",
-      "bunq.com", "knab.nl", "triodos.nl", "revolut.com",
-      "fiscaal-online.nl", "fiscale-online.nl", "fisc-online.nl",
-      "kvk.nl", "belasting", "newsletter", "nieuwsbrief"
-    ];
-    
-    const fromLower = email.from.toLowerCase();
-    if (skipDomains.some(d => fromLower.includes(d))) return false;
-    
-    const bulkSubjects = [
-      /automatic reply/i,
-      /auto-?reply/i,
-      /out of office/i,
-      /unsubscribe/i,
-      /inkomstenbelasting/i,
-      /your (account|projects?|subscription)/i,
-      /billing/i,
-      /verify your/i,
-      /welcome to/i,
-      /setup success/i,
-      /\d+% (off|korting)/i,
-      /free (shipping|trial)/i,
-      /last chance/i,
-      /limited time/i,
-      /buy \d+.*get \d+/i,
-      /suspended/i,
-      /credit limit/i,
-      /webwinkel vakdagen/i,
-      /automatic reply.*:/i,
-      /auto.*reply.*:/i,
-      /fiscaal/i,
-      /nieuwsbrief/i,
-      /advertisement/i,
-      /vacture/i,
-      /doorsturen/i,
-      /factuur/i,
-      /betaling/i,
-      /herinnering/i,
-    ];
-
-    
-    if (bulkSubjects.some(p => p.test(email.subject))) return false;
-    
-    return true;
-  }
 }

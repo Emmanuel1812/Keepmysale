@@ -4,7 +4,7 @@ import { MessageService } from "@/services/message-service";
 import { CustomerService } from "@/services/customer-service";
 import { MerchantService } from "@/services/merchant-service";
 import { sendEmailViaSes } from "@/lib/ses/client";
-import { formatEmailResponse } from "@/lib/email/template";
+import { formatEmailResponse } from "@/lib/utils/email-formatter";
 
 export class InboxService {
   private readonly conversationService: ConversationService;
@@ -42,10 +42,10 @@ export class InboxService {
 
     if (conversation.channel === "email" && customer?.email) {
       const template = formatEmailResponse({
-        customerName: customer.name || "klant",
-        body: params.content,
-        storeName: merchant.shopDomain.replace(".myshopify.com", ""),
-        supportEmail: merchant.googleEmail || merchant.email || "support@" + merchant.shopDomain,
+        customerName: customer.name,
+        aiResponse: params.content,
+        storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
+        language: merchant.settings?.language || "nl",
       });
 
       await sendEmailViaSes({
