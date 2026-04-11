@@ -25,7 +25,7 @@ export function LandingPage() {
     const observerOptions = {
       root: null,
       rootMargin: "0px 0px -40px 0px",
-      threshold: 0.15,
+      threshold: 0.1, // Lower threshold for better trigger reliability
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -48,11 +48,20 @@ export function LandingPage() {
       });
     }, observerOptions);
 
-    const elementsToReveal = document.querySelectorAll(
-      ".hero-badge, .hero-headline, .hero-subtitle, .hero-ctas, .hero-trust, .dashboard-card, .section-badge, .section-title, .section-subtitle, .step-card, .feature-card, .spotlight-badge, .spotlight-headline, .spotlight-desc, .benefit-item, .phone-mockup, .ai-badge, .ai-headline, .ai-subtitle, .ai-bullet, .ai-card, .niches-badge, .niches-title, .niche-card, .cta-badge, .cta-title, .cta-subtitle, .value-card, .cta-panel, .faq-badge, .faq-title, .faq-item"
-    );
+    // Observe all reveal-enabled elements
+    const elementsToReveal = document.querySelectorAll(".reveal, .section-badge, .section-title, .feature-card, .step-card, .niche-card, .faq-item");
 
     elementsToReveal.forEach((el) => observer.observe(el));
+
+    // Force trigger for elements already in view (like Hero)
+    setTimeout(() => {
+      elementsToReveal.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
+          el.classList.add("visible");
+        }
+      });
+    }, 100);
 
     return () => observer.disconnect();
   }, []);
@@ -187,13 +196,10 @@ export function LandingPage() {
       </header>
 
       {/* PARTICLES */}
-      <div className="particles" id="particles"></div>
-
-      {/* HERO SECTION */}
+      <div className="particles" id="particles"></div>      {/* HERO SECTION */}
       <section className="hero">
-        <div className="hero-left">
+        <div className="hero-left reveal">
           <div className="hero-badge">
-            <div className="hero-badge-dot"></div>
             AI-Powered Customer Service
           </div>
 
@@ -208,108 +214,66 @@ export function LandingPage() {
             return on logistics alone. The AI helpdesk that handles your tickets <em>and</em> keeps your revenue.
           </p>
 
-          <div className="hero-ctas">
-            <Link href="/signup" className="btn-primary">
+          <div className="nav-right" style={{ justifyContent: 'flex-start', marginTop: '36px' }}>
+             <Link href="/signup" className="nav-cta" style={{ padding: '14px 32px', fontSize: '16px' }}>
               Start Free Trial
-              <span className="arrow" style={{ marginLeft: '8px' }}>→</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '10px' }}>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
             </Link>
-            <a href="#how-it-works" className="btn-secondary">
-              See How It Works
-            </a>
-          </div>
-
-          <div className="hero-trust">
-            <div className="trust-item">
-              <div className="trust-check">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              Save €15+ per intercepted return
-            </div>
-            <div className="trust-item">
-              <div className="trust-check">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              AI responds from your own email address
-            </div>
-            <div className="trust-item">
-              <div className="trust-check">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              Built for Shopify — setup in under 5 minutes
-            </div>
           </div>
         </div>
 
-        <div className="hero-right">
+        <div className="hero-right reveal">
           <div className="dashboard-card">
             <div className="card-header">
-              <div className="card-header-left">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div className="card-icon">
-                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </div>
                 <div>
-                  <div className="card-title">Return Dashboard</div>
-                  <div className="card-label">Live Overview</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700 }}>Return Dashboard</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Real-time savings</div>
                 </div>
               </div>
-              <div className="card-status">
-                <div className="status-dot"></div>
-                Active
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#00e0c0' }}>
+                 <div style={{ width: '6px', height: '6px', background: '#00e0c0', borderRadius: '50%' }}></div>
+                 Active
               </div>
             </div>
 
             <div className="stats-grid">
               <div className="stat-box">
-                <div className="stat-label">Intercepted</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Intercepted</div>
                 <div className="stat-value">47</div>
-                <div className="stat-sub positive">+12 this week</div>
               </div>
               <div className="stat-box">
-                <div className="stat-label">Saved</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Saved Revenue</div>
                 <div className="stat-value">€2,847</div>
-                <div className="stat-sub positive">+€430 today</div>
               </div>
               <div className="stat-box">
-                <div className="stat-label">Success Rate</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Success Rate</div>
                 <div className="stat-value">89%</div>
-                <div className="stat-sub">Industry: 34%</div>
               </div>
             </div>
 
-            <div className="card-divider"></div>
-
             <div className="email-preview">
-              <div className="email-header">
-                <div className="email-sender">
-                  <div className="email-avatar">LV</div>
-                  <div>
-                    <div className="email-name">Lisa V.</div>
-                    <div className="email-meta" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>via Gmail · 3 hours ago</div>
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div className="email-avatar">LV</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700 }}>Lisa V.</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>Return Request · Order #1084</div>
                 </div>
-                <div className="ai-badge" style={{ background: 'rgba(0, 150, 255, 0.1)', borderColor: 'rgba(0, 150, 255, 0.2)', color: '#0099ff' }}>
-                  Return
+                <div style={{ padding: '4px 8px', background: 'rgba(0,150,255,0.1)', border: '1px solid rgba(0,150,255,0.2)', borderRadius: '6px', fontSize: '10px', fontWeight: 700, color: '#0099ff' }}>
+                  Negotiating
                 </div>
               </div>
-              <div className="email-body">
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
                 "Hi, I'd like to return order #1084. The size doesn't fit me well..."
-              </div>
-              <div className="email-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px' }}>
-                <div className="ai-badge">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
-                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-                  </svg>
-                  Negotiating — 35% Store Credit Offered
-                </div>
-              </div>
+              </p>
             </div>
           </div>
         </div>
@@ -317,145 +281,78 @@ export function LandingPage() {
 
       {/* HOW IT WORKS SECTION */}
       <section className="how-it-works" id="how-it-works">
-        <div className="section-header">
-          <div className="section-badge">3 Simple Steps</div>
+        <div className="section-header reveal">
+          <div className="section-badge">How It Works</div>
           <h2 className="section-title">Up and Running in Minutes</h2>
-          <p className="section-subtitle">
-            No complex setup. No training required. Just connect, launch, and start saving on returns.
+          <p className="hero-subtitle" style={{ margin: '0 auto' }}>
+            No complex setup. No training required. Just connect and start saving on returns.
           </p>
         </div>
 
         <div className="steps-grid">
           {/* STEP 1: Connect Shopify */}
-          <div className="step-card">
-            <div className="step-top">
-              <div className="step-number">01</div>
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="#00e0c0">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </div>
-              <div className="step-arrow">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </div>
+          <div className="step-card reveal">
+            <div className="step-icon-wrap">
+              <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
             </div>
-
-            <div className="step-title">Connect Your Shopify Store</div>
-            <div className="step-tag" style={{ color: '#00e0c0' }}>Takes under 5 minutes</div>
-            <p className="step-desc">
-              Install KeepMySale on your Shopify store and we instantly sync your orders, customers, and tracking
-              data. One-click OAuth — no technical skills needed.
+            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Connect Shopify</div>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, marginBottom: '20px' }}>
+              Install KeepMySale and we instantly sync your orders and customers.
             </p>
-
             <div className="mini-ui">
-              <div className="shopify-connect-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #5e8e3e, #95bf47)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 24 24" style={{ width: '18px', height: '18px', fill: '#fff' }}>
-                      <path d="M15.34 3.27a.68.68 0 0 0-.6-.05.72.72 0 0 0-.33.43s-.42 1.3-.47 1.45a4.77 4.77 0 0 0-1.57-.53V3.5a.86.86 0 0 0-.26-.63.84.84 0 0 0-.64-.24c-.05 0-1.09.08-1.09.08A.62.62 0 0 0 9.85 3l-.29.92a7.18 7.18 0 0 0-1.59.46l-.51-1a.6.6 0 0 0-.52-.33.58.58 0 0 0-.2.04l-1.48.48a.6.6 0 0 0-.37.76l.5 1a4.4 4.4 0 0 0-1.12 1.15l-.97-.32a.6.6 0 0 0-.76.37l-.48 1.48a.6.6 0 0 0 .37.76l.97.31a5.4 5.4 0 0 0-.12 1.58l-.96.31a.6.6 0 0 0-.37.76l.48 1.48a.6.6 0 0 0 .76.37l.5-.16c.44 1.28 2.63 6.97 2.63 6.97a.73.73 0 0 0 .68.48h0l1.63-.01a.73.73 0 0 0 .7-.56L12 11.32l3.48-7.3a.69.69 0 0 0-.14-.75z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>Efo Testing Store</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>Shopify Store Connected</div>
-                  </div>
-                </div>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 200, 180, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 24 24" style={{ width: '14px', height: '14px', fill: '#00e0c0' }}>
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="shopify-logo">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M15.34 3.27a.68.68 0 0 0-.6-.05.72.72 0 0 0-.33.43s-.42 1.3-.47 1.45a4.77 4.77 0 0 0-1.57-.53V3.5a.86.86 0 0 0-.26-.63.84.84 0 0 0-.64-.24c-.05 0-1.09.08-1.09.08A.62.62 0 0 0 9.85 3l-.29.92a7.18 7.18 0 0 0-1.59.46l-.51-1a.6.6 0 0 0-.52-.33.58.58 0 0 0-.2.04l-1.48.48a.6.6 0 0 0-.37.76l.5 1a4.4 4.4 0 0 0-1.12 1.15l-.97-.32a.6.6 0 0 0-.76.37l-.48 1.48a.6.6 0 0 0 .37.76l.97.31a5.4 5.4 0 0 0-.12 1.58l-.96.31a.6.6 0 0 0-.37.76l.48 1.48a.6.6 0 0 0 .76.37l.5-.16c.44 1.28 2.63 6.97 2.63 6.97a.73.73 0 0 0 .68.48h0l1.63-.01a.73.73 0 0 0 .7-.56L12 11.32l3.48-7.3a.69.69 0 0 0-.14-.75z" />
                   </svg>
                 </div>
-              </div>
-              <div className="shopify-sync" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(0, 200, 180, 0.06)', border: '1px solid rgba(0, 200, 180, 0.12)', borderRadius: '10px', fontSize: '12px', fontWeight: 600, color: '#00e0c0' }}>
-                <div className="sync-dot"></div>
-                Connected & syncing
+                <div>
+                   <div style={{ fontSize: '12px', fontWeight: 600 }}>Syncing...</div>
+                   <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>Order #2847 fetched</div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* STEP 2: Link Gmail */}
-          <div className="step-card">
-            <div className="step-top">
-              <div className="step-number">02</div>
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="#0099ff">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </div>
-              <div className="step-arrow">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </div>
+          <div className="step-card reveal">
+            <div className="step-icon-wrap" style={{ background: 'rgba(0,150,255,0.1)', borderColor: 'rgba(0,150,255,0.2)' }}>
+              <svg viewBox="0 0 24 24" stroke="#0099ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
             </div>
-
-            <div className="step-title">Link Your Gmail</div>
-            <div className="step-tag" style={{ color: '#0099ff' }}>AI starts working instantly</div>
-            <p className="step-desc">
-              Connect your Gmail and our AI monitors every incoming email. It auto-classifies WISMO, FAQ, and
-              return requests — then responds from your own email address.
+            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Link Your Gmail</div>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, marginBottom: '20px' }}>
+              Connect your inbox and our AI monitors every incoming return request.
             </p>
-
             <div className="mini-ui">
-              <div className="email-campaign-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '16px', height: '16px', fill: '#0099ff' }}>
-                    <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>AI Inbox</div>
-                </div>
-                <div style={{ padding: '3px 10px', background: 'rgba(0, 150, 255, 0.1)', border: '1px solid rgba(0, 150, 255, 0.25)', borderRadius: '6px', fontSize: '10px', fontWeight: 700, color: '#0099ff', textTransform: 'uppercase' }}>Live</div>
-              </div>
-              <div className="recipient-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #4a1a6b, #6a2d8a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#fff' }}>LK</div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Lisa K.</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Return · 12m ago</div>
-                  </div>
-                </div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: '#00e0c0' }}>Saved! ✓</div>
-              </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, color: '#0099ff' }}>
+                 <div style={{ width: '6px', height: '6px', background: '#0099ff', borderRadius: '50%' }}></div>
+                 Inbox Polling
+               </div>
             </div>
           </div>
 
-          {/* STEP 3: Watch Growth */}
-          <div className="step-card">
-            <div className="step-top">
-              <div className="step-number">03</div>
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="#00e0c0">
-                  <line x1="12" y1="20" x2="12" y2="10" />
-                  <line x1="18" y1="20" x2="18" y2="4" />
-                  <line x1="6" y1="20" x2="6" y2="16" />
-                </svg>
-              </div>
+          {/* STEP 3: Save Revenue */}
+          <div className="step-card reveal">
+            <div className="step-icon-wrap" style={{ background: 'rgba(255,160,50,0.1)', borderColor: 'rgba(255,160,50,0.2)' }}>
+              <svg viewBox="0 0 24 24" stroke="#ffa032" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="18" y1="20" x2="18" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="16" />
+              </svg>
             </div>
-
-            <div className="step-title">Watch Your Savings Grow</div>
-            <div className="step-tag" style={{ color: '#00e0c0' }}>Results from day one</div>
-            <p className="step-desc">
-              Every intercepted return saves you €15+ in logistics. Track savings, success rates, and negotiation
-              performance in real-time from your dashboard.
+            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>Save Revenue</div>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, marginBottom: '20px' }}>
+              Watch your savings grow as AI keeps your revenue in the store.
             </p>
-
             <div className="mini-ui">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>€4.8K</div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#00e0c0' }}>+€1.2K</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>vs last month</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '50px', gap: '4px' }}>
-                {[20, 35, 25, 45, 60, 85].map((h, i) => (
-                  <div key={i} style={{ flex: 1, height: h + '%', background: i === 5 ? '#00e0c0' : 'rgba(255,255,255,0.1)', borderRadius: '2px' }}></div>
-                ))}
-              </div>
+               <div style={{ fontSize: '16px', fontWeight: 800, color: '#00e0c0' }}>+€1,240</div>
+               <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>Saved this month</div>
             </div>
           </div>
         </div>
@@ -498,66 +395,68 @@ export function LandingPage() {
 
       {/* SPOTLIGHT SECTION */}
       <section className="spotlight-section">
-        <div className="spotlight-left">
-          <div className="section-badge">Core Technology</div>
-          <h2 className="spotlight-headline">
-            Turn Return Requests Into <span className="gradient-text">Retained Revenue</span>
+        <div className="spotlight-left reveal">
+          <div className="section-badge">Return Prevention</div>
+          <h2 className="section-title" style={{ textAlign: 'left' }}>
+            Turn Returns Into <span className="gradient-text">Retained Revenue</span>
           </h2>
-          <p className="spotlight-desc">
-            KeepMySale intercepts return requests and negotiates partial refunds with AI — saving you €15+ per
-            return on logistics alone.
+          <p className="hero-subtitle" style={{ textAlign: 'left' }}>
+            Negotiate partial refunds automatically with AI — saving you €15+ per return on logistics alone.
           </p>
 
-          <div className="spotlight-benefits">
-            <div className="benefit-item">
-              <div className="benefit-icon teal">
-                <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-              </div>
-              <div className="benefit-text">
-                <div className="benefit-name">Instant Detection</div>
-                <div className="benefit-desc">AI detects return intent in seconds — before you even see the ticket.</div>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '30px' }}>
+            <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+               <div className="feature-icon teal" style={{ width: '42px', height: '42px', flexShrink: 0 }}>
+                 <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+               </div>
+               <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700 }}>Instant Detection</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>AI detects return intent in seconds.</div>
+               </div>
             </div>
-            <div className="benefit-item">
-              <div className="benefit-icon blue">
-                <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-              </div>
-              <div className="benefit-text">
-                <div className="benefit-name">Escalating Offers</div>
-                <div className="benefit-desc">Starts with 20% store credit, then 35%, then 50% to save the sale.</div>
-              </div>
+            <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+               <div className="feature-icon teal" style={{ width: '42px', height: '42px', flexShrink: 0, background: 'rgba(0,150,255,0.1)', borderColor: 'rgba(0,150,255,0.2)' }}>
+                 <svg viewBox="0 0 24 24" stroke="#0099ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /></svg>
+               </div>
+               <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700 }}>Escalating Offers</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Starts with 20% credit, then 35%, then 50%.</div>
+               </div>
             </div>
           </div>
         </div>
 
         <div className="spotlight-right">
-          <div className="phone-mockup">
-            <div className="phone-notch"></div>
+          <div className="phone-mockup reveal">
             <div className="phone-inner">
               <div className="phone-store-header">
                 <div className="phone-store-icon">
-                  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                  <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                 </div>
-                <div className="phone-store-name">KeepMySale AI</div>
-                <div className="phone-store-label">Return Negotiation · #1084</div>
+                <div style={{ fontSize: '12px', fontWeight: 700 }}>Return Negotiations</div>
+                <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>Order #1084</div>
               </div>
-              <div className="negotiation-chat">
+
+              <div style={{ display: 'flex', flexDirection: 'column', height: '220px', marginTop: '10px' }}>
                 <div className={`chat-bubble customer ${spotlightStep >= 1 ? 'visible' : ''}`}>
-                  Hi, I'd like to return my order. The color is different.
+                  Hi, I'd like to return order #1084...
                 </div>
                 <div className={`chat-bubble ai ${spotlightStep >= 6 ? 'visible' : ''}`}>
-                  I'm sorry! How about 20% store credit (€8.40) to keep it?
+                  How about 35% store credit (€14.70) to keep the product?
                 </div>
-                <div className={`chat-bubble accept ${spotlightStep >= 7 ? 'visible' : ''}`}>
-                  ✓ Deal! I'll keep the item. Thanks!
+                <div className={`chat-bubble customer ${spotlightStep >= 7 ? 'visible' : ''}`} style={{ alignSelf: 'flex-start', background: 'rgba(0,200,180,0.1)', borderColor: 'rgba(0,200,180,0.2)' }}>
+                  ✓ Deal! I'll keep it.
                 </div>
               </div>
+
               <div className={`saved-banner ${spotlightStep >= 7 ? 'visible' : ''}`}>
-                <div className="saved-left">
-                  <div className="saved-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="saved-check">
+                    <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
+                  </div>
                   <div>
-                    <div className="saved-label">Sale Saved!</div>
-                    <div className="saved-sub">via 35% Store Credit</div>
+                    <div style={{ fontSize: '12px', fontWeight: 800 }}>Sale Saved!</div>
+                    <div style={{ fontSize: '9px', color: '#00e0c0', opacity: 0.7 }}>via Store Credit</div>
                   </div>
                 </div>
                 <div className="saved-amount">€{savedAmount.toFixed(2)}</div>
@@ -568,78 +467,53 @@ export function LandingPage() {
       </section>
 
       {/* AI ASSISTANT SECTION */}
-      <section className="ai-section" id="ai-assistant">
-        <div className="ai-left">
-          <div className="ai-badge">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0099ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            AI-Powered Support
-          </div>
-          <h2 className="ai-headline">Your AI Email Assistant</h2>
-          <p className="ai-subtitle">
-            Our AI learns your store's tone, reads every customer email, and drafts perfect responses automatically — from your own Gmail address.
+      <section className="ai-assistant-section">
+        <div className="ai-left reveal">
+          <div className="section-badge">AI Assistant</div>
+          <h2 className="section-title" style={{ textAlign: 'left' }}>Your AI Inbox Helper</h2>
+          <p className="hero-subtitle" style={{ textAlign: 'left' }}>
+            Our AI reads every customer email and drafts perfect responses automatically — from your own business address.
           </p>
-          <div className="ai-bullets">
-            <div className="ai-bullet">
-              <div className="ai-bullet-icon blue">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z" /><path d="M20 12a8 8 0 0 0-8-8v8h8z" opacity="0.4" /></svg>
-              </div>
-              <span className="ai-bullet-text">Learns your unique brand voice</span>
-            </div>
-            <div className="ai-bullet">
-              <div className="ai-bullet-icon teal">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
-              </div>
-              <span className="ai-bullet-text">Drafts personalized responses in seconds</span>
-            </div>
-            <div className="ai-bullet">
-              <div className="ai-bullet-icon green">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-              </div>
-              <span className="ai-bullet-text">Classifies WISMO, returns, and FAQ automatically</span>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
+             <div className="reveal" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0099ff' }}></div>
+               <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Learns your brand voice</span>
+             </div>
+             <div className="reveal" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00e0c0' }}></div>
+               <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Drafts responses in seconds</span>
+             </div>
           </div>
         </div>
 
         <div className="ai-right">
-          <div className="ai-card">
-            <div className="ai-card-header">
-              <div className="ai-card-header-icon">
-                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M8 9h8" /><path d="M8 13h4" /></svg>
-              </div>
-              <div>
-                <div className="ai-card-header-title">AI Response Generator</div>
-                <div className="ai-card-header-sub">Powered by your brand voice</div>
-              </div>
+          <div className="ai-card reveal">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+               <div className="ai-card-header-icon">
+                 <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+               </div>
+               <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700 }}>AI Email Draft</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Powered by brand voice</div>
+               </div>
             </div>
-            <div className="ai-card-body">
-              <div className={`customer-email ${aiStep >= 1 ? 'visible' : ''}`}>
-                <div className="customer-email-header">
-                  <div className="email-stars">
-                    {[1, 2, 3].map(i => <svg key={i} viewBox="0 0 24 24" style={{ fill: '#f5a623', width: '14px' }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>)}
-                    {[4, 5].map(i => <svg key={i} viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 2, width: '14px' }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>)}
-                  </div>
-                  <span className="customer-email-label">Customer Email</span>
+
+            <div className={`customer-email ${aiStep >= 1 ? 'visible' : ''}`}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>CUSTOMER EMAIL</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                  "When can I expect order #2847? Starting to get worried."
                 </div>
-                <div className="customer-email-text">
-                  "I placed order #2847 three days ago but haven't received any shipping update yet. When can I expect my package?"
-                </div>
-              </div>
-              <div className={`ai-draft ${aiStep >= 2 ? 'visible' : ''}`}>
-                <div className="ai-draft-header">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#0099ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></svg>
-                  <span className="ai-draft-label">AI Draft</span>
-                  <span className="ai-draft-tone">— Professional</span>
-                </div>
-                <div className="ai-draft-text">
-                  "{aiTypedMessage}"<span className={aiStep < 3 ? 'typed-cursor' : 'hidden'}></span>
+            </div>
+
+            <div className={`ai-draft ${aiStep >= 2 ? 'visible' : ''}`}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#0099ff', marginBottom: '6px' }}>AI SUGGESTION — PROFESSIONAL TONE</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+                   {aiTypedMessage}<span className="typed-cursor"></span>
                 </div>
                 <div className={`ai-draft-actions ${aiStep >= 3 ? 'visible' : ''}`}>
-                  <button className="action-btn primary" onClick={() => alert('Demo approved!')}>Approve</button>
-                  <button className="action-btn secondary">Edit</button>
+                    <button className="action-btn primary">Approve</button>
+                    <button className="action-btn secondary">Edit</button>
                 </div>
-              </div>
             </div>
           </div>
         </div>
@@ -647,56 +521,28 @@ export function LandingPage() {
 
       {/* NICHES SECTION */}
       <section className="niches-section" id="niches">
-        <div className="niches-header">
-          <div className="niches-badge">Built For You</div>
-          <h2 className="niches-title">Perfect for Every Shopify Niche</h2>
+        <div className="section-header reveal">
+           <div className="section-badge">Built For You</div>
+           <h2 className="section-title">Perfect for Every Shopify Niche</h2>
         </div>
         <div className="niches-grid">
-          <div className={`niche-card ${activeNiche === 0 ? 'active' : ''}`}>
-            <div className="niche-icon orange">
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46L16 2 12 5.5 8 2 3.62 3.46a1 1 0 0 0-.62 1.18l2.44 10.88A1 1 0 0 0 6.42 16H17.58a1 1 0 0 0 .98-.48L21 4.64a1 1 0 0 0-.62-1.18z" /><path d="M12 5.5V16" /></svg>
+          {[
+            { id: 0, name: "Fashion & Apparel", desc: "Reduce sizing returns by 60%", icon: "orange", path: "M20.38 3.46L16 2 12 5.5 8 2 3.62 3.46a1 1 0 0 0-.62 1.18l2.44 10.88A1 1 0 0 0 6.42 16H17.58a1 1 0 0 0 .98-.48L21 4.64a1 1 0 0 0-.62-1.18z" },
+            { id: 1, name: "Electronics", desc: "Save on device return costs", icon: "amber", path: "M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" },
+            { id: 2, name: "Beauty & Skincare", desc: "Turn churn into loyal fans", icon: "teal", path: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" },
+            { id: 3, name: "Home & Living", desc: "Eliminate bulky return logistics", icon: "blue", path: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" },
+            { id: 4, name: "Sports & Fitness", desc: "Keep profit in your store", icon: "pink", path: "M12 8v4l3 3" }
+          ].map((niche) => (
+            <div key={niche.id} className={`niche-card reveal ${activeNiche === niche.id ? 'active' : ''}`}>
+              <div className={`niche-icon ${niche.icon}`}>
+                <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={niche.path} />
+                </svg>
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>{niche.name}</div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{niche.desc}</div>
             </div>
-            <div className="niche-text">
-              <div className="niche-name">Fashion & Apparel</div>
-              <div className="niche-desc">Reduce sizing-related returns by up to 60%</div>
-            </div>
-          </div>
-          <div className={`niche-card ${activeNiche === 1 ? 'active' : ''}`}>
-            <div className="niche-icon amber" style={{ background: 'rgba(240, 180, 40, 0.1)', border: '1px solid rgba(240, 180, 40, 0.2)' }}>
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="#f0b428"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
-            </div>
-            <div className="niche-text">
-              <div className="niche-name">Electronics</div>
-              <div className="niche-desc">Save on costly device return shipping</div>
-            </div>
-          </div>
-          <div className={`niche-card ${activeNiche === 2 ? 'active' : ''}`}>
-            <div className="niche-icon teal">
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /></svg>
-            </div>
-            <div className="niche-text">
-              <div className="niche-name">Beauty & Skincare</div>
-              <div className="niche-desc">Turn dissatisfied buyers into loyal fans</div>
-            </div>
-          </div>
-          <div className={`niche-card ${activeNiche === 3 ? 'active' : ''}`}>
-            <div className="niche-icon blue">
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
-            </div>
-            <div className="niche-text">
-              <div className="niche-name">Home & Living</div>
-              <div className="niche-desc">Eliminate bulky furniture return costs</div>
-            </div>
-          </div>
-          <div className={`niche-card ${activeNiche === 4 ? 'active' : ''}`}>
-             <div className="niche-icon pink" style={{ background: 'rgba(220, 80, 180, 0.1)', border: '1px solid rgba(220, 80, 180, 0.2)' }}>
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="#dc50b4"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg>
-            </div>
-            <div className="niche-text">
-              <div className="niche-name">Sports & Fitness</div>
-              <div className="niche-desc">Keep fit-related returns at zero cost</div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -749,14 +595,48 @@ export function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="site-footer">
-        <div className="footer-divider"></div>
-        <div className="footer-bottom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '40px', opacity: 0.6, fontSize: '13px' }}>
-          <p>© 2026 KeepMySale. All rights reserved.</p>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/terms">Terms of Service</Link>
-          </div>
+      <footer className="footer reveal">
+        <div className="footer-grid">
+           <div>
+              <Link href="/" className="nav-logo" style={{ marginBottom: '20px' }}>
+                <div className="nav-logo-icon">K</div>
+                <div className="nav-logo-text">Keep<span>My</span>Sale</div>
+              </Link>
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+                The AI helpdesk that handles your tickets and keeps your revenue.
+              </p>
+           </div>
+           <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Product</div>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+              </ul>
+           </div>
+           <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Company</div>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="/privacy">Privacy Policy</a></li>
+              </ul>
+           </div>
+           <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Support</div>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#">Documentation</a></li>
+                <li><a href="#">API Status</a></li>
+              </ul>
+           </div>
+        </div>
+        <div style={{ marginTop: '60px', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
+           <p>© 2026 KeepMySale. All rights reserved.</p>
+           <div style={{ display: 'flex', gap: '20px' }}>
+              <a href="#">Twitter</a>
+              <a href="#">LinkedIn</a>
+           </div>
         </div>
       </footer>
     </div>
