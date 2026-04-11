@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { LandingPage } from "@/components/landing-page";
+import { Homepage2Client } from "@/components/homepage2-client";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ shop?: string }> }) {
   const sp = await searchParams;
@@ -15,5 +15,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
     redirect("/dashboard");
   }
 
-  return <LandingPage />;
+  return <Homepage2Client />;
 }
