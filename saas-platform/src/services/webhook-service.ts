@@ -12,7 +12,7 @@ import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { formatEmailResponse } from "@/lib/email/template";
-import { extractCleanEmail } from "@/lib/email/parser";
+import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
 
 export interface IInboundEmailInput {
   messageId: string;
@@ -44,9 +44,9 @@ export class WebhookService {
   }
 
   async handleInboundEmail(input: IInboundEmailInput) {
-    // TODO: Implement full AWS SNS signature verification before production.
-    // Current route-level validation only checks payload shape.
-
+    // 0. Clean the body
+    const cleanBody = stripHtml(input.textBody || "");
+    
     const existingByExternalId = await this.messageService.findByExternalMessageId(
       input.merchantId,
       input.messageId,
@@ -81,7 +81,7 @@ export class WebhookService {
       merchantId: input.merchantId,
       sender: "customer",
       channel: "email",
-      content: input.textBody,
+      content: cleanBody,
       externalMessageId: input.messageId,
       metadata: { 
         direction: "inbound", 
@@ -91,7 +91,7 @@ export class WebhookService {
       },
     });
 
-    const classification = await this.aiService.classifyIntent(input.textBody);
+    const classification = await this.aiService.classifyIntent(cleanBody);
     console.log("[WEBHOOK] Classification:", JSON.stringify(classification));
 
     const history = await this.messageService.findByConversation(conversation.id);
@@ -135,13 +135,16 @@ export class WebhookService {
     }
 
     const action = await this.aiService.buildAutomatedAction({
-      incomingText: input.textBody,
+      incomingText: cleanBody,
       history: recentHistory,
       orderNameGuess: classification.extracted_order_number ?? undefined,
+      customerName: customer.name || undefined,
+      storeName: merchant.shopName || undefined,
       shopDomain: merchant.shopDomain,
       shopAccessToken: decryptedShopifyAccessToken,
       merchantSettings: merchant.settings,
     });
+
     console.log("[WEBHOOK] Action:", action.action);
     console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
     console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);

@@ -28,7 +28,14 @@ export async function POST(
       return apiError("NOT_FOUND", "Negotiation not found", 404);
     }
 
-    const updated = await negotiationService.finalizeRefund(id);
+    const { action, rejectionReason } = await req.json().catch(() => ({ action: "approve" }));
+
+    let updated;
+    if (action === "reject") {
+      updated = await negotiationService.rejectManualRefund(id, rejectionReason || "Rejected by merchant");
+    } else {
+      updated = await negotiationService.approveManualRefund(id);
+    }
     
     return apiResponse({ 
       success: true, 
@@ -36,6 +43,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error("[negotiation refund POST] Error:", error);
-    return apiError("INTERNAL_ERROR", error.message || "Failed to execute refund", 500);
+    return apiError("INTERNAL_ERROR", error.message || "Failed to process refund action", 500);
   }
 }

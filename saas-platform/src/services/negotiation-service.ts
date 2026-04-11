@@ -8,6 +8,7 @@ import { RefundLogsDal } from "@/dal/refund-logs";
 import { OrdersDal } from "@/dal/orders";
 import { ConversationsDal } from "@/dal/conversations";
 import { RefundService } from "@/services/refund-service";
+import { ShopifyService } from "@/services/shopify-service";
 
 export type TCustomerNegotiationInput =
   | "accept_offer"
@@ -103,6 +104,7 @@ export class NegotiationService {
   private readonly ordersDal: OrdersDal;
   private readonly conversationsDal: ConversationsDal;
   private readonly refundService: RefundService;
+  private readonly shopifyService: ShopifyService;
 
   constructor(private readonly supabase: SupabaseClient) {
     this.negotiationsDal = new NegotiationsDal(supabase);
@@ -110,6 +112,7 @@ export class NegotiationService {
     this.ordersDal = new OrdersDal(supabase);
     this.conversationsDal = new ConversationsDal(supabase);
     this.refundService = new RefundService(supabase);
+    this.shopifyService = new ShopifyService(supabase);
   }
 
   findById(id: string) {
@@ -291,22 +294,81 @@ export class NegotiationService {
     return updated;
   }
 
-  async finalizeRefund(id: string): Promise<INegotiation> {
+  async approveManualRefund(id: string): Promise<INegotiation> {
     const negotiation = await this.negotiationsDal.findById(id);
     if (!negotiation) throw new Error("Negotiation not found");
-    if (negotiation.status !== "offer_accepted") {
-      throw new Error(`Refund can only be finalized for 'offer_accepted' negotiations (current: ${negotiation.status})`);
-    }
+    if (!negotiation.orderId) throw new Error("Negotiation has no order");
 
-    // Execute the actual Shopify refund
-    await this.refundService.executeRefund(id);
+    const order = await this.ordersDal.findById(negotiation.orderId);
+    if (!order) throw new Error("Order not found");
 
-    // Update status to completed and set completedAt
+    const amount = negotiation.finalRefundAmount;
+    if (!amount || amount <= 0) throw new Error("No valid refund amount found");
+
+    // Execute Shopify Refund
+    const refund = await this.shopifyService.processPartialRefund(
+      negotiation.merchantId,
+      order.shopifyOrderId,
+      amount,
+      order.currency || "EUR"
+    );
+
+    // Update Negotiation
     const updated = await this.negotiationsDal.update(id, {
+      isManualRefundRequired: false,
       status: "completed",
+      shopifyRefundId: String(refund.id),
       completedAt: new Date().toISOString(),
     });
 
+    // Log Refund
+    await this.refundLogsDal.create({
+      merchantId: updated.merchantId,
+      negotiationId: updated.id,
+      orderId: updated.orderId,
+      customerId: updated.customerId,
+      action: "partial_refund_accepted",
+      amount,
+      currency: order.currency || "EUR",
+      shopifyRefundId: String(refund.id),
+      customerConsentRecorded: true,
+      auditDetails: {
+        manual_approval: true,
+        shopify_refund_id: refund.id,
+      },
+    });
+
     return updated;
+  }
+
+  async rejectManualRefund(id: string, reason: string): Promise<INegotiation> {
+    const negotiation = await this.negotiationsDal.findById(id);
+    if (!negotiation) throw new Error("Negotiation not found");
+
+    const updated = await this.negotiationsDal.update(id, {
+      isManualRefundRequired: false,
+      status: "escalated",
+      refundRejectionReason: reason || "Rejected by merchant",
+    });
+
+    await this.refundLogsDal.create({
+      merchantId: updated.merchantId,
+      negotiationId: updated.id,
+      orderId: updated.orderId,
+      customerId: updated.customerId,
+      action: "escalated",
+      customerConsentRecorded: false,
+      auditDetails: {
+        manual_rejection: true,
+        reason,
+      },
+    });
+
+    return updated;
+  }
+
+  async finalizeRefund(id: string): Promise<INegotiation> {
+    // Legacy method - redirecting to approveManualRefund or keeping for automated flows
+    return this.approveManualRefund(id);
   }
 }

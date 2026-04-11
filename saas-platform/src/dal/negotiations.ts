@@ -29,6 +29,8 @@ function mapNegotiationRow(row: NegotiationRow): INegotiation {
     returnReason: (row.return_reason as string | null) ?? null,
     customerFeedback: (row.customer_feedback as string | null) ?? null,
     auditPdfUrl: (row.audit_pdf_url as string | null) ?? null,
+    isManualRefundRequired: Boolean(row.is_manual_refund_required ?? false),
+    refundRejectionReason: (row.refund_rejection_reason as string | null) ?? null,
     completedAt: (row.completed_at as string | null) ?? null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -106,6 +108,8 @@ export class NegotiationsDal {
         shopify_refund_id: input.shopifyRefundId ?? null,
         return_reason: input.returnReason ?? null,
         customer_feedback: input.customerFeedback ?? null,
+        is_manual_refund_required: input.isManualRefundRequired ?? false,
+        refund_rejection_reason: input.refundRejectionReason ?? null,
       })
       .select("*")
       .single();
@@ -131,6 +135,8 @@ export class NegotiationsDal {
         savings: input.savings,
         audit_pdf_url: input.auditPdfUrl,
         completed_at: input.completedAt,
+        is_manual_refund_required: input.isManualRefundRequired,
+        refund_rejection_reason: input.refundRejectionReason,
       })
       .eq("id", id)
       .select("*")

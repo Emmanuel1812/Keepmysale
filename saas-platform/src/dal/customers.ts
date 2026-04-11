@@ -116,12 +116,31 @@ export class CustomersDal {
     }
 
     try {
-      return await this.create(input);
+      // Ensure we are sending clean data
+      const toInsert = {
+        merchant_id: input.merchantId,
+        email: input.email?.trim().toLowerCase() ?? null,
+        phone: input.phone?.trim() ?? null,
+        name: input.name?.trim() ?? null,
+        shopify_customer_id: input.shopifyCustomerId ?? null,
+        language: input.language ?? "nl",
+        metadata: input.metadata ?? {},
+      };
+
+      const { data, error } = await this.supabase
+        .from("customers")
+        .insert(toInsert)
+        .select("*")
+        .single();
+        
+      if (error || !data) throw error ?? new Error("Could not create customer");
+      return mapCustomerRow(data as CustomerRow);
     } catch (err: any) {
       // Handle race condition: if another process inserted the customer in the meantime (Error 23505)
       // Retry the search once.
-      if (err.code === "23505") {
+      if (err.code === "23505" || err.message?.includes("unique constraint")) {
         console.log("[DAL] Retrying findOrCreate due to unique constraint violation (race condition).");
+        // Clear cached or stale info by just recurring once
         return this.findOrCreate(input);
       }
       throw err;

@@ -18,10 +18,10 @@ export default async function OnboardingPage({
   }
 
   // Determine current step
-  const currentStep = sp.step || "rules"; // Default to rules if skip or after install
+  const currentStep = sp.step || "shopify"; // Start at shopify by default
   const steps = ["Connect Shopify", "Configure Rules", "Connect Email"];
   
-  let activeIndex = 1;
+  let activeIndex = 0;
   if (currentStep === "shopify") activeIndex = 0;
   if (currentStep === "rules") activeIndex = 1;
   if (currentStep === "email") activeIndex = 2;

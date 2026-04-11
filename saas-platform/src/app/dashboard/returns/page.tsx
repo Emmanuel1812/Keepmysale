@@ -29,6 +29,8 @@ interface EnrichedNegotiation {
   shopifyRefundId: string | null;
   shopifyOrderId: string | null;
   shopDomain: string;
+  isManualRefundRequired: boolean;
+  refundRejectionReason: string | null;
 }
 
 export default function ReturnsPage() {
@@ -54,21 +56,22 @@ export default function ReturnsPage() {
     }
   }
 
-  const handleIssueRefund = async (negId: string) => {
+  const handleManualAction = async (negId: string, action: "approve" | "reject", reason?: string) => {
     if (processingRefund) return;
     setProcessingRefund(true);
     setRefundError(null);
     try {
       const response = await fetch(`/api/negotiations/${negId}/refund`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, rejectionReason: reason }),
       });
       const data = await response.json();
       if (data.success) {
-        // Reload list and close modal or update selected
         await loadNegotiations();
         setSelectedNeg(null);
       } else {
-        setRefundError(data.error?.message || "Failed to execute refund. Ensure Shopify Payments is active.");
+        setRefundError(data.error?.message || `Failed to ${action} refund.`);
       }
     } catch (err) {
       setRefundError("A network error occurred.");
@@ -96,10 +99,16 @@ export default function ReturnsPage() {
     return true;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (neg: EnrichedNegotiation) => {
+    const { status, isManualRefundRequired } = neg;
+    
+    if (isManualRefundRequired) {
+      return <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20 animate-pulse">Action Required ⚡</span>;
+    }
+
     switch (status) {
       case "offer_accepted":
-        return <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Action Required ⚡</span>;
+        return <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Awaiting Sync</span>;
       case "offer_sent":
       case "initiated":
       case "offer_rejected":
@@ -108,7 +117,7 @@ export default function ReturnsPage() {
         return <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/20">Completed ✅</span>;
       case "return_initiated":
       case "escalated":
-        return <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-600/20">Return Started</span>;
+        return <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-600/20">Return / Escalated</span>;
       case "expired":
       default:
         return <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">Expired</span>;
@@ -209,7 +218,7 @@ export default function ReturnsPage() {
                     <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
                     <th className="px-5 py-3.5 whitespace-nowrap">Current Step</th>
                     <th className="px-5 py-3.5 whitespace-nowrap text-right">Offered</th>
-                    <th className="px-5 py-3.5 whitespace-nowrap text-right">Savings</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap text-right text-emerald-600">Savings</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -240,7 +249,7 @@ export default function ReturnsPage() {
                           {formatCurrency(neg.orderValue, neg.currency)}
                         </td>
                         <td className="whitespace-nowrap px-5 py-4">
-                          {getStatusBadge(neg.status)}
+                          {getStatusBadge(neg)}
                         </td>
                         <td className="whitespace-nowrap px-5 py-4 text-zinc-600 dark:text-zinc-400 text-xs">
                           {neg.currentStep > 0 ? `Step ${neg.currentStep} (${latestOffer?.percentage || 0}%)` : "Initiating"}
@@ -281,7 +290,7 @@ export default function ReturnsPage() {
                 <p className="text-sm text-zinc-500">Order Value: {formatCurrency(selectedNeg.orderValue, selectedNeg.currency)}</p>
               </div>
               <div>
-                {getStatusBadge(selectedNeg.status)}
+                {getStatusBadge(selectedNeg)}
               </div>
             </div>
 
@@ -338,25 +347,39 @@ export default function ReturnsPage() {
               </div>
             )}
 
-            {selectedNeg.status === "offer_accepted" && (
+            {selectedNeg.isManualRefundRequired && (
               <div className="mt-6 space-y-3">
                 <div className="rounded-lg bg-amber-50 border border-amber-100 p-4 dark:bg-amber-900/20 dark:border-amber-800/50">
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                    ⚡ Offer Accepted by Customer
+                    ⚡ Offer Accepted - Manual Approval Required
                   </p>
                   <p className="text-xs text-amber-700 mt-1">
                     The customer has agreed to a partial refund of <strong>{formatCurrency(selectedNeg.offers[selectedNeg.offers.length - 1]?.amount || 0, selectedNeg.currency)}</strong>. 
-                    Click below to issue the refund via Shopify.
+                    Review the negotiation details below before issuing the refund.
                   </p>
                   {refundError && <p className="mt-2 text-xs font-bold text-red-600">{refundError}</p>}
                 </div>
-                <button 
-                  onClick={() => handleIssueRefund(selectedNeg.id)}
-                  disabled={processingRefund}
-                  className="w-full flex items-center justify-center gap-2 rounded-md bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors disabled:opacity-50"
-                >
-                  {processingRefund ? "Processing..." : "Issue Partial Refund & Resolve"}
-                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => handleManualAction(selectedNeg.id, "approve")}
+                    disabled={processingRefund}
+                    className="flex items-center justify-center gap-2 rounded-md bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    {processingRefund ? "Processing..." : "Approve Refund"}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const reason = window.prompt("Reason for rejection (sent to audit log):");
+                      if (reason !== null) handleManualAction(selectedNeg.id, "reject", reason);
+                    }}
+                    disabled={processingRefund}
+                    className="flex items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+                  >
+                    Reject & Escalated
+                  </button>
+                </div>
+
                 <div className="text-center">
                    {selectedNeg.shopDomain && selectedNeg.shopifyOrderId ? (
                      <a 

@@ -22,4 +22,30 @@ export function extractCleanEmail(input: string): string {
   // 3. Last fallback: trim and lowercase
   return input.trim().toLowerCase();
 }
+/**
+ * Robustly strips HTML tags and styles from a string.
+ */
+export function stripHtml(html: string): string {
+  if (!html) return "";
+  
+  // 1. Remove style, script, and head tags and their content
+  let text = html.replace(/<(style|script|head)[^>]*>[\s\S]*?<\/\1>/gi, "");
+  
+  // 2. Remove comments
+  text = text.replace(/<!--[\s\S]*?-->/g, "");
 
+  // 3. Remove all other tags
+  text = text.replace(/<[^>]+>/g, " ");
+  
+  // 4. Decode common HTML entities
+  text = text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+    
+  // 5. Normalize whitespace
+  return text.replace(/\s+/g, " ").trim();
+}

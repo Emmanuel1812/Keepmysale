@@ -87,7 +87,9 @@ export class AutomationService {
       "belastingdienst", "mollie.com", "stripe.com",
       "paypal.com", "bank", "payment",
       "ing.com", "ing.nl", "rabobank.nl", "abnamro.nl",
-      "bunq.com", "knab.nl", "triodos.nl", "revolut.com"
+      "bunq.com", "knab.nl", "triodos.nl", "revolut.com",
+      "fiscaal-online.nl", "fiscale-online.nl", "fisc-online.nl",
+      "kvk.nl", "belasting", "newsletter", "nieuwsbrief"
     ];
     
     const fromLower = email.from.toLowerCase();
@@ -114,7 +116,16 @@ export class AutomationService {
       /webwinkel vakdagen/i,
       /automatic reply.*:/i,
       /auto.*reply.*:/i,
+      /fiscaal/i,
+      /nieuwsbrief/i,
+      /advertisement/i,
+      /vacture/i,
+      /doorsturen/i,
+      /factuur/i,
+      /betaling/i,
+      /herinnering/i,
     ];
+
     
     if (bulkSubjects.some(p => p.test(email.subject))) return false;
     

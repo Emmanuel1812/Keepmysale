@@ -69,7 +69,7 @@ export class AiService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -100,16 +100,22 @@ export class AiService {
         reasoning: "Gemini classification unavailable fallback.",
       };
     }
-  }  async buildAutomatedAction(input: {
+  }
+
+  async buildAutomatedAction(input: {
     incomingText: string;
     history?: Array<{ role: "user" | "assistant"; content: string }>;
     orderNameGuess?: string;
+    customerName?: string;
+    storeName?: string;
     shopDomain: string;
     shopAccessToken: string;
     merchantSettings: IMerchantSettings;
   }): Promise<ActionResult> {
     const intentResult = await this.classifyIntent(input.incomingText);
     const preferredLanguage = input.merchantSettings.language ?? "nl";
+    const customerName = input.customerName || "Klant";
+    const storeName = input.storeName || input.shopDomain.replace(".myshopify.com", "");
 
     const messagesByLanguage = {
       nl: {
@@ -181,46 +187,43 @@ export class AiService {
           - Status: ${order.financialStatus}
           - Fulfillment: ${order.fulfillmentStatus}
           - Tracking: ${order.trackingNumber || "geen"}
-          - Producten: ${lineItemsStr}
+          - Producten in deze order: ${lineItemsStr}
           - Totaal: ${order.totalPrice} ${order.currency}
         `;
       }
-    }
-
-    if (intentResult.intent === "resend_confirmation") {
-      resultAction = {
-        action: "send_confirmation",
-        messageBody: localText.resend,
-      };
     }
 
     // Dynamic handling for WISMO or General if we have order context
     if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other")) {
       try {
         const model = this.geminiClient.getGenerativeModel({
-          model: "gemini-2.0-flash", // Use 2.0 flash as requested in settings or standard
+          model: "gemini-2.0-flash",
           generationConfig: { responseMimeType: "application/json" },
         });
 
         const prompt = `
-        Je bent een klantenservice medewerker. 
-        Beantwoord de vraag op basis van de order info.
-        Als de klant vraagt naar producten, toon de line items. 
-        Als de klant vraagt naar tracking, toon het trackingnummer. 
-        Wees behulpzaam en kort.
+        Je bent een professionele klantenservice medewerker voor de webshop genaamd '${storeName}'. 
+        Je spreekt de klant aan met '${customerName}'.
+        
+        RICHTLIJNEN VOOR JE ANTWOORD:
+        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName} (bijv. "Beste ${customerName}," of "Hoi ${customerName},").
+        2. TONE-OF-VOICE: Wees uiterst behulpzaam, professioneel, kalm en empathisch. Gebruik volledige, goed geformuleerde zinnen. Vermijd korte, robotachtige antwoorden.
+        3. ACCURAATHEID & SOURCE OF TRUTH: 
+           - Als de klant vraagt naar de INHOUD van de order, wat er in het pakket zit, of welke PRODUCTEN er besteld zijn: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder. Dit is de enige bron van waarheid voor productinhoud.
+           - Als de klant vraagt naar de STATUS of TRACKING: geef dan het trackingnummer en de status (indien beschikbaar).
+           - Gebruik ALTIJD de verstrekte Order Context.
+        4. AFSLUITING: Eindig altijd met een professionele groet (bijv. "Met vriendelijke groet,") gevolgd door de naam van de shop: '${storeName}'.
         
         Taal: ${preferredLanguage}
         
         Order Context:
         ${orderContext}
         
-        BELANGRIJK: Als de klant vraagt naar de inhoud van de order of welke producten erin zitten, som dan ALTIJD de producten op die je ziet bij 'Producten' in de context hierboven.
-        
         Klantvraag: ${input.incomingText}
         
         Return ONLY valid JSON:
         {
-          "messageBody": "jouw antwoord tekst hier"
+          "messageBody": "jouw volledige antwoord tekst hier inclusief aanhef en afsluiting"
         }
         `;
 
@@ -238,7 +241,7 @@ export class AiService {
         if (intentResult.intent === "wismo" && order?.trackingNumber) {
           resultAction = {
             action: "send_tracking_status",
-            messageBody: localText.tracking(order.name, order.trackingNumber),
+            messageBody: `Beste ${customerName},\n\nJe bestelling ${order.name} heeft trackingnummer ${order.trackingNumber}.\n\nMet vriendelijke groet,\n${storeName}`,
           };
         }
       }
@@ -248,7 +251,7 @@ export class AiService {
       // Dynamic negotiation via Gemini
       try {
         const model = this.geminiClient.getGenerativeModel({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.0-flash",
           generationConfig: { responseMimeType: "application/json" },
         });
 
@@ -257,29 +260,31 @@ export class AiService {
           .join("\n");
 
         const negotiationPrompt = `
-        Je bent een klantenservice assistent. De klant wil iets retourneren of is in gesprek over een retour.
-        Beantwoord de vraag op basis van de order info.
-        ${orderContext ? "Als de klant vraagt naar producten, toon de line items. Als de klant vraagt naar tracking, toon het trackingnummer." : "LET OP: Je hebt GEEN orderinformatie kunnen vinden. Vraag de klant vriendelijk om hun ordernummer (bijv. #1234) zodat je ze verder kunt helpen met hun retourverzoek."}
-        Wees behulpzaam en kort.
+        Je bent een professionele klantenservice medewerker voor de webshop genaamd '${storeName}'. 
+        Je spreekt de klant aan met '${customerName}'.
 
+        De klant wil iets retourneren of is in gesprek over een retour.
+        
+        RICHTLIJNEN VOOR JE ANTWOORD:
+        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName} (bijv. "Beste ${customerName}," of "Hoi ${customerName},").
+        2. TONE-OF-VOICE: Wees uiterst behulpzaam, professioneel, kalm en empathisch. Gebruik volledige, geruststellende zinnen.
+        3. ACCURAATHEID & SOURCE OF TRUTH: 
+           - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
+           - Gebruik ALTIJD de verstrekte Order Context als bron van waarheid.
+        4. STRATEGIE:
+           - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
+           - De merchant heeft de volgende stappen ingesteld voor kortingen:
+           ${(input.merchantSettings.negotiation_offers || [])
+             .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
+             .join("\n")}
+           - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt. Focus op het gebaar en de oplossing.
+        5. AFSLUITING: Eindig altijd met een professionele groet (bijv. "Met vriendelijke groet,") gevolgd door de naam van de shop: '${storeName}'.
 
         Taal: ${preferredLanguage}
         
         Order Context:
         ${orderContext}
 
-        BELANGRIJK: Als de klant vraagt naar de inhoud van de order of welke producten erin zitten, som dan ALTIJD de producten op die je ziet bij 'Producten' in de context hierboven.
-
-        Regels van de merchant:
-        - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
-        - Tone of voice: Hulpvaardig, professioneel, maar gericht op het behouden van de verkoop.
-        - De merchant heeft de volgende stappen ingesteld voor kortingen:
-        ${(input.merchantSettings.negotiation_offers || [])
-          .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
-          .join("\n")}
-        - BELANGRIJK: Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant erom vraagt. Begin met een algemeen voorstel voor een gedeeltelijke terugbetaling om te zien of ze openstaan voor een alternatief voor retourneren.
-
-        
         Chatgeschiedenis:
         ${historyContext}
         
@@ -287,12 +292,12 @@ export class AiService {
         ${input.incomingText}
         
         Opdracht: 
-        1. Analyseer of de klant akkoord gaat met een aanbod, het afwijst, of dat we gewoon door moeten praten.
-        2. Schrijf een natuurlijk antwoord. Als we al een voorstel hebben gedaan en de klant vraagt om details of gaat akkoord, reageer daar dan inhoudelijk op. Maak het antwoord kort en krachtig (max 3-4 zinnen).
+        1. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
+        2. Schrijf een natuurlijk, professioneel antwoord inclusief aanhef en afsluiting.
         
         Return ONLY valid JSON with this shape:
         {
-          "messageBody": "jouw antwoord tekst hier",
+          "messageBody": "jouw volledige antwoord tekst hier inclusief aanhef en afsluiting",
           "negotiationDecision": "accept" | "reject" | "continue"
         }
         `;

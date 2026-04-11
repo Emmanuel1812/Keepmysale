@@ -38,6 +38,8 @@ export interface INegotiation {
   returnReason: string | null;
   customerFeedback: string | null;
   auditPdfUrl: string | null;
+  isManualRefundRequired: boolean;
+  refundRejectionReason: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +61,8 @@ export interface INegotiationCreate {
   shopifyRefundId?: string | null;
   returnReason?: string | null;
   customerFeedback?: string | null;
+  isManualRefundRequired?: boolean;
+  refundRejectionReason?: string | null;
 }
 
 export interface INegotiationUpdate extends Partial<INegotiationCreate> {
