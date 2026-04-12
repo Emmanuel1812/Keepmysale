@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<any> }
 ) {
   const { id } = await params;
   const conversationId = id;
