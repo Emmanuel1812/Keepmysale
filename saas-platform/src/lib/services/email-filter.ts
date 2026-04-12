@@ -47,7 +47,7 @@ export class EmailFilterService {
       "hubspot.com", "klaviyo.com",
       // Other high-traffic spammy domains from previous version
       "uber.com", "tiktok.com", "facebook.com", "facebookmail.com", "instagram.com", 
-      "twitter.com", "linkedin.com", "pinterest.com", "google.com", "netlify.com", 
+      "twitter.com", "linkedin.com", "pinterest.com", "netlify.com", 
       "vercel.com", "github.com"
     ];
 

@@ -27,6 +27,7 @@ export interface IConversation {
   shopifyOrderId: string | null;
   lastMessageAt: string;
   lastMessageSenderType?: string | null;
+  lastMessageContent?: string | null;
   resolvedAt: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;

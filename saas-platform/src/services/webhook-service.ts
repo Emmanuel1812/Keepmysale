@@ -76,6 +76,9 @@ export class WebhookService {
       metadata: { source: "ses_webhook" },
     });
 
+    console.log(`[WEBHOOK] Processing inbound email from: ${input.from} | Subject: ${input.subject}`);
+    console.log(`[WEBHOOK] Body snippet: ${cleanBody.substring(0, 500)}`);
+
     await this.messageService.create({
       conversationId: conversation.id,
       merchantId: input.merchantId,
@@ -92,7 +95,7 @@ export class WebhookService {
     });
 
     const classification = await this.aiService.classifyIntent(cleanBody);
-    console.log("[WEBHOOK] Classification:", JSON.stringify(classification));
+    console.log("[WEBHOOK] Classification Result:", JSON.stringify(classification, null, 2));
     const settings = merchant.settings;
 
     // ── Settings Guard: do_not_engage_subjects ──────────────────
@@ -101,7 +104,7 @@ export class WebhookService {
       const subjectLower = (input.subject || "").toLowerCase();
       const blocked = doNotEngage.find((s) => subjectLower.includes(s.toLowerCase()));
       if (blocked) {
-        console.log(`[WEBHOOK] Subject blocked by do_not_engage_subjects: "${blocked}"`);
+        console.log(`[WEBHOOK] Subject BLOCKED by rule: "${blocked}"`);
         logger({
           level: "info",
           eventType: "automation.blocked.do_not_engage",
@@ -129,13 +132,13 @@ export class WebhookService {
     const confidenceThreshold = settings.requires_human_threshold ?? 0.6;
     const belowThreshold = classification.confidence < confidenceThreshold;
     if (belowThreshold) {
-      console.log(`[WEBHOOK] Confidence ${classification.confidence} below threshold ${confidenceThreshold} — flagging for human review`);
+      console.log(`[WEBHOOK] FLAG: Confidence ${classification.confidence} is below the threshold of ${confidenceThreshold}`);
     }
 
     const shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
+    console.log(`[WEBHOOK] Auto-reply Decision -> shouldAutoReply: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
 
     const history = await this.messageService.findByConversation(conversation.id);
-    // Beperk tot laatste 10 berichten om token-limiet te besparen
     const recentHistory = history.slice(-10).map((m) => ({
       role: m.sender === "customer" ? ("user" as const) : ("assistant" as const),
       content: m.content,

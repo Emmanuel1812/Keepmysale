@@ -17,6 +17,7 @@ interface ApiConversation {
   aiResolved: boolean;
   lastMessageAt: string;
   lastMessageSenderType: string | null;
+  lastMessageContent: string | null;
   customer?: { name?: string | null; email?: string | null };
 }
 
@@ -235,8 +236,8 @@ export function InboxSidebar() {
                     <span className="text-xs font-medium text-zinc-400 whitespace-nowrap pt-0.5">{timeAgo}</span>
                   </div>
 
-                  <p className={`text-sm truncate ${isUnanswered ? "font-semibold text-zinc-900" : "font-medium text-zinc-700"}`}>
-                    {item.subject ?? "No Subject"}
+                  <p className={`text-sm truncate ${isUnanswered ? "font-semibold text-zinc-900" : "font-medium text-zinc-600"}`}>
+                    {item.lastMessageContent || item.subject || "No content"}
                   </p>
                   
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-100/80">

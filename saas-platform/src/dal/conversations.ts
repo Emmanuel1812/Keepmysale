@@ -16,6 +16,8 @@ function mapConversationRow(row: ConversationRow): IConversation {
     aiResolved: Boolean(row.ai_resolved),
     shopifyOrderId: (row.shopify_order_id as string | null) ?? null,
     lastMessageAt: String(row.last_message_at),
+    lastMessageSenderType: (row.last_message_sender_type as string | null) ?? null,
+    lastMessageContent: (row.last_message_content as string | null) ?? null,
     resolvedAt: (row.resolved_at as string | null) ?? null,
     metadata: ((row.metadata as Record<string, unknown> | null) ?? {}) as Record<string, unknown>,
     createdAt: String(row.created_at),

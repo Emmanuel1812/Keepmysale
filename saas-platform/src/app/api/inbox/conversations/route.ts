@@ -37,6 +37,7 @@ export async function GET() {
     shopifyOrderId: row.shopify_order_id ?? null,
     lastMessageAt: String(row.last_message_at),
     lastMessageSenderType: row.last_message_sender_type ?? null,
+    lastMessageContent: row.last_message_content ?? null,
     resolvedAt: row.resolved_at ?? null,
     metadata: row.metadata ?? {},
     createdAt: String(row.created_at),

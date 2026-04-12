@@ -3,11 +3,12 @@ import { apiError, apiResponse } from "@/lib/api-helpers";
 import { AnalyticsService } from "@/services/analytics-service";
 import { getMerchantFromSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;
   let merchantId = "";
   let shopName: string | null = null;
   try {
-    const merchant = await getMerchantFromSession();
+    const merchant = await getMerchantFromSession(shopDomainHeader);
     merchantId = merchant.id;
     shopName = merchant.shopName;
   } catch {

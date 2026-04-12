@@ -3,12 +3,13 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getMerchantFromSession } from "@/lib/auth";
 import { OrderService } from "@/services/order-service";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;
   let merchantId = "";
   try {
-    const merchant = await getMerchantFromSession();
+    const merchant = await getMerchantFromSession(shopDomainHeader);
     merchantId = merchant.id;
-    console.log("[orders GET] Using merchantId from session:", merchantId);
+    console.log("[orders GET] Using merchantId:", merchantId);
   } catch (err) {
     console.error("[orders GET] Unauthorized", err);
     return apiError("UNAUTHORIZED", "Unauthorized", 401);

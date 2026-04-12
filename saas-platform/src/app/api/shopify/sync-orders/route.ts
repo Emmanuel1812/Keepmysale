@@ -17,10 +17,11 @@ function normalizeShopDomain(shopDomain: string): string {
   return withoutAdmin.split("/")[0];
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;
   let merchant;
   try {
-    merchant = await getMerchantFromSession();
+    merchant = await getMerchantFromSession(shopDomainHeader);
   } catch {
     return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }

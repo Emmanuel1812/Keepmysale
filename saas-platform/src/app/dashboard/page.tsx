@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,10 @@ interface OrderItem {
   syncedAt?: string;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const shop = searchParams.get("shop");
+
   const [summary, setSummary] = useState<Summary>({
     moneySaved: 0, returnsPrevented: 0, partialRefunds: 0, successRate: 0,
     totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, fulfilledOrders: 0,
@@ -84,9 +88,22 @@ export default function DashboardPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
 
+  const getAuthHeaders = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (shop) {
+      headers["X-Shop-Domain"] = shop;
+    }
+    return headers;
+  };
+
   async function loadOrders() {
     try {
-      const response = await fetch("/api/orders", { cache: "no-store" });
+      const response = await fetch("/api/orders", { 
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      });
       const payload = await response.json();
       if (payload.success) setOrders(payload.data?.orders ?? []);
     } catch {}
@@ -98,7 +115,10 @@ export default function DashboardPage() {
     setSyncError(null);
     setSyncSuccess(null);
     try {
-      const response = await fetch("/api/shopify/sync-orders", { method: "POST" });
+      const response = await fetch("/api/shopify/sync-orders", { 
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
         if (payload.error?.details?.reconnectUrl) {
@@ -118,14 +138,17 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadSummary() {
       try {
-        const response = await fetch("/api/analytics/summary", { cache: "no-store" });
+        const response = await fetch("/api/analytics/summary", { 
+          cache: "no-store",
+          headers: getAuthHeaders(),
+        });
         const payload = await response.json();
         if (payload.success && payload.data) setSummary(payload.data);
       } catch {}
     }
     void loadSummary();
     void loadOrders();
-  }, []);
+  }, [shop]); // Reload if shop changes
 
   function formatTime(minutes: number) {
     if (minutes === 0) return "-";
@@ -379,5 +402,13 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
   );
 }
