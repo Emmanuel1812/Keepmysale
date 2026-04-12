@@ -489,7 +489,7 @@ export class WebhookService {
         subject: conversation.subject || "Re: Your Request",
         html: template.html,
         text: template.text,
-        threadId: lastCustomerMsg.metadata?.threadId || undefined,
+        threadId: (lastCustomerMsg.metadata as any)?.threadId || undefined,
       });
     } else {
       await sendEmailViaSes({
