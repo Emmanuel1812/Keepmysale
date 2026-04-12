@@ -121,7 +121,7 @@ export class AiService {
         intent: "other",
         confidence: 1.0,
         extracted_order_number: input.orderNameGuess || null,
-        language_detected: preferredLanguage,
+        language_detected: (["nl", "en", "pt"].includes(preferredLanguage) ? preferredLanguage : "other") as any,
         sentiment: "positive",
         requires_human: false,
         reasoning: "System request for proactive satisfaction survey",
