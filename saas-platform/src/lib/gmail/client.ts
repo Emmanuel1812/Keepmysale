@@ -4,6 +4,7 @@ import { decryptAes256, encryptAes256 } from "@/lib/encryption";
 import type { IMerchant } from "@/types";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { MerchantService } from "@/services/merchant-service";
+import { extractCleanEmail } from "@/lib/email/parser";
 
 export function createOAuth2Client() {
   const env = getEnv();
@@ -84,8 +85,8 @@ export async function fetchNewEmails(accessToken: string): Promise<GmailMessage[
 
   const response = await gmail.users.messages.list({
     userId: "me",
-    q: "is:unread in:inbox category:primary newer_than:1d",
-    maxResults: 5,
+    q: "is:unread in:inbox category:primary newer_than:7d",
+    maxResults: 50,
   });
 
   const messages = response.data.messages || [];
@@ -144,9 +145,11 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
   const textBase64 = Buffer.from(params.text, 'utf-8').toString('base64');
   const htmlBase64 = Buffer.from(params.html, 'utf-8').toString('base64');
 
+  const cleanTo = extractCleanEmail(params.to);
+
   const messageParts = [
     `From: ${merchantEmail}`,
-    `To: ${params.to}`,
+    `To: ${cleanTo}`,
     `Subject: ${utf8Subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,

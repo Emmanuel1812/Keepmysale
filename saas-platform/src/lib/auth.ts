@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MerchantService } from "@/services/merchant-service";
 import type { IMerchant } from "@/types";
+import { normalizeShopDomain } from "@/lib/shopify/auth";
 
 export async function getMerchantFromSession(shopDomain?: string): Promise<IMerchant> {
   const supabase = await createSupabaseServerClient();
@@ -20,8 +21,9 @@ export async function getMerchantFromSession(shopDomain?: string): Promise<IMerc
   // Fallback: If we have a shopDomain (e.g. from X-Shop-Domain header), 
   // try to find the merchant by domain. This handles the Shopify iframe cookie blockage.
   if (shopDomain) {
-    console.log("[auth] Falling back to shopDomain lookup:", shopDomain);
-    const merchant = await merchantService.findByShopDomain(shopDomain);
+    const normalized = normalizeShopDomain(shopDomain);
+    console.log("[auth] Falling back to shopDomain lookup:", normalized);
+    const merchant = await merchantService.findByShopDomain(normalized);
     if (merchant) {
       return merchant;
     }

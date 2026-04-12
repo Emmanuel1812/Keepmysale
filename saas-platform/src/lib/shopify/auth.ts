@@ -24,3 +24,9 @@ export function verifyShopifyHmac(query: URLSearchParams, hmac: string) {
   const digest = crypto.createHmac("sha256", env.SHOPIFY_API_SECRET).update(sorted).digest("hex");
   return digest === hmac;
 }
+
+export function normalizeShopDomain(shopDomain: string): string {
+  const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
+  return withoutAdmin.split("/")[0];
+}

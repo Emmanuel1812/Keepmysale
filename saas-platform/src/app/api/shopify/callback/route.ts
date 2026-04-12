@@ -6,12 +6,8 @@ import { getEnv } from "@/lib/env";
 import { encryptAes256 } from "@/lib/encryption";
 import { MerchantService } from "@/services/merchant-service";
 import { ShopifyService } from "@/services/shopify-service";
+import { normalizeShopDomain } from "@/lib/shopify/auth";
 
-function normalizeShopDomain(shopDomain: string): string {
-  const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
-  return withoutAdmin.split("/")[0];
-}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -141,7 +137,10 @@ export async function GET(request: Request) {
     await shopifyService.registerWebhooks(normalizedShop, accessToken);
 
     const redirectPath = merchant.onboardingCompleted ? "/dashboard" : "/onboarding/configure";
-    return NextResponse.redirect(new URL(redirectPath, env.NEXT_PUBLIC_APP_URL));
+    const redirectUrl = new URL(redirectPath, env.NEXT_PUBLIC_APP_URL);
+    redirectUrl.searchParams.set("shop", normalizedShop);
+    
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid callback";
     if (message === "Missing OAuth callback parameters") {

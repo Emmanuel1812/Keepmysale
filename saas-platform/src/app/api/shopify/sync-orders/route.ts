@@ -5,17 +5,13 @@ import { decryptAes256 } from "@/lib/encryption";
 import { OrderService } from "@/services/order-service";
 import { CustomerService } from "@/services/customer-service";
 import { MerchantService } from "@/services/merchant-service";
+import { normalizeShopDomain } from "@/lib/shopify/auth";
 
 function isLikelyValidShopifyToken(token: string): boolean {
   const trimmed = token.trim();
   return /^[A-Za-z0-9_\-]{20,}$/.test(trimmed);
 }
 
-function normalizeShopDomain(shopDomain: string): string {
-  const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  const withoutAdmin = sanitized.replace(/\/admin$/i, "");
-  return withoutAdmin.split("/")[0];
-}
 
 export async function POST(request: Request) {
   const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;

@@ -46,7 +46,7 @@ export class AutomationService {
 
         console.log(`[AutomationService] ALLOWED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
         
-        await this.webhookService.handleInboundEmail({
+        const automationResult = await this.webhookService.handleInboundEmail({
           messageId: email.id,
           merchantId: merchant.id,
           from: email.from,
@@ -55,6 +55,8 @@ export class AutomationService {
           gmailThreadId: email.threadId,
           metadata: { source: "automation_service_poll" }
         });
+        
+        console.log(`[AutomationService] Automation Result for ${email.id}:`, automationResult.action);
 
         await markAsRead(accessToken, email.id);
         processedCount++;
