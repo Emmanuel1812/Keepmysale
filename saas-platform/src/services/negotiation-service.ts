@@ -262,11 +262,11 @@ export class NegotiationService {
       throw new Error("Negotiation not found");
     }
 
+    const order = current.orderId ? await this.ordersDal.findById(current.orderId) : null;
     const transition = transitionNegotiationState(current, customerInput);
     let working = current;
 
     if (transition.nextStep > current.currentStep) {
-      const order = current.orderId ? await this.ordersDal.findById(current.orderId) : null;
       const baseAmount = Number(order?.totalPrice ?? 0) || 0;
       const nextOffer = buildOfferForStep(
         transition.nextStep,
@@ -331,7 +331,6 @@ export class NegotiationService {
     }
 
     if (transition.shouldCreateRefundLog && transition.refundLogAction && transition.nextStatus !== "completed") {
-      const order = updated.orderId ? await this.ordersDal.findById(updated.orderId) : null;
       await this.refundLogsDal.create({
         merchantId: updated.merchantId,
         negotiationId: updated.id,
