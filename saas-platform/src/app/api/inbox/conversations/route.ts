@@ -36,6 +36,7 @@ export async function GET() {
     aiResolved: Boolean(row.ai_resolved),
     shopifyOrderId: row.shopify_order_id ?? null,
     lastMessageAt: String(row.last_message_at),
+    lastMessageSenderType: row.last_message_sender_type ?? null,
     resolvedAt: row.resolved_at ?? null,
     metadata: row.metadata ?? {},
     createdAt: String(row.created_at),

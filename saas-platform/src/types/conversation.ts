@@ -26,6 +26,7 @@ export interface IConversation {
   aiResolved: boolean;
   shopifyOrderId: string | null;
   lastMessageAt: string;
+  lastMessageSenderType?: string | null;
   resolvedAt: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
