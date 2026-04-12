@@ -6,9 +6,10 @@ import { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const conversationId = params.id;
+  const { id } = await params;
+  const conversationId = id;
   if (!conversationId) return apiError("BAD_REQUEST", "Missing conversation ID", 400);
 
   let merchantId = "";
