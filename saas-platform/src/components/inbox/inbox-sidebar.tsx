@@ -59,6 +59,7 @@ export function InboxSidebar() {
   const [conversations, setConversations] = useState<ApiConversation[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TFilter>("All");
+  const [syncing, setSyncing] = useState(false);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -67,6 +68,21 @@ export function InboxSidebar() {
       if (payload.success) setConversations(payload.data?.conversations ?? []);
     } catch {}
   }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/inbox/sync", { method: "POST" });
+      const payload = await res.json();
+      if (payload.success) {
+        await loadConversations();
+      }
+    } catch (err) {
+      console.error("Sync failed", err);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     void loadConversations();
@@ -110,14 +126,39 @@ export function InboxSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-zinc-200 bg-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-[#111827] flex items-center gap-2">
-            Inbox
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#111827]">Inbox</h2>
             {needsReplyCount > 0 && (
-              <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                {needsReplyCount} needs attention
+              <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {needsReplyCount}
               </span>
             )}
-          </h2>
+          </div>
+          
+          <button 
+            onClick={handleSync}
+            disabled={syncing}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+              syncing 
+                ? "bg-zinc-50 text-zinc-400 border-zinc-200 cursor-not-allowed" 
+                : "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100 hover:border-teal-200 shadow-sm"
+            }`}
+          >
+            <svg 
+              className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="3" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24" />
+              <path d="M21 3v9h-9" />
+            </svg>
+            {syncing ? "Syncing..." : "Sync"}
+          </button>
         </div>
 
         {/* Search */}
