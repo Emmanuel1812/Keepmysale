@@ -300,8 +300,8 @@ export class AiService {
         4. STRATEGIE:
            - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
            - De merchant heeft de volgende stappen ingesteld voor kortingen:
-           ${(ms.negotiation_steps || [])
-             .map((o) => \`  * Stap \${o.step}: \${o.percentage}% \${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}\`)
+           ${(ms.negotiation_steps as any[] || [])
+             .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
              .join("\n")}
            - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt.
         5. AFSLUITING: Eindig altijd met een professionele groet gevolgd door de naam van de shop: '${storeName}'.
