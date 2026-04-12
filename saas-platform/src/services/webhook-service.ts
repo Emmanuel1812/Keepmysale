@@ -473,12 +473,14 @@ export class WebhookService {
     });
 
     const template = formatEmailResponse({
-      customerName: customer.name || customer.email.split("@")[0],
+      customerName: customer.name || (customer.email ?? "").split("@")[0],
       aiResponse: action.messageBody,
       storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
       language: merchant.settings?.language || "nl",
       settings: merchant.settings,
     });
+
+    if (!customer.email) throw new Error("No customer email found");
 
     if (merchant.googleEmail) {
       const accessToken = await getValidAccessToken(merchant);
