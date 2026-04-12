@@ -44,6 +44,7 @@ export default function ConversationThreadPage() {
   const conversationId = params?.id;
   const [messages, setMessages] = useState<ApiMessage[]>([]);
   const [conversation, setConversation] = useState<ApiConversation | null>(null);
+  const [isResolvingAI, setIsResolvingAI] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!conversationId) return;
@@ -82,6 +83,29 @@ export default function ConversationThreadPage() {
       })),
     [messages],
   );
+  
+  const handleResolveAI = async () => {
+    if (!conversationId || isResolvingAI) return;
+    
+    setIsResolvingAI(true);
+    try {
+      const response = await fetch(`/api/inbox/conversations/${conversationId}/resolve-ai`, {
+        method: "POST"
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        await loadData();
+        // Optioneel: toast success
+      } else {
+        alert("AI error: " + (data.message || "Failed to generate response"));
+      }
+    } catch (err) {
+      console.error("AI Resolve failed", err);
+    } finally {
+      setIsResolvingAI(false);
+    }
+  };
 
   if (!conversation) {
     return <div className="flex h-full items-center justify-center bg-white"><div className="animate-pulse flex items-center text-teal-600 font-semibold gap-2"><span>Loading thread...</span></div></div>;
@@ -108,6 +132,18 @@ export default function ConversationThreadPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            <button 
+              onClick={handleResolveAI}
+              disabled={isResolvingAI}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md border border-teal-200 bg-teal-600 text-white hover:bg-teal-700 transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isResolvingAI ? (
+                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <span className="text-[14px]">✨</span>
+              )}
+              {isResolvingAI ? "AI Thinking..." : "✨ AI Reply"}
+            </button>
             <button className="px-3 py-1.5 text-xs font-semibold rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 shadow-sm transition-colors">
               Assign to Me
             </button>

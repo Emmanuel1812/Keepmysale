@@ -61,6 +61,7 @@ export function InboxSidebar() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TFilter>("All");
   const [syncing, setSyncing] = useState(false);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -82,6 +83,27 @@ export function InboxSidebar() {
       console.error("Sync failed", err);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleResolveAI = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (resolvingId) return;
+    
+    setResolvingId(id);
+    try {
+      const res = await fetch(`/api/inbox/conversations/${id}/resolve-ai`, { method: "POST" });
+      const payload = await res.json();
+      if (payload.success) {
+        await loadConversations();
+      } else {
+        alert("AI resolution failed: " + (payload.message || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Manual AI resolve failed", err);
+    } finally {
+      setResolvingId(null);
     }
   };
 
@@ -255,9 +277,27 @@ export function InboxSidebar() {
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full ${item.status === 'resolved' || item.status === 'closed' ? "bg-zinc-300" : "bg-teal-500 shadow-[0_0_0_3px_rgba(20,184,166,0.1)]"}`} />
-                      <span className="text-xs font-medium text-zinc-500 capitalize">{item.status.replace("_", " ")}</span>
+                    <div className="flex items-center gap-1.5 min-w-[100px] justify-end">
+                      <button
+                        onClick={(e) => handleResolveAI(e, item.id)}
+                        disabled={!!resolvingId}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                          resolvingId === item.id
+                            ? "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+                            : "bg-teal-500 text-white hover:bg-teal-600 shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        } ${isDraft ? "opacity-100!" : ""}`}
+                        title="Resolve with AI"
+                      >
+                        {resolvingId === item.id ? (
+                          <div className="w-2.5 h-2.5 border-2 border-zinc-300 border-t-zinc-500 rounded-full animate-spin" />
+                        ) : (
+                          "✨ AI REPLY"
+                        )}
+                      </button>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <div className={`w-2 h-2 rounded-full ${item.status === 'resolved' || item.status === 'closed' ? "bg-zinc-300" : "bg-teal-500 shadow-[0_0_0_3px_rgba(20,184,166,0.1)]"}`} />
+                        <span className="text-xs font-medium text-zinc-500 capitalize">{item.status.replace("_", " ")}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

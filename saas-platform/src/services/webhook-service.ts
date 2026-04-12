@@ -412,4 +412,98 @@ export class WebhookService {
 
     return { accepted: true as const, topic };
   }
+
+  /**
+   * Manually trigger an AI resolution for an existing conversation.
+   * This ignores shadow mode/auto-reply settings because a human is requesting it.
+   */
+  async processAiResolution(conversationId: string, merchantId: string) {
+    const merchant = await this.merchantService.findById(merchantId);
+    if (!merchant) throw new Error("Merchant not found");
+
+    const conversation = await this.conversationService.findById(conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+
+    const messages = await this.messageService.findByConversation(conversationId);
+    const lastCustomerMsg = [...messages].reverse().find((m) => m.sender === "customer");
+    
+    if (!lastCustomerMsg) {
+      throw new Error("No customer message found to respond to");
+    }
+
+    const customer = await this.customerService.findById(conversation.customerId);
+    if (!customer) throw new Error("Customer not found");
+
+    // 1. Build context
+    const recentHistory = messages.slice(-10).map((m) => ({
+      role: m.sender === "customer" ? ("user" as const) : ("assistant" as const),
+      content: m.content,
+    }));
+
+    const classification = await this.aiService.classifyIntent(lastCustomerMsg.content);
+    
+    const decryptedShopifyAccessToken = merchant.shopifyAccessTokenEncrypted
+      ? decryptAes256(merchant.shopifyAccessTokenEncrypted)
+      : "";
+
+    // 2. Generate Action
+    const action = await this.aiService.buildAutomatedAction({
+      incomingText: lastCustomerMsg.content,
+      history: recentHistory,
+      orderNameGuess: classification.extracted_order_number ?? undefined,
+      customerName: customer.name || undefined,
+      storeName: merchant.shopName || undefined,
+      shopDomain: merchant.shopDomain,
+      shopAccessToken: decryptedShopifyAccessToken,
+      merchantSettings: merchant.settings,
+    });
+
+    // 3. Send and Save (Ignore guards)
+    await this.messageService.create({
+      conversationId: conversation.id,
+      merchantId: merchant.id,
+      sender: "ai",
+      channel: "email",
+      content: action.messageBody,
+      metadata: {
+        direction: "outbound",
+        intent: classification.intent,
+        manual_trigger: true,
+      },
+    });
+
+    const template = formatEmailResponse({
+      customerName: customer.name || customer.email.split("@")[0],
+      aiResponse: action.messageBody,
+      storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
+      language: merchant.settings?.language || "nl",
+      settings: merchant.settings,
+    });
+
+    if (merchant.googleEmail) {
+      const accessToken = await getValidAccessToken(merchant);
+      await sendGmailReply(accessToken, {
+        to: customer.email,
+        subject: conversation.subject || "Re: Your Request",
+        html: template.html,
+        text: template.text,
+        threadId: lastCustomerMsg.metadata?.threadId || undefined,
+      });
+    } else {
+      await sendEmailViaSes({
+        to: customer.email,
+        subject: conversation.subject || "Re: Your Request",
+        html: template.html,
+        text: template.text,
+      });
+    }
+
+    // 4. Update AI resolved flag but keep status as is
+    await this.conversationService.update(conversationId, {
+      aiResolved: true,
+      updated_at: new Date().toISOString(),
+    });
+
+    return { success: true, action: action.action };
+  }
 }
