@@ -503,7 +503,6 @@ export class WebhookService {
     // 4. Update AI resolved flag but keep status as is
     await this.conversationService.update(conversationId, {
       aiResolved: true,
-      updated_at: new Date().toISOString(),
     });
 
     return { success: true, action: action.action };
