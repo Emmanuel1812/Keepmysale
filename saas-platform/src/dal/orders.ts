@@ -20,6 +20,7 @@ function mapOrderRow(row: OrderRow): IOrder {
     trackingCompany: (row.tracking_company as string | null) ?? null,
     deliveredAt: (row.delivered_at as string | null) ?? null,
     proactiveCheckSent: Boolean(row.proactive_check_sent),
+    paymentGateway: (row.payment_gateway as string | null) ?? null,
     syncedAt: String(row.synced_at),
     lineItems: ((row.line_items as Array<Record<string, unknown>> | null) ?? []) as Array<
       Record<string, unknown>
@@ -53,11 +54,21 @@ export class OrdersDal {
   async findByMerchant(merchantId: string): Promise<IOrder[]> {
     const { data, error } = await this.supabase
       .from("orders")
-      .select("*")
+      .select(`
+        *,
+        customers (
+          name
+        )
+      `)
       .eq("merchant_id", merchantId)
       .order("updated_at", { ascending: false });
+    
     if (error) throw error;
-    return (data ?? []).map((row) => mapOrderRow(row as OrderRow));
+    
+    return (data ?? []).map((row: any) => ({
+      ...mapOrderRow(row),
+      customerName: row.customers?.name ?? null,
+    }));
   }
 
   async create(input: IOrderCreate): Promise<IOrder> {
@@ -78,6 +89,7 @@ export class OrdersDal {
         tracking_url: input.trackingUrl ?? null,
         tracking_company: input.trackingCompany ?? null,
         delivered_at: input.deliveredAt ?? null,
+        payment_gateway: input.paymentGateway ?? null,
       })
       .select("*")
       .single();
@@ -102,6 +114,7 @@ export class OrdersDal {
         tracking_company: input.trackingCompany,
         delivered_at: input.deliveredAt,
         proactive_check_sent: input.proactiveCheckSent,
+        payment_gateway: input.paymentGateway,
       })
       .eq("id", id)
       .select("*")

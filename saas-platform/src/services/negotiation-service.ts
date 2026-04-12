@@ -29,14 +29,63 @@ export interface INegotiationTransitionResult {
     | null;
 }
 
+/**
+ * Check if an order is eligible for negotiation based on merchant settings.
+ * Returns { eligible: false, reason: string } if not eligible.
+ */
+export function checkNegotiationEligibility(
+  orderAmount: number,
+  lineItems: Array<{ title?: string; product_type?: string; category?: string }> | null,
+  merchantSettings?: IMerchantSettings,
+): { eligible: boolean; reason?: string } {
+  if (!merchantSettings) return { eligible: true };
+
+  // Check min_order_value
+  if (merchantSettings.min_order_value > 0 && orderAmount < merchantSettings.min_order_value) {
+    return { eligible: false, reason: `Order value €${orderAmount} below minimum €${merchantSettings.min_order_value}` };
+  }
+
+  // Check excluded_categories
+  const excludedCats = merchantSettings.excluded_categories ?? [];
+  if (excludedCats.length > 0 && lineItems) {
+    const matchedCat = lineItems.find((item) =>
+      excludedCats.some((cat) =>
+        (item.product_type ?? "").toLowerCase().includes(cat.toLowerCase()) ||
+        (item.category ?? "").toLowerCase().includes(cat.toLowerCase())
+      )
+    );
+    if (matchedCat) {
+      return { eligible: false, reason: `Product category excluded from negotiation` };
+    }
+  }
+
+  // Check excluded_keywords
+  const excludedKw = merchantSettings.excluded_keywords ?? [];
+  if (excludedKw.length > 0 && lineItems) {
+    const matchedKw = lineItems.find((item) =>
+      excludedKw.some((kw) => (item.title ?? "").toLowerCase().includes(kw.toLowerCase()))
+    );
+    if (matchedKw) {
+      return { eligible: false, reason: `Product keyword excluded from negotiation` };
+    }
+  }
+
+  return { eligible: true };
+}
+
 export function buildOfferForStep(
   step: number,
   orderAmount: number,
   currency = "EUR",
   merchantSettings?: IMerchantSettings,
 ): INegotiationOffer {
-  const configured = merchantSettings?.negotiation_offers?.find((item) => item.step === step);
-  const percentage = configured?.percentage ?? { 1: 20, 2: 35, 3: 50 }[step] ?? 50;
+  const configured = merchantSettings?.negotiation_steps?.find((item) => item.step === step);
+  let percentage = configured?.percentage ?? { 1: 20, 2: 35, 3: 50 }[step] ?? 50;
+
+  // Cap at max_refund_percentage if set
+  const maxPct = merchantSettings?.max_refund_percentage ?? 100;
+  if (percentage > maxPct) percentage = maxPct;
+
   const amount = Number(((orderAmount * percentage) / 100).toFixed(2));
   return {
     step,
@@ -174,7 +223,7 @@ export class NegotiationService {
       orderId,
       status: "initiated",
       currentStep: 0,
-      maxSteps: merchantSettings.negotiation_offers.length || NEGOTIATION_MAX_STEPS,
+      maxSteps: merchantSettings.max_steps || merchantSettings.negotiation_steps?.length || NEGOTIATION_MAX_STEPS,
       offers: [],
     });
 

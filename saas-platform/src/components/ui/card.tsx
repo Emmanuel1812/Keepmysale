@@ -15,3 +15,7 @@ export function CardTitle({ className = "", ...props }: HTMLAttributes<HTMLHeadi
 export function CardContent({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={className} {...props} />;
 }
+
+export function CardDescription({ className = "", ...props }: HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={`text-sm text-zinc-500 dark:text-zinc-400 ${className}`} {...props} />;
+}

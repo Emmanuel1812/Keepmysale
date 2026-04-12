@@ -27,19 +27,53 @@ vi.mock("@/lib/shopify/client", async () => {
 });
 
 const defaultSettings: IMerchantSettings = {
-  business_hours: { start: "09:00", end: "17:00" },
-  timezone: "Europe/Amsterdam",
-  auto_respond: true,
+  // Language & Communication
   language: "nl",
-  return_negotiation_enabled: true,
-  negotiation_offers: [
-    { step: 1, type: "partial_refund", percentage: 20 },
-    { step: 2, type: "partial_refund", percentage: 35 },
-    { step: 3, type: "store_credit", percentage: 50 },
+  tone: "professional",
+  greeting_style: "time_based",
+  sign_off_name: "E2E Team",
+  sign_off_text: "Met vriendelijke groet,",
+  custom_intro: "Bedankt voor je bericht over je bestelling.",
+
+  // Return Negotiation
+  auto_negotiate: true,
+  negotiation_steps: [
+    { step: 1, percentage: 20, type: "partial_refund" },
+    { step: 2, percentage: 35, type: "partial_refund" },
+    { step: 3, percentage: 50, type: "store_credit" },
   ],
-  escalation_email: null,
+  max_steps: 3,
+  excluded_categories: [],
+  excluded_keywords: [],
+  min_order_value: 0,
+  max_refund_percentage: 50,
+  shadow_mode: false,
+
+  // Automation & Escalation
+  auto_reply_wismo: true,
+  auto_reply_general: true,
+  auto_reply_complaint: false,
+  requires_human_threshold: 0.6,
+  escalate_after_steps: 3,
   proactive_check_enabled: true,
   proactive_check_delay_hours: 48,
+
+  // Rules & Restrictions
+  forbidden_topics: [],
+  forbidden_phrases: [],
+  required_phrases: [],
+  custom_rules: [],
+  do_not_engage_subjects: [],
+
+  // Shopify & Order Info
+  include_tracking_in_wismo: true,
+  include_line_items_in_wismo: true,
+  currency_display: "EUR",
+
+  // Legacy/Other
+  business_hours: { start: "09:00", end: "17:00" },
+  timezone: "Europe/Amsterdam",
+  escalation_email: null,
 };
 
 describe("E2E inbound email pipeline", () => {

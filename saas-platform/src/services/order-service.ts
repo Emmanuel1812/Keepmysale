@@ -58,6 +58,7 @@ export class OrderService {
           : Number(shopifyOrderData.total_price),
       currency: (shopifyOrderData.currency as string | undefined) ?? "EUR",
       lineItems: (shopifyOrderData.line_items as Array<Record<string, unknown>> | undefined) ?? [],
+      paymentGateway: (shopifyOrderData.gateway as string | undefined) ?? null,
     };
 
     const fulfillments = shopifyOrderData.fulfillments as Array<Record<string, unknown>> | undefined;

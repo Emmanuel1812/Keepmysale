@@ -113,9 +113,28 @@ export class AiService {
     merchantSettings: IMerchantSettings;
   }): Promise<ActionResult> {
     const intentResult = await this.classifyIntent(input.incomingText);
-    const preferredLanguage = input.merchantSettings.language ?? "nl";
+    const ms = input.merchantSettings;
+    const preferredLanguage = ms.language ?? "nl";
     const customerName = input.customerName || "Klant";
     const storeName = input.storeName || input.shopDomain.replace(".myshopify.com", "");
+    const currencyDisplay = ms.currency_display ?? "EUR";
+
+    // ── Build settings-aware rules block for Gemini prompts ──
+    const toneMap: Record<string, string> = {
+      professional: "professioneel, kalm en empathisch",
+      friendly: "warm, vriendelijk en informeel",
+      formal: "zeer formeel en zakelijk",
+      casual: "casual, vrolijk en persoonlijk",
+    };
+    const toneDescription = toneMap[ms.tone] ?? toneMap.professional;
+
+    const settingsRulesBlock = [
+      `TONE-OF-VOICE: Wees ${toneDescription}. Gebruik volledige, goed geformuleerde zinnen.`,
+      ...(ms.custom_rules ?? []).map((r) => `EXTRA REGEL: ${r}`),
+      ...(ms.forbidden_topics ?? []).map((t) => `VERBODEN ONDERWERP (reageer hier NOOIT op, escaleer in plaats daarvan): ${t}`),
+      ...(ms.forbidden_phrases ?? []).map((p) => `ZIN NOOIT GEBRUIKEN: "${p}"`),
+      ...(ms.required_phrases ?? []).map((p) => `ALTIJD VERMELDEN in je antwoord: "${p}"`),
+    ].join("\n");
 
     const messagesByLanguage = {
       nl: {
@@ -178,18 +197,25 @@ export class AiService {
       );
 
       if (order) {
-        const lineItemsStr = (order.lineItems || [])
-          .map((item: any) => `${item.quantity}x ${item.title}`)
-          .join(", ");
+        const includeTracking = ms.include_tracking_in_wismo !== false;
+        const includeLineItems = ms.include_line_items_in_wismo !== false;
 
-        orderContext = `
-          Order ${order.shopifyOrderNumber || order.name}:
-          - Status: ${order.financialStatus}
-          - Fulfillment: ${order.fulfillmentStatus}
-          - Tracking: ${order.trackingNumber || "geen"}
-          - Producten in deze order: ${lineItemsStr}
-          - Totaal: ${order.totalPrice} ${order.currency}
-        `;
+        const lineItemsStr = includeLineItems
+          ? (order.lineItems || [])
+              .map((item: any) => `${item.quantity}x ${item.title}`)
+              .join(", ")
+          : "";
+
+        const parts = [
+          `Order ${order.shopifyOrderNumber || order.name}:`,
+          `- Status: ${order.financialStatus}`,
+          `- Fulfillment: ${order.fulfillmentStatus}`,
+        ];
+        if (includeTracking) parts.push(`- Tracking: ${order.trackingNumber || "geen"}`);
+        if (includeLineItems && lineItemsStr) parts.push(`- Producten in deze order: ${lineItemsStr}`);
+        parts.push(`- Totaal: ${order.totalPrice} ${currencyDisplay}`);
+
+        orderContext = parts.join("\n          ");
       }
     }
 
@@ -202,17 +228,17 @@ export class AiService {
         });
 
         const prompt = `
-        Je bent een professionele klantenservice medewerker voor de webshop genaamd '${storeName}'. 
+        Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
         Je spreekt de klant aan met '${customerName}'.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName} (bijv. "Beste ${customerName}," of "Hoi ${customerName},").
-        2. TONE-OF-VOICE: Wees uiterst behulpzaam, professioneel, kalm en empathisch. Gebruik volledige, goed geformuleerde zinnen. Vermijd korte, robotachtige antwoorden.
+        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName}.
+        2. ${settingsRulesBlock}
         3. ACCURAATHEID & SOURCE OF TRUTH: 
-           - Als de klant vraagt naar de INHOUD van de order, wat er in het pakket zit, of welke PRODUCTEN er besteld zijn: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder. Dit is de enige bron van waarheid voor productinhoud.
+           - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
            - Als de klant vraagt naar de STATUS of TRACKING: geef dan het trackingnummer en de status (indien beschikbaar).
            - Gebruik ALTIJD de verstrekte Order Context.
-        4. AFSLUITING: Eindig altijd met een professionele groet (bijv. "Met vriendelijke groet,") gevolgd door de naam van de shop: '${storeName}'.
+        4. AFSLUITING: Eindig altijd met een professionele groet gevolgd door de naam van de shop: '${storeName}'.
         
         Taal: ${preferredLanguage}
         
@@ -223,7 +249,7 @@ export class AiService {
         
         Return ONLY valid JSON:
         {
-          "messageBody": "jouw volledige antwoord tekst hier inclusief aanhef en afsluiting"
+          "messageBody": "jouw volledige antwoord tekst hier (ZONDER aanhef en afsluiting, die worden apart toegevoegd)"
         }
         `;
 
@@ -260,25 +286,25 @@ export class AiService {
           .join("\n");
 
         const negotiationPrompt = `
-        Je bent een professionele klantenservice medewerker voor de webshop genaamd '${storeName}'. 
+        Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
         Je spreekt de klant aan met '${customerName}'.
 
         De klant wil iets retourneren of is in gesprek over een retour.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName} (bijv. "Beste ${customerName}," of "Hoi ${customerName},").
-        2. TONE-OF-VOICE: Wees uiterst behulpzaam, professioneel, kalm en empathisch. Gebruik volledige, geruststellende zinnen.
+        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName}.
+        2. ${settingsRulesBlock}
         3. ACCURAATHEID & SOURCE OF TRUTH: 
            - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
            - Gebruik ALTIJD de verstrekte Order Context als bron van waarheid.
         4. STRATEGIE:
            - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
            - De merchant heeft de volgende stappen ingesteld voor kortingen:
-           ${(input.merchantSettings.negotiation_offers || [])
-             .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
+           ${(ms.negotiation_steps || [])
+             .map((o) => \`  * Stap \${o.step}: \${o.percentage}% \${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}\`)
              .join("\n")}
-           - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt. Focus op het gebaar en de oplossing.
-        5. AFSLUITING: Eindig altijd met een professionele groet (bijv. "Met vriendelijke groet,") gevolgd door de naam van de shop: '${storeName}'.
+           - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt.
+        5. AFSLUITING: Eindig altijd met een professionele groet gevolgd door de naam van de shop: '${storeName}'.
 
         Taal: ${preferredLanguage}
         
@@ -293,11 +319,11 @@ export class AiService {
         
         Opdracht: 
         1. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
-        2. Schrijf een natuurlijk, professioneel antwoord inclusief aanhef en afsluiting.
+        2. Schrijf een natuurlijk antwoord (ZONDER aanhef en afsluiting, die worden apart toegevoegd).
         
         Return ONLY valid JSON with this shape:
         {
-          "messageBody": "jouw volledige antwoord tekst hier inclusief aanhef en afsluiting",
+          "messageBody": "jouw antwoord tekst hier (zonder aanhef en afsluiting)",
           "negotiationDecision": "accept" | "reject" | "continue"
         }
         `;

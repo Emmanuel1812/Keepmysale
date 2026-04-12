@@ -123,9 +123,15 @@ export async function POST() {
     const email = (order.email as string | undefined) ?? null;
     let customerId: string | null = null;
     if (email) {
+      const shopifyCustomer = order.customer as Record<string, any> | undefined;
+      const firstName = shopifyCustomer?.first_name ?? "";
+      const lastName = shopifyCustomer?.last_name ?? "";
+      const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
       const customer = await customerService.resolveCustomer({
         merchantId: merchant.id,
         email,
+        name: fullName || null,
         language: merchant.settings?.language ?? "nl",
       });
       customerId = customer.id;

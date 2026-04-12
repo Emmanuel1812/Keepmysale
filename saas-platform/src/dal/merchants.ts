@@ -1,7 +1,41 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { IMerchant, IMerchantCreate, IMerchantUpdate } from "@/types";
+import type { IMerchant, IMerchantCreate, IMerchantUpdate, IMerchantSettings } from "@/types";
+import { DEFAULT_MERCHANT_SETTINGS } from "@/types/merchant";
 
 type MerchantRow = Record<string, unknown>;
+
+/**
+ * Normalize raw JSONB settings from the database into the full spec-aligned shape.
+ * Handles legacy field names (return_negotiation_enabled, negotiation_offers, auto_respond)
+ * and fills missing fields with defaults so every merchant always has the complete settings object.
+ */
+function normalizeSettings(raw: Record<string, unknown> | null | undefined): IMerchantSettings {
+  if (!raw) return { ...DEFAULT_MERCHANT_SETTINGS };
+
+  return {
+    ...DEFAULT_MERCHANT_SETTINGS,
+    ...raw,
+
+    // ── Renamed field migrations ──
+    // auto_negotiate: new name for return_negotiation_enabled
+    auto_negotiate:
+      (raw.auto_negotiate as boolean | undefined) ??
+      (raw.return_negotiation_enabled as boolean | undefined) ??
+      DEFAULT_MERCHANT_SETTINGS.auto_negotiate,
+
+    // negotiation_steps: new name for negotiation_offers
+    negotiation_steps:
+      (raw.negotiation_steps as IMerchantSettings["negotiation_steps"] | undefined) ??
+      (raw.negotiation_offers as IMerchantSettings["negotiation_steps"] | undefined) ??
+      DEFAULT_MERCHANT_SETTINGS.negotiation_steps,
+
+    // auto_reply_general: new name for auto_respond
+    auto_reply_general:
+      (raw.auto_reply_general as boolean | undefined) ??
+      (raw.auto_respond as boolean | undefined) ??
+      DEFAULT_MERCHANT_SETTINGS.auto_reply_general,
+  };
+}
 
 export function mapMerchantRow(row: MerchantRow): IMerchant {
   return {
@@ -19,7 +53,7 @@ export function mapMerchantRow(row: MerchantRow): IMerchant {
     subscriptionStatus: row.subscription_status as IMerchant["subscriptionStatus"],
     trialEndsAt: (row.trial_ends_at as string | null) ?? null,
     onboardingCompleted: Boolean(row.onboarding_completed),
-    settings: row.settings as IMerchant["settings"],
+    settings: normalizeSettings(row.settings as Record<string, unknown> | null),
     googleAccessTokenEncrypted: (row.google_access_token_encrypted as string | null) ?? null,
     googleRefreshTokenEncrypted: (row.google_refresh_token_encrypted as string | null) ?? null,
     googleEmail: (row.google_email as string | null) ?? null,

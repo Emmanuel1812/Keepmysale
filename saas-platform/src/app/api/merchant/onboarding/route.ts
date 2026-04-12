@@ -4,6 +4,7 @@ import { apiError, apiResponse } from "@/lib/api-helpers";
 import { MerchantService } from "@/services/merchant-service";
 import { getMerchantFromSession } from "@/lib/auth";
 import type { IMerchantSettings } from "@/types";
+import { DEFAULT_MERCHANT_SETTINGS } from "@/types/merchant";
 
 function normalizeShopDomain(shopDomain: string): string {
   const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
@@ -35,19 +36,7 @@ export async function POST(request: Request) {
     }
 
     const defaultSettings: IMerchantSettings = {
-      business_hours: { start: "09:00", end: "17:00" },
-      timezone: "Europe/Amsterdam",
-      auto_respond: true,
-      language: "nl",
-      return_negotiation_enabled: true,
-      negotiation_offers: [
-        { step: 1, type: "partial_refund", percentage: 20 },
-        { step: 2, type: "partial_refund", percentage: 35 },
-        { step: 3, type: "store_credit", percentage: 50 },
-      ],
-      escalation_email: null,
-      proactive_check_enabled: true,
-      proactive_check_delay_hours: 48,
+      ...DEFAULT_MERCHANT_SETTINGS,
     };
     const baseSettings: IMerchantSettings = {
       ...defaultSettings,
@@ -56,7 +45,7 @@ export async function POST(request: Request) {
 
     const settings: IMerchantSettings = {
       ...baseSettings,
-      negotiation_offers: [
+      negotiation_steps: [
         { step: 1, type: "partial_refund", percentage: parsed.data.step1Percentage },
         { step: 2, type: "partial_refund", percentage: parsed.data.step2Percentage },
         { step: 3, type: "store_credit", percentage: parsed.data.step3Percentage },

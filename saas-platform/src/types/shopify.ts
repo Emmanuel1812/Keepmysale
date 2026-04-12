@@ -7,6 +7,11 @@ export interface IShopifyOrderSummary {
   totalPrice: string;
   currency: string;
   lineItems?: Array<any>;
+  gateway: string | null;
+  customer: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
 }
 
 export interface IShopifyOauthCallbackPayload {

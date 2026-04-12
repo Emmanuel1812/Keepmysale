@@ -7,7 +7,7 @@ import { verifyShopifyWebhookSignature } from "@/lib/shopify/webhooks";
 import { CustomerService } from "@/services/customer-service";
 import { ConversationService } from "@/services/conversation-service";
 import { MessageService } from "@/services/message-service";
-import { NegotiationService } from "@/services/negotiation-service";
+import { NegotiationService, checkNegotiationEligibility } from "@/services/negotiation-service";
 import { OrderService } from "@/services/order-service";
 import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
@@ -93,6 +93,46 @@ export class WebhookService {
 
     const classification = await this.aiService.classifyIntent(cleanBody);
     console.log("[WEBHOOK] Classification:", JSON.stringify(classification));
+    const settings = merchant.settings;
+
+    // ── Settings Guard: do_not_engage_subjects ──────────────────
+    const doNotEngage = settings.do_not_engage_subjects ?? [];
+    if (doNotEngage.length > 0) {
+      const subjectLower = (input.subject || "").toLowerCase();
+      const blocked = doNotEngage.find((s) => subjectLower.includes(s.toLowerCase()));
+      if (blocked) {
+        console.log(`[WEBHOOK] Subject blocked by do_not_engage_subjects: "${blocked}"`);
+        logger({
+          level: "info",
+          eventType: "automation.blocked.do_not_engage",
+          merchantId: input.merchantId,
+          message: `Subject matched do_not_engage rule: ${blocked}`,
+          details: { subject: input.subject },
+        });
+        return { deduplicated: false as const, action: "blocked_by_settings", blocked: true };
+      }
+    }
+
+    // ── Settings Guard: auto_reply per intent ────────────────────
+    const intentAutoReplyMap: Record<string, boolean> = {
+      wismo: settings.auto_reply_wismo !== false,
+      return: settings.auto_negotiate !== false,
+      complaint: settings.auto_reply_complaint === true,
+      other: settings.auto_reply_general !== false,
+      faq: settings.auto_reply_general !== false,
+      exchange: settings.auto_reply_general !== false,
+      resend_confirmation: settings.auto_reply_wismo !== false,
+    };
+    const shouldAutoReply = intentAutoReplyMap[classification.intent] ?? settings.auto_reply_general !== false;
+
+    // ── Settings Guard: requires_human_threshold ─────────────────
+    const confidenceThreshold = settings.requires_human_threshold ?? 0.6;
+    const belowThreshold = classification.confidence < confidenceThreshold;
+    if (belowThreshold) {
+      console.log(`[WEBHOOK] Confidence ${classification.confidence} below threshold ${confidenceThreshold} — flagging for human review`);
+    }
+
+    const shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
 
     const history = await this.messageService.findByConversation(conversation.id);
     // Beperk tot laatste 10 berichten om token-limiet te besparen
@@ -131,14 +171,25 @@ export class WebhookService {
       }
     }
 
-    if (classification.intent === "return" && orderIdForNegotiation) {
-      await this.negotiationService.initiateNegotiation(
-        input.merchantId,
-        conversation.id,
-        customer.id,
-        orderIdForNegotiation,
-        merchant.settings,
-      );
+    if (classification.intent === "return" && orderIdForNegotiation && settings.auto_negotiate !== false) {
+      // Check negotiation eligibility based on settings
+      const existingOrders = await this.orderService.findByMerchant(input.merchantId);
+      const matchedOrder = existingOrders.find((o) => o.id === orderIdForNegotiation);
+      const orderAmount = matchedOrder ? Number(matchedOrder.totalPrice) : 0;
+      const lineItems = (matchedOrder?.lineItems as Array<{ title?: string; product_type?: string; category?: string }>) ?? null;
+
+      const eligibility = checkNegotiationEligibility(orderAmount, lineItems, settings);
+      if (eligibility.eligible) {
+        await this.negotiationService.initiateNegotiation(
+          input.merchantId,
+          conversation.id,
+          customer.id,
+          orderIdForNegotiation,
+          settings,
+        );
+      } else {
+        console.log(`[WEBHOOK] Negotiation skipped: ${eligibility.reason}`);
+      }
     }
 
     const action = await this.aiService.buildAutomatedAction({
@@ -155,6 +206,7 @@ export class WebhookService {
     console.log("[WEBHOOK] Action:", action.action);
     console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
     console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);
+    console.log("[WEBHOOK] shouldSkipAutoReply:", shouldSkipAutoReply, "| shadow_mode:", settings.shadow_mode);
 
     // Sync negotiation status if requested by AI
     const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
@@ -165,14 +217,18 @@ export class WebhookService {
       await this.negotiationService.processCustomerResponse(
         activeNeg.id,
         action.negotiationDecision === "accept" ? "accept_offer" : "reject_offer",
-        merchant.settings,
+        settings,
       );
     }
+
+    // ── Determine if we should send or just draft ─────────────
+    const isShadowMode = settings.shadow_mode === true;
+    const senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
 
     await this.messageService.create({
       conversationId: conversation.id,
       merchantId: input.merchantId,
-      sender: "ai",
+      sender: senderLabel,
       channel: "email",
       content: action.messageBody,
       externalMessageId: null,
@@ -181,11 +237,34 @@ export class WebhookService {
         intent: classification.intent,
         confidence: classification.confidence,
         requires_human: classification.requires_human,
+        below_confidence_threshold: belowThreshold,
+        auto_reply_blocked: !shouldAutoReply,
+        shadow_mode: isShadowMode,
         negotiation_decision: action.negotiationDecision,
       },
     });
 
-    // Enhanced customer name extraction if still missing
+    // If auto-reply is blocked, shadow mode is on, or human review is needed → don't send
+    if (shouldSkipAutoReply || isShadowMode) {
+      const reason = isShadowMode
+        ? "shadow_mode"
+        : !shouldAutoReply
+          ? "auto_reply_disabled"
+          : belowThreshold
+            ? "below_confidence_threshold"
+            : "requires_human";
+      console.log(`[WEBHOOK] Email NOT sent (${reason}). Draft saved for merchant review.`);
+      logger({
+        level: "info",
+        eventType: "automation.draft.saved",
+        merchantId: input.merchantId,
+        message: `Draft created: ${reason}`,
+        details: { intent: classification.intent, confidence: classification.confidence },
+      });
+      return { deduplicated: false as const, action: "draft_saved", reason };
+    }
+
+    // ── Build formatted email using full settings ─────────────
     let finalCustomerName = customer.name;
     if (!finalCustomerName) {
       if (input.from.includes("<")) {
@@ -201,7 +280,8 @@ export class WebhookService {
       customerName: finalCustomerName,
       aiResponse: action.messageBody,
       storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
-      language: merchant.settings?.language || "nl",
+      language: settings.language || "nl",
+      settings,
     });
 
     if (merchant.googleEmail) {

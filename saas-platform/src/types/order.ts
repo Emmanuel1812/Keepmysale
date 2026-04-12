@@ -14,6 +14,8 @@ export interface IOrder {
   trackingCompany: string | null;
   deliveredAt: string | null;
   proactiveCheckSent: boolean;
+  paymentGateway: string | null;
+  customerName?: string | null;
   syncedAt: string;
   lineItems: Array<Record<string, unknown>>;
   createdAt: string;
@@ -35,6 +37,7 @@ export interface IOrderCreate {
   trackingUrl?: string | null;
   trackingCompany?: string | null;
   deliveredAt?: string | null;
+  paymentGateway?: string | null;
 }
 
 export interface IOrderUpdate extends Partial<IOrderCreate> {
