@@ -42,6 +42,7 @@ export async function GET() {
         trackingCompany: (row.tracking_company as string | null) ?? null,
         deliveredAt: (row.delivered_at as string | null) ?? null,
         proactiveCheckSent: Boolean(row.proactive_check_sent),
+        paymentGateway: (row.payment_gateway as string | null) ?? null,
         syncedAt: String(row.synced_at),
         lineItems: [],
         createdAt: String(row.created_at),
