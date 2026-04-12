@@ -40,6 +40,7 @@ export interface INegotiation {
   auditPdfUrl: string | null;
   isManualRefundRequired: boolean;
   refundRejectionReason: string | null;
+  generatedDiscountCode: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -63,6 +64,7 @@ export interface INegotiationCreate {
   customerFeedback?: string | null;
   isManualRefundRequired?: boolean;
   refundRejectionReason?: string | null;
+  generatedDiscountCode?: string | null;
 }
 
 export interface INegotiationUpdate extends Partial<INegotiationCreate> {
@@ -70,4 +72,5 @@ export interface INegotiationUpdate extends Partial<INegotiationCreate> {
   completedAt?: string | null;
   auditPdfUrl?: string | null;
   savings?: number | null;
+  generatedDiscountCode?: string | null;
 }
