@@ -684,7 +684,32 @@ export default function SettingsPage() {
                         <p className="text-sm font-semibold text-red-900">Delete Account</p>
                         <p className="text-xs text-red-700/70">Permanently remove all your store data and settings. This cannot be undone.</p>
                      </div>
-                     <Button variant="destructive" size="sm" onClick={() => alert("Please contact support to delete account.")}>Delete Account</Button>
+                     <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={async () => {
+                          const confirm = window.prompt("To confirm deletion, please type 'DELETE' in the box below:");
+                          if (confirm === "DELETE") {
+                            try {
+                              const res = await fetch("/api/merchant/account/delete", {
+                                method: "POST",
+                                body: JSON.stringify({ confirmation: "DELETE" }),
+                              });
+                              if (res.ok) {
+                                const supabase = createSupabaseBrowserClient();
+                                await supabase.auth.signOut();
+                                window.location.href = "/";
+                              } else {
+                                alert("Deletion failed. Please contact support.");
+                              }
+                            } catch (err) {
+                              alert("An error occurred during deletion.");
+                            }
+                          }
+                        }}
+                      >
+                        Delete Account
+                      </Button>
                   </div>
                </div>
             </CardContent>

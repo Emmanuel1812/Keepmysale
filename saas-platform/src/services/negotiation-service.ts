@@ -305,7 +305,23 @@ export class NegotiationService {
         completedAt: transition.nextStatus === "completed" ? new Date().toISOString() : null,
       });
 
-      // Automatic refund execution removed here. Now handled manually via UI.
+      // If it's store credit, generate the discount code immediately
+      if (acceptedOffer?.type === "store_credit" && finalRefundAmount) {
+        try {
+          const { code } = await this.shopifyService.createDiscountCode(
+            updated.merchantId,
+            finalRefundAmount,
+            order?.currency || "EUR"
+          );
+          updated = await this.negotiationsDal.update(updated.id, {
+            generatedDiscountCode: code,
+          });
+          console.log(`[Negotiation] Generated store credit code: ${code}`);
+        } catch (err) {
+          console.error("[Negotiation] Failed to generate discount code:", err);
+          // Fallback: mark for manual handling or log error
+        }
+      }
     }
 
     if (transition.nextStatus === "return_initiated") {

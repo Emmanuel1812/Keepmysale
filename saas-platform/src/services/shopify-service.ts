@@ -90,6 +90,60 @@ export class ShopifyService {
     return refund;
   }
 
+  async createDiscountCode(merchantId: string, amount: number, currency: string) {
+    const { accessToken, shopDomain } = await this.getAccessToken(merchantId);
+    const code = `CREDIT-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+    // 1. Create Price Rule
+    const priceRuleBody = {
+      price_rule: {
+        title: `Store Credit - AI Negotiation (${code})`,
+        target_type: "line_item",
+        target_selection: "all",
+        allocation_method: "across",
+        value_type: "fixed_amount",
+        value: `-${amount.toFixed(2)}`,
+        customer_selection: "all",
+        starts_at: new Date().toISOString(),
+        usage_limit: 1,
+      },
+    };
+
+    const prResponse = await fetch(`https://${shopDomain}/admin/api/2025-01/price_rules.json`, {
+      method: "POST",
+      headers: {
+        "X-Shopify-Access-Token": accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(priceRuleBody),
+    });
+
+    if (!prResponse.ok) {
+      throw new Error(`Shopify Price Rule failed: ${await prResponse.text()}`);
+    }
+
+    const { price_rule } = await prResponse.json();
+
+    // 2. Create Discount Code
+    const dcResponse = await fetch(
+      `https://${shopDomain}/admin/api/2025-01/price_rules/${price_rule.id}/discount_codes.json`,
+      {
+        method: "POST",
+        headers: {
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ discount_code: { code } }),
+      }
+    );
+
+    if (!dcResponse.ok) {
+      throw new Error(`Shopify Discount Code failed: ${await dcResponse.text()}`);
+    }
+
+    return { code, priceRuleId: price_rule.id };
+  }
+
   async registerWebhooks(shopDomain: string, accessToken: string) {
     const topics = [
       "orders/create",

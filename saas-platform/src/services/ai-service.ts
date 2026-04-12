@@ -112,9 +112,24 @@ export class AiService {
     shopAccessToken: string;
     merchantSettings: IMerchantSettings;
   }): Promise<ActionResult> {
-    const intentResult = await this.classifyIntent(input.incomingText);
+    let intentResult: IIntentStructuredResult;
     const ms = input.merchantSettings;
     const preferredLanguage = ms.language ?? "nl";
+
+    if (input.incomingText === "SYSTEM_GENERATE_PROACTIVE_CHECK") {
+      intentResult = {
+        intent: "other",
+        confidence: 1.0,
+        extracted_order_number: input.orderNameGuess || null,
+        language_detected: preferredLanguage,
+        sentiment: "positive",
+        requires_human: false,
+        reasoning: "System request for proactive satisfaction survey",
+      };
+    } else {
+      intentResult = await this.classifyIntent(input.incomingText);
+    }
+
     const customerName = input.customerName || "Klant";
     const storeName = input.storeName || input.shopDomain.replace(".myshopify.com", "");
     const currencyDisplay = ms.currency_display ?? "EUR";
