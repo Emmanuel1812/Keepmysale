@@ -226,26 +226,48 @@ export class WebhookService {
 
     // ── Determine if we should send or just draft ─────────────
     const isShadowMode = settings.shadow_mode === true;
-    const senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
+    let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
 
-    await this.messageService.create({
-      conversationId: conversation.id,
-      merchantId: input.merchantId,
-      sender: senderLabel,
-      channel: "email",
-      content: action.messageBody,
-      externalMessageId: null,
-      metadata: {
-        direction: "outbound",
-        intent: classification.intent,
-        confidence: classification.confidence,
-        requires_human: classification.requires_human,
-        below_confidence_threshold: belowThreshold,
-        auto_reply_blocked: !shouldAutoReply,
-        shadow_mode: isShadowMode,
-        negotiation_decision: action.negotiationDecision,
-      },
-    });
+    try {
+      await this.messageService.create({
+        conversationId: conversation.id,
+        merchantId: input.merchantId,
+        sender: senderLabel as any,
+        channel: "email",
+        content: action.messageBody,
+        externalMessageId: null,
+        metadata: {
+          direction: "outbound",
+          intent: classification.intent,
+          confidence: classification.confidence,
+          requires_human: classification.requires_human,
+          below_confidence_threshold: belowThreshold,
+          auto_reply_blocked: !shouldAutoReply,
+          shadow_mode: isShadowMode,
+          negotiation_decision: action.negotiationDecision,
+        },
+      });
+    } catch (err: any) {
+      // FALLBACK: If the DB hasn't been updated with the 'ai_draft' enum, 
+      // save as 'ai' but track draft status in metadata to avoid logic crash.
+      if (err.message?.includes("enum") || err.code === "22P02") {
+        console.warn("[WEBHOOK] 'ai_draft' enum missing, falling back to 'ai' with metadata.");
+        await this.messageService.create({
+          conversationId: conversation.id,
+          merchantId: input.merchantId,
+          sender: "ai",
+          channel: "email",
+          content: action.messageBody,
+          metadata: {
+            is_fallback_draft: true,
+            original_sender: senderLabel,
+            intent: classification.intent,
+          },
+        });
+      } else {
+        throw err;
+      }
+    }
 
     // If auto-reply is blocked, shadow mode is on, or human review is needed → don't send
     if (shouldSkipAutoReply || isShadowMode) {
