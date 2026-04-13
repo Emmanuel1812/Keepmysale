@@ -157,7 +157,7 @@ export class AiService {
       ...(ms.forbidden_topics ?? []).map((t) => `VERBODEN ONDERWERP (reageer hier NOOIT op, escaleer in plaats daarvan): ${t}`),
       ...(ms.forbidden_phrases ?? []).map((p) => `ZIN NOOIT GEBRUIKEN: "${p}"`),
       ...(ms.required_phrases ?? []).map((p) => `ALTIJD VERMELDEN in je antwoord: "${p}"`),
-      ms.custom_intro_sentence ? `INTRODUCTIE-ZIN (gebruik dit als start): "${ms.custom_intro_sentence.replace("[name customer]", customerName === "Klant" ? "" : customerName)}"` : "",
+      ms.custom_intro ? `INTRODUCTIE-ZIN (gebruik dit als start): "${ms.custom_intro.replace("[name customer]", customerName === "Klant" ? "" : customerName)}"` : "",
     ].filter(Boolean).join("\n");
 
     const messagesByLanguage = {
