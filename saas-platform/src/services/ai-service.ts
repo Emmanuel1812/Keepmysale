@@ -264,6 +264,7 @@ export class AiService {
         1. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
+        4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
         
         CONTEXT:
         ${orderContext}
@@ -339,6 +340,10 @@ export class AiService {
         1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
         2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
+        
+        CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the CURRENT active step. 
+        DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the current step.
+        If the user rejects the current step, you must ONLY offer the NEXT sequential step in your upcoming response, or wait for system state updates. Do not invent your own percentages.
         
         STRATEGIE:
         Gespreksgeschiedenis:

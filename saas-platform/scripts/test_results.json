@@ -10,9 +10,9 @@
         "turn": 1,
         "customer_message": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?",
         "ai_response": {
-          "id": "19d889974c4b6671",
+          "id": "19d88aa0114901e5",
           "subject": "Re: Status van mijn bestelling #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nUw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nBedankt voor uw vraag over de status van uw bestelling. Uw bestelling #1004\r\nis reeds volledig verzonden, aangezien de fulfillment-status op 'fulfilled'\r\nstaat. Onze leverancier heeft het pakket voor u klaargemaakt en verzonden\r\nmet een trackingnummer van 00446414507764. Het kan zijn dat u nog geen\r\nupdates heeft ontvangen van de vervoerder over de status van uw pakket,\r\nmaar u kunt uw pakket traceren met het trackingnummer op de website van de\r\nvervoerder. Mocht u nog verdere vragen hebben of als u problemen ondervindt\r\nmet het traceren van uw pakket, kunt u ons altijd contacten en zullen wij\r\nons best doen om u te helpen. Uw bestelling bevat \u00e9\u00e9n The Multi-managed\r\nSnowboard, wat een totaal van 629,95 EUR kostte.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -28,9 +28,9 @@
         "turn": 1,
         "customer_message": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?",
         "ai_response": {
-          "id": "19d889a5ed813666",
+          "id": "19d88aad75817720",
           "subject": "Re: Vraag over de Multi-managed Snowboard",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk zie dat u een vraag heeft over de Multi-managed Snowboard, maar helaas\r\nhebben wij geen ordergegevens kunnen vinden die overeenkomen met uw.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nEr is helaas geen order gevonden in ons systeem, dus we kunnen niet\r\nbevestigen dat u de Multi-managed Snowboard bij ons heeft besteld. Om uw\r\nvraag te beantwoorden: de Multi-managed Snowboard is een geweldige keuze\r\nvoor zowel beginners als gevorderde snowboarders, maar het is belangrijk om\r\nte kiezen voor een snowboard die past bij uw niveau en stijl. Als beginner\r\nis het aan te raden om te beginnen met een board dat wat korter en\r\nflexibeler is, omdat dit makkelijker te hanteren is. Onze klantenservice\r\nkan u helpen bij het vinden van de juiste snowboard die aansluit bij uw\r\nspecifieke behoeften en niveau. Zodra we uw order hebben gevonden, kunnen\r\nwe ook meer specifieke informatie geven over de status van uw bestelling.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -51,24 +51,37 @@
         "turn": 1,
         "customer_message": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
         "ai_response": {
-          "id": "19d889b4ff7d4720",
+          "id": "19d88abc9531fc15",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat je snowboard niet helemaal bevalt zoals je had gehoopt.\r\nVoordat we overstappen op de retourprocedure, zouden we graag iets voor je\r\ndoen om je tevredenheid te herstellen. We kunnen je eenmalig een\r\nterugbetaling van 15% aanbieden op de aankoopprijs van het snowboard. Zou\r\nje daarmee akkoord kunnen gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat de snowboard niet helemaal is wat u ervan had verwacht.\r\nVoordat we overgaan tot retourneren, wil ik u graag een alternatief\r\naanbieden. Wij kunnen u een compensatie van 15% van de aankoopsom\r\naanbieden, zodat u de snowboard toch kunt houden en wij u een gedeeltelijke\r\ntegemoetkoming kunnen bieden voor eventuele ongemakken.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 2,
         "customer_message": "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
         "ai_response": {
-          "id": "19d889c4d6ac381a",
+          "id": "19d88acae81f7c42",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat 15% korting niet voldoende is voor u. Ik wil graag een stap\r\nverder gaan in onze oplossing. We kunnen een aanbod doen van 25%\r\nterugbetaling. Zou dit voor u een acceptabel aanbod zijn?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat de 15% korting niet genoeg is om u tevreden te stellen. Om u\r\ntegemoet te komen, wil ik een stap verder gaan in ons compensatiebeleid.\r\nWij kunnen u een compensatie van 25% van de aankoopsom aanbieden, zodat u\r\nde snowboard toch kunt houden en wij u een ruimere tegemoetkoming kunnen\r\nbieden voor eventuele ongemakken.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 3,
         "customer_message": "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
-        "ai_response": "TIMED OUT"
+        "ai_response": {
+          "id": "19d88addbabf149f",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nWe begrijpen dat de eerdere aanboden niet voldeden aan uw verwachtingen.\r\nOmdat we onze klanten tevreden willen stellen, willen we een laatste aanbod\r\ndoen om een retour te voorkomen. We zijn bereid om 50% van de aankoopprijs\r\nterug te betalen, als compensatie voor het ongemak. Wilt u hiermee akkoord\r\ngaan of wilt u toch het product retourneren?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      },
+      {
+        "turn": 4,
+        "customer_message": "Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.",
+        "ai_response": {
+          "id": "19d88b05b3174937",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nWe begrijpen dat onze voorgaande aanboden niet voldeden aan uw\r\nverwachtingen. Omdat we onze klanten tevreden willen stellen, willen we een\r\nnieuw aanbod doen om een retour te voorkomen. We zijn nu bereid om 50% van\r\nde aankoopprijs terug te betalen, als compensatie voor het ongemak. Dit is\r\nons hoogste aanbod.Als u deze optie ook niet accepteert, zullen we u\r\ninstructies geven over hoe u het snowboard kunt retourneren.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
       }
     ]
   }
