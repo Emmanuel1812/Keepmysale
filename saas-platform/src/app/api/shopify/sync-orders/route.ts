@@ -5,6 +5,7 @@ import { decryptAes256 } from "@/lib/encryption";
 import { OrderService } from "@/services/order-service";
 import { CustomerService } from "@/services/customer-service";
 import { MerchantService } from "@/services/merchant-service";
+import { getEnv } from "@/lib/env";
 import { normalizeShopDomain } from "@/lib/shopify/auth";
 
 function isLikelyValidShopifyToken(token: string): boolean {
