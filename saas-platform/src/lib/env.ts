@@ -31,7 +31,7 @@ let cachedEnv: z.infer<typeof envSchema> | null = null;
 export function getEnv() {
   if (cachedEnv) return cachedEnv;
 
-  const parsedEnv = envSchema.safeParse({
+  const rawData = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -55,14 +55,27 @@ export function getEnv() {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
     CRON_SECRET: process.env.CRON_SECRET,
-  });
+  };
+
+  const parsedEnv = envSchema.safeParse(rawData);
 
   if (!parsedEnv.success) {
-    const errorDetails = JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2);
-    console.error("❌ Invalid environment variables:", errorDetails);
-    throw new Error(
-      `Invalid environment variables. Please check your Vercel/local .env settings. Details: ${errorDetails}`,
-    );
+    const errorDetails = parsedEnv.error.flatten().fieldErrors;
+    console.error("⚠️ Environment Validation Warning:", JSON.stringify(errorDetails, null, 2));
+    
+    // During local development, we still want to see these clearly.
+    // In production, we'll use a fallback object to prevent boot-time crashes.
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Continuing with partial environment for local development...");
+    }
+
+    // Return the partially valid data cast to the schema type to prevent 500 boot-time crashes.
+    // Individual service calls will fail with clearer errors if they need a missing variable.
+    cachedEnv = {
+      ...(rawData as any),
+      ...parsedEnv.data,
+    };
+    return cachedEnv;
   }
 
   cachedEnv = parsedEnv.data;

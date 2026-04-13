@@ -16,6 +16,7 @@ export async function getMerchantFromSession(shopDomain?: string): Promise<IMerc
     if (merchant) {
       return merchant;
     }
+    console.warn("[auth] User logged in but no merchant found in DB. UserId:", user.id);
   }
 
   // Fallback: If we have a shopDomain (e.g. from X-Shop-Domain header), 
@@ -27,6 +28,7 @@ export async function getMerchantFromSession(shopDomain?: string): Promise<IMerc
     if (merchant) {
       return merchant;
     }
+    console.warn("[auth] Shop domain lookup failed. Domain:", normalized);
   }
 
   throw new Error("UNAUTHORIZED");

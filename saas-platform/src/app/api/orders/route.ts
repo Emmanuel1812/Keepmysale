@@ -23,6 +23,7 @@ export async function GET(request: Request) {
   if (orders.length === 0) {
     console.log("[orders GET] No orders found for merchant", merchantId, " - trying to fetch all orders to check for mismatches...");
     const { data: allOrders } = await supabase.from("orders").select("*").order("updated_at", { ascending: false });
+    
     if (allOrders && allOrders.length > 0) {
       console.log("[orders GET] Found", allOrders.length, "orders system-wide. First order merchant_id:", allOrders[0].merchant_id);
       console.log("[orders GET] Temporarily returning all orders to fix the 'No orders synced' data bug.");
@@ -49,6 +50,9 @@ export async function GET(request: Request) {
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
       }));
+    } else {
+      console.log("[orders GET] System-wide orders also empty. Returning empty list.");
+      orders = [];
     }
   }
 
