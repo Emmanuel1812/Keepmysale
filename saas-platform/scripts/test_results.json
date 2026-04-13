@@ -5,11 +5,7 @@
       "subject": "Status van mijn bestelling #1004",
       "body": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?"
     },
-    "ai_response": {
-      "id": "19d87dcbe6ada3cc",
-      "subject": "Re: Status van mijn bestelling #1004",
-      "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nBeste [name customer]\r\n\r\nUw order #1004 is reeds gefulfilled en heeft een trackingnummer van\r\n00446414507764. U kunt de status van uw pakket natrekken met dit nummer. De\r\ninhoud van uw order bestaat uit 1x The Multi-managed Snowboard met een\r\ntotaalbedrag van 629.95 EUR.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
-    }
+    "ai_response": "TIMED OUT"
   },
   {
     "test_case": {
@@ -17,11 +13,7 @@
       "subject": "Vraag over de Multi-managed Snowboard",
       "body": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?"
     },
-    "ai_response": {
-      "id": "19d87ddc0cc6b32f",
-      "subject": "Re: Vraag over de Multi-managed Snowboard",
-      "body": "Goedemiddag eoudennaarden2,\r\n\r\nBeste [name customer]\r\n\r\nHelaas hebben wij geen order informatie gevonden om uw vraag te kunnen\r\nbeantwoorden over de Multi-managed Snowboard. Zodra uw order is geplaatst,\r\nkunnen wij u meer informatie geven over de producten in uw order.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
-    }
+    "ai_response": "TIMED OUT"
   },
   {
     "test_case": {

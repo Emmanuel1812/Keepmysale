@@ -2,14 +2,24 @@ import requests
 import time
 import sys
 
-# Configuration
-LOCAL_API_URL = "http://localhost:3000/api/cron/check-gmail"
-INTERVAL_SECONDS = 60  # Poll every minute
+# Load CRON_SECRET from .env.local if possible
+def get_cron_secret():
+    try:
+        with open(".env.local", "r") as f:
+            for line in f:
+                if line.startswith("CRON_SECRET="):
+                    return line.split("=")[1].strip()
+    except:
+        pass
+    return "your-secret-here" # Fallback
+
+CRON_SECRET = get_cron_secret()
 
 def run_sync():
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 🔄 Triggering local Gmail sync...")
     try:
-        response = requests.get(LOCAL_API_URL)
+        headers = {"Authorization": f"Bearer {CRON_SECRET}"}
+        response = requests.get(LOCAL_API_URL, headers=headers)
         if response.status_code == 200:
             data = response.json()
             processed = data.get('processedCount', 0)
