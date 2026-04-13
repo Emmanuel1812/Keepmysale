@@ -23,8 +23,9 @@ async function processGmailPolling(request: Request) {
   const isVercelCron = request.headers.get("x-vercel-cron");
   const authHeader = request.headers.get("authorization");
   const hasSecret = authHeader === `Bearer ${env.CRON_SECRET}`;
+  const isDev = process.env.NODE_ENV === "development";
 
-  if (!isVercelCron && !hasSecret) {
+  if (!isVercelCron && !hasSecret && !isDev) {
     const userAgent = request.headers.get("user-agent") || "";
     // Avoid spamming logs if it's just a browser or bot hit
     if (!userAgent.includes("Mozilla")) {
