@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { OrderService } from "@/services/order-service";
 import type { ActionResult } from "@/types/domain";
 import type { IMerchantSettings } from "@/types/merchant";
-import { createGeminiClient } from "@/lib/gemini/client";
+import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/gemini/client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 
 const resendPatterns = [
@@ -69,12 +69,12 @@ export class AiService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODELS.PRIMARY,
         generationConfig: { responseMimeType: "application/json" },
       });
 
       const prompt = `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}`;
-      const result = await model.generateContent(prompt);
+      const result = await callGeminiWithRetry(model, prompt);
       const raw = result.response.text() || "{}";
       const parsed = JSON.parse(raw) as IIntentStructuredResult;
 
@@ -238,7 +238,7 @@ export class AiService {
     if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other")) {
       try {
         const model = this.geminiClient.getGenerativeModel({
-          model: "gemini-2.5-flash",
+          model: GEMINI_MODELS.PRIMARY,
           generationConfig: { responseMimeType: "application/json" },
         });
 
@@ -268,7 +268,7 @@ export class AiService {
         }
         `;
 
-        const response = await model.generateContent(prompt);
+        const response = await callGeminiWithRetry(model, prompt);
         const raw = response.response.text();
         const parsed = JSON.parse(raw);
 
@@ -292,7 +292,7 @@ export class AiService {
       // Dynamic negotiation via Gemini
       try {
         const model = this.geminiClient.getGenerativeModel({
-          model: "gemini-2.5-flash",
+          model: GEMINI_MODELS.PRIMARY,
           generationConfig: { responseMimeType: "application/json" },
         });
 
@@ -343,7 +343,7 @@ export class AiService {
         }
         `;
 
-        const response = await model.generateContent(negotiationPrompt);
+        const response = await callGeminiWithRetry(model, negotiationPrompt);
         const raw = response.response.text();
         const parsed = JSON.parse(raw) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
 
