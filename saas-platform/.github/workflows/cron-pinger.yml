@@ -1,0 +1,19 @@
+name: Remote Cron Pinger (Workaround)
+
+on:
+  schedule:
+    # GitHub Action Cron minimum is roughly every 5 minutes.
+    # This is the best free workaround for Vercel Hobby limits.
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  ping-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Gmail Sync Endpoint
+        run: |
+          # Use your production URL here. 
+          # GitHub Actions will hit this URL every 5 minutes.
+          curl -X GET "https://${{ secrets.PRODUCTION_URL }}/api/cron/check-gmail" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
