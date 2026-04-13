@@ -55,7 +55,11 @@ export function formatEmailResponse(params: {
   }
 
   // ── Custom intro (optional line after greeting) ───────────
-  const customIntro = settings?.custom_intro?.trim() || "";
+  let customIntro = settings?.custom_intro?.trim() || "";
+  if (customIntro.includes("[name customer]")) {
+    const replacement = name && name !== "Klant" ? name : "";
+    customIntro = customIntro.replace(/\[name customer\]/g, replacement).replace(/\s\s+/g, " ").trim();
+  }
 
   // ── Sign-off ──────────────────────────────────────────────
   const storeSuffix = params.storeName || "Store";
@@ -96,7 +100,20 @@ export function formatEmailResponse(params: {
   const requiredPhrases = (settings?.required_phrases ?? []).filter(Boolean);
 
   // ── Build plain text ──────────────────────────────────────
-  const textBody = params.aiResponse.trim();
+  let textBody = params.aiResponse.trim();
+
+  // Sanity Strip: Remove AI-generated greetings or placeholders that leaked through
+  const hallucinationPatterns = [
+    /^(hallo|beste|geachte|hi|hoi|dear|hello|good (morning|afternoon|evening))\s+.*?[,.:!]\s*/i,
+    /\[name customer\]/gi,
+    /\[customer\]/gi,
+    /(met vriendelijke groet|vriendelijke groeten|vriendelijke groet|kind regards|sincerely|best|best regards|regards|atenciosamente|com os melhores cumprimentos)[,.:!]*\s*.*$/i
+  ];
+  
+  hallucinationPatterns.forEach(pattern => {
+    textBody = textBody.replace(pattern, "").trim();
+  });
+
   const parts = [greeting];
   if (customIntro) parts.push(customIntro);
   parts.push("", textBody);

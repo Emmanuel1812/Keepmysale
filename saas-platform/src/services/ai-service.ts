@@ -241,8 +241,10 @@ export class AiService {
       }
     }
 
-    // Dynamic handling for WISMO, FAQ or General/Other if we have order context
-    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other" || intentResult.intent === "faq" || intentResult.intent === "exchange")) {
+    // Dynamic handling for WISMO, FAQ, Exchange, Return, or General/Other if we have order context
+    const hasOrderContext = orderContext !== "Geen order gevonden.";
+    
+    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other" || intentResult.intent === "faq" || intentResult.intent === "exchange" || intentResult.intent === "return")) {
       try {
         const model = this.geminiClient.getGenerativeModel({
           model: GEMINI_MODELS.PRIMARY,
@@ -251,17 +253,17 @@ export class AiService {
 
         const prompt = `
         Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
-        De klant heet '${customerName}'.
         
-        BELANGRIJKE INSTRUCTIE: SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT!
-        Het systeem voegt zelf al een aanhef, de introductiezinnen en een afsluiting toe. Begin dus direct met het antwoord en sluit niet af met een groet.
+        BELANGRIJKE INSTRUCTIES (STRICTE OVERLEVING VEREIST):
+        1. SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT. 
+        2. GEEN AANHEF OF GROET. Start direct met de feitelijke informatie (geen "Hallo", "Beste", "Geachte", "Hi").
+        3. GEEN AFSLUITING OF NAAM. Eindig na je laatste feitelijke zin (geen "Met vriendelijke groet", "Kind regards").
+        4. GEEN PLACEHOLDERS. Gebruik nooit "[name customer]" of "[customer]". Het systeem regelt de namen.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. ${settingsRulesBlock}
-        2. ACCURAATHEID & SOURCE OF TRUTH: 
-           - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
-           - Als de klant vraagt naar de STATUS of TRACKING: geef dan het trackingnummer en de status (indien beschikbaar).
-           - Gebruik ALTIJD de verstrekte Order Context.
+        - Wees ${toneDescription}.
+        - ${settingsRulesBlock}
+        - ACCURAATHEID: Gebruik ALTIJD de verstrekte Order Context hieronder als 'Source of Truth'.
         
         Taal: ${preferredLanguage}
         
@@ -272,7 +274,7 @@ export class AiService {
         
         Return ONLY valid JSON:
         {
-          "messageBody": "jouw antwoord tekst hier (ZONDER aanhef en afsluiting)"
+          "messageBody": "jouw antwoord tekst hier"
         }
         `;
 
@@ -317,46 +319,32 @@ export class AiService {
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
 
+        const steps = (ms.negotiation_steps as any[] || []);
+        const stepsContext = steps.length > 0
+          ? `De merchant heeft de volgende oploop-stappen ingesteld:\n${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}`
+          : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
+
         const negotiationPrompt = `
-        Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
-        De klant heet '${customerName}'.
-
-        De klant wil iets retourneren of is in gesprek over een retour.
+        Je bent een klantenservice medewerker voor '${storeName}'. 
         
-        BELANGRIJKE INSTRUCTIE: SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT!
-        Het systeem voegt zelf al een aanhef, de introductiezinnen en een afsluiting toe. Begin dus direct met het antwoord en sluit niet af met een groet.
-
-        RICHTLIJNEN VOOR JE ANTWOORD:
-        1. ${settingsRulesBlock}
-        2. ACCURAATHEID & SOURCE OF TRUTH: 
-           - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
-           - Gebruik ALTIJD de verstrekte Order Context als bron van waarheid.
-        3. STRATEGIE:
-           - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
-           - De merchant heeft de volgende stappen ingesteld voor kortingen:
-           ${(ms.negotiation_steps as any[] || [])
-            .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
-            .join("\n")}
-           - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt.
-
-        Taal: ${preferredLanguage}
+        OPLOOP-NEGOTIATIE PROTOCOL (STRICT CONTENT ONLY):
+        1. SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT.
+        2. GEEN GREETINGS, GEEN AFSLUITING, GEEN NAMEN.
+        3. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
         
-        Order Context:
-        ${orderContext}
-
-        Chatgeschiedenis:
-        ${historyContext}
+        Stijl: ${toneDescription}.
+        Context: ${orderContext}
+        
+        NEGOTIATIE RICHTLIJNEN:
+        ${stepsContext}
+        - Probeer de klant te overtuigen de producten te houden in ruil voor de bovenstaande compensatie.
         
         Laatste bericht van de klant:
         ${input.incomingText}
         
-        Opdracht: 
-        1. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
-        2. Schrijf een natuurlijk antwoord (ZONDER aanhef en afsluiting).
-        
-        Return ONLY valid JSON with this shape:
+        Return ONLY valid JSON shape:
         {
-          "messageBody": "jouw antwoord tekst hier (zonder aanhef en afsluiting)",
+          "messageBody": "jouw antwoord tekst hier",
           "negotiationDecision": "accept" | "reject" | "continue"
         }
         `;

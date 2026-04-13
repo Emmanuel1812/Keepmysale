@@ -135,7 +135,17 @@ export class WebhookService {
       console.log(`[WEBHOOK] FLAG: Confidence ${classification.confidence} is below the threshold of ${confidenceThreshold}`);
     }
 
-    const shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
+    const isNegotiation = classification.intent === "return" && settings.auto_negotiate !== false;
+    let shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
+    
+    // ── Special Case: Automated Negotiation Bypass ───────────────
+    // If the merchant enabled auto-negotiate, we WANT the offer to go out even if 
+    // it technically 'requires human' or has lower confidence.
+    if (isNegotiation) {
+      console.log("[WEBHOOK] Negotiation detected and auto_negotiate is ON. Bypassing skip guards.");
+      shouldSkipAutoReply = false;
+    }
+
     console.log(`[WEBHOOK] Auto-reply Decision -> shouldAutoReply: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
 
     const history = await this.messageService.findByConversation(conversation.id);
@@ -226,6 +236,26 @@ export class WebhookService {
       );
     }
 
+    // ── Build formatted email using full settings FIRST to save to DB ─────────────
+    let finalCustomerName = customer.name;
+    if (!finalCustomerName) {
+      if (input.from.includes("<")) {
+        const displayName = input.from.split("<")[0].replace(/"/g, "").trim();
+        if (displayName) finalCustomerName = displayName;
+      }
+    }
+    if (!finalCustomerName) {
+      finalCustomerName = cleanFrom.split("@")[0];
+    }
+
+    const template = formatEmailResponse({
+      customerName: finalCustomerName,
+      aiResponse: action.messageBody,
+      storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
+      language: settings.language || "nl",
+      settings,
+    });
+
     // ── Determine if we should send or just draft ─────────────
     const isShadowMode = settings.shadow_mode === true;
     let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
@@ -236,7 +266,7 @@ export class WebhookService {
         merchantId: input.merchantId,
         sender: senderLabel as any,
         channel: "email",
-        content: action.messageBody,
+        content: template.text, // Store fully formatted message so UI shows greetings
         externalMessageId: null,
         metadata: {
           direction: "outbound",
@@ -259,7 +289,7 @@ export class WebhookService {
           merchantId: input.merchantId,
           sender: "ai",
           channel: "email",
-          content: action.messageBody,
+          content: template.text,
           metadata: {
             is_fallback_draft: true,
             original_sender: senderLabel,
@@ -291,25 +321,7 @@ export class WebhookService {
       return { deduplicated: false as const, action: "draft_saved", reason };
     }
 
-    // ── Build formatted email using full settings ─────────────
-    let finalCustomerName = customer.name;
-    if (!finalCustomerName) {
-      if (input.from.includes("<")) {
-        const displayName = input.from.split("<")[0].replace(/"/g, "").trim();
-        if (displayName) finalCustomerName = displayName;
-      }
-    }
-    if (!finalCustomerName) {
-      finalCustomerName = cleanFrom.split("@")[0];
-    }
-
-    const template = formatEmailResponse({
-      customerName: finalCustomerName,
-      aiResponse: action.messageBody,
-      storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
-      language: settings.language || "nl",
-      settings,
-    });
+    // Formatting moved up to save in database
 
     if (merchant.googleEmail) {
       console.log("[WEBHOOK] Sending via Gmail:", merchant.googleEmail);
@@ -368,9 +380,21 @@ export class WebhookService {
       const customerEmail = (payload.email as string | undefined) ?? null;
       let customerId: string | null = null;
       if (customerEmail) {
+        let customerName: string | undefined = undefined;
+        if (payload.customer) {
+            const firstName = (payload.customer as any).first_name;
+            const lastName = (payload.customer as any).last_name;
+            customerName = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : undefined;
+        } else if (payload.billing_address) {
+            const firstName = (payload.billing_address as any).first_name;
+            const lastName = (payload.billing_address as any).last_name;
+            customerName = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : undefined;
+        }
+
         const customer = await this.customerService.resolveCustomer({
           merchantId: merchant.id,
           email: customerEmail,
+          name: customerName,
           language: merchant.settings?.language ?? "nl",
         });
         customerId = customer.id;
@@ -460,26 +484,26 @@ export class WebhookService {
       merchantSettings: merchant.settings,
     });
 
-    // 3. Send and Save (Ignore guards)
-    await this.messageService.create({
-      conversationId: conversation.id,
-      merchantId: merchant.id,
-      sender: "ai",
-      channel: "email",
-      content: action.messageBody,
-      metadata: {
-        direction: "outbound",
-        intent: classification.intent,
-        manual_trigger: true,
-      },
-    });
-
     const template = formatEmailResponse({
       customerName: customer.name || (customer.email ?? "").split("@")[0],
       aiResponse: action.messageBody,
       storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
       language: merchant.settings?.language || "nl",
       settings: merchant.settings,
+    });
+
+    // 3. Send and Save (Ignore guards)
+    await this.messageService.create({
+      conversationId: conversation.id,
+      merchantId: merchant.id,
+      sender: "ai",
+      channel: "email",
+      content: template.text,
+      metadata: {
+        direction: "outbound",
+        intent: classification.intent,
+        manual_trigger: true,
+      },
     });
 
     if (!customer.email) throw new Error("No customer email found");
