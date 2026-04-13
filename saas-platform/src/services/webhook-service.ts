@@ -149,27 +149,29 @@ export class WebhookService {
       : "";
 
     let orderIdForNegotiation: string | null = null;
-    if (classification.intent === "wismo" || classification.intent === "return") {
-      const orderNameGuess = classification.extracted_order_number ?? undefined;
-      if (orderNameGuess) {
-        const shopifyOrder = await this.orderService.fetchShopifyOrderByName(
-          merchant.shopDomain,
-          decryptedShopifyAccessToken,
-          orderNameGuess,
-        );
-        if (shopifyOrder) {
-          // Extract customer name from Shopify order if missing
-          if (!customer.name && (shopifyOrder as any).customer) {
-            const firstName = (shopifyOrder as any).customer.first_name;
-            const lastName = (shopifyOrder as any).customer.last_name;
-            customer.name = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : null;
-          }
+    const orderNameGuess = classification.extracted_order_number ?? undefined;
 
-          const existingOrders = await this.orderService.findByMerchant(input.merchantId);
-          const matched = existingOrders.find((o) => o.shopifyOrderId === shopifyOrder.id);
-          if (matched) {
-            orderIdForNegotiation = matched.id;
-          }
+    if (orderNameGuess) {
+      console.log(`[WEBHOOK] Attempting to fetch order data for: ${orderNameGuess}`);
+      const shopifyOrder = await this.orderService.fetchShopifyOrderByName(
+        merchant.shopDomain,
+        decryptedShopifyAccessToken,
+        orderNameGuess,
+      );
+
+      if (shopifyOrder) {
+        // Extract customer name from Shopify order if missing
+        if (!customer.name && (shopifyOrder as any).customer) {
+          const firstName = (shopifyOrder as any).customer.first_name;
+          const lastName = (shopifyOrder as any).customer.last_name;
+          customer.name = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : null;
+          console.log(`[WEBHOOK] Extracted name from order: ${customer.name}`);
+        }
+
+        const existingOrders = await this.orderService.findByMerchant(input.merchantId);
+        const matched = existingOrders.find((o) => o.shopifyOrderId === shopifyOrder.id);
+        if (matched) {
+          orderIdForNegotiation = matched.id;
         }
       }
     }

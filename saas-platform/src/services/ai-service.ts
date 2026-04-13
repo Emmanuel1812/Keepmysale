@@ -157,7 +157,8 @@ export class AiService {
       ...(ms.forbidden_topics ?? []).map((t) => `VERBODEN ONDERWERP (reageer hier NOOIT op, escaleer in plaats daarvan): ${t}`),
       ...(ms.forbidden_phrases ?? []).map((p) => `ZIN NOOIT GEBRUIKEN: "${p}"`),
       ...(ms.required_phrases ?? []).map((p) => `ALTIJD VERMELDEN in je antwoord: "${p}"`),
-    ].join("\n");
+      ms.custom_intro_sentence ? `INTRODUCTIE-ZIN (gebruik dit als start): "${ms.custom_intro_sentence.replace("[name customer]", customerName === "Klant" ? "" : customerName)}"` : "",
+    ].filter(Boolean).join("\n");
 
     const messagesByLanguage = {
       nl: {
@@ -242,8 +243,8 @@ export class AiService {
       }
     }
 
-    // Dynamic handling for WISMO or General if we have order context
-    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other")) {
+    // Dynamic handling for WISMO, FAQ or General/Other if we have order context
+    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other" || intentResult.intent === "faq" || intentResult.intent === "exchange")) {
       try {
         const model = this.geminiClient.getGenerativeModel({
           model: GEMINI_MODELS.PRIMARY,
@@ -255,7 +256,7 @@ export class AiService {
         Je spreekt de klant aan met '${customerName}'.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName}.
+        1. BEGIN altijd met een vriendelijke groet. Gebruik '${customerName}' alleen als het een echte naam is (NIET als de naam 'Klant' is). Als de naam 'Klant' is, gebruik dan een algemene begroeting zoals 'Beste klant,' of 'Goedendag,'.
         2. ${settingsRulesBlock}
         3. ACCURAATHEID & SOURCE OF TRUTH: 
            - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
@@ -290,7 +291,7 @@ export class AiService {
         const parsed = JSON.parse(resultStr);
 
         resultAction = {
-          action: intentResult.intent === "wismo" ? "send_tracking_status" : "send_general_reply",
+          action: (intentResult.intent === "wismo" || intentResult.intent === "faq") ? "send_tracking_status" : "send_general_reply",
           messageBody: parsed.messageBody,
         };
       } catch (error) {
@@ -324,7 +325,7 @@ export class AiService {
         De klant wil iets retourneren of is in gesprek over een retour.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet gericht aan ${customerName}.
+        1. BEGIN altijd met een vriendelijke groet. Gebruik '${customerName}' alleen als het een echte naam is (NIET als de naam 'Klant' is). Als de naam 'Klant' is, gebruik dan een algemene begroeting zoals 'Beste klant,' of 'Goedendag,'.
         2. ${settingsRulesBlock}
         3. ACCURAATHEID & SOURCE OF TRUTH: 
            - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
