@@ -24,7 +24,7 @@ export function createGroqClient() {
 export async function callGroqWithRetry(
   client: OpenAI,
   messages: any[],
-  model = GROQ_MODELS.PRIMARY,
+  model: string = GROQ_MODELS.PRIMARY,
   maxRetries = 2
 ) {
   let lastError: any;
