@@ -5,6 +5,7 @@ import { OrderService } from "@/services/order-service";
 import type { ActionResult } from "@/types/domain";
 import type { IMerchantSettings } from "@/types/merchant";
 import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/gemini/client";
+import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 
 const resendPatterns = [
@@ -22,6 +23,7 @@ const returnPatterns = [/return/i, /refund/i, /damaged/i, /troca/i, /devolver/i]
 export class AiService {
   private readonly orderService: OrderService;
   private readonly geminiClient = createGeminiClient();
+  private readonly groqClient = createGroqClient();
 
   constructor(private readonly supabase: SupabaseClient) {
     this.orderService = new OrderService(supabase);
@@ -68,15 +70,21 @@ export class AiService {
     }
 
     try {
-      const model = this.geminiClient.getGenerativeModel({
-        model: GEMINI_MODELS.PRIMARY,
-        generationConfig: { responseMimeType: "application/json" },
+      const resultStr = await this.callResilientAi({
+        gemini: {
+          model: GEMINI_MODELS.PRIMARY,
+          prompt: `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}`,
+          jsonMode: true
+        },
+        groq: {
+          messages: [
+            { role: "system", content: INTENT_SYSTEM_PROMPT },
+            { role: "user", content: `${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}` }
+          ]
+        }
       });
 
-      const prompt = `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}`;
-      const result = await callGeminiWithRetry(model, prompt);
-      const raw = result.response.text() || "{}";
-      const parsed = JSON.parse(raw) as IIntentStructuredResult;
+      const parsed = JSON.parse(resultStr) as IIntentStructuredResult;
 
       console.log("[AI] Classification result:", JSON.stringify(parsed));
       return {
@@ -268,9 +276,18 @@ export class AiService {
         }
         `;
 
-        const response = await callGeminiWithRetry(model, prompt);
-        const raw = response.response.text();
-        const parsed = JSON.parse(raw);
+        const resultStr = await this.callResilientAi({
+          gemini: {
+            model: GEMINI_MODELS.PRIMARY,
+            prompt,
+            jsonMode: true
+          },
+          groq: {
+            messages: [{ role: "user", content: prompt }]
+          }
+        });
+
+        const parsed = JSON.parse(resultStr);
 
         resultAction = {
           action: intentResult.intent === "wismo" ? "send_tracking_status" : "send_general_reply",
@@ -343,9 +360,18 @@ export class AiService {
         }
         `;
 
-        const response = await callGeminiWithRetry(model, negotiationPrompt);
-        const raw = response.response.text();
-        const parsed = JSON.parse(raw) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
+        const resultStr = await this.callResilientAi({
+          gemini: {
+            model: GEMINI_MODELS.PRIMARY,
+            prompt: negotiationPrompt,
+            jsonMode: true
+          },
+          groq: {
+            messages: [{ role: "user", content: negotiationPrompt }]
+          }
+        });
+
+        const parsed = JSON.parse(resultStr) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
 
         resultAction = {
           action: "offer_partial_refund",
@@ -372,5 +398,44 @@ export class AiService {
 
     console.log("[AI] Action result:", resultAction.action, resultAction.messageBody?.substring(0, 200));
     return resultAction;
+  }
+
+  private async callResilientAi(options: {
+    gemini: { model: string; prompt: string; jsonMode?: boolean };
+    groq: { messages: any[]; model?: string };
+  }): Promise<string> {
+    // 1. Attempt Gemini
+    try {
+      const gModel = this.geminiClient.getGenerativeModel({
+        model: options.gemini.model,
+        ...(options.gemini.jsonMode ? { generationConfig: { responseMimeType: "application/json" } } : {}),
+      });
+      const result = await callGeminiWithRetry(gModel, options.gemini.prompt);
+      const text = result.response.text();
+      if (text) return text;
+      throw new Error("Gemini returned empty response");
+    } catch (geminiError: any) {
+      console.error("[AI] Gemini failed, checking fallback:", geminiError.message || geminiError);
+      
+      // 2. Fallback to Groq if available
+      if (this.groqClient) {
+        try {
+          console.log("[AI] Falling back to Groq...");
+          const result = await callGroqWithRetry(
+            this.groqClient,
+            options.groq.messages,
+            options.groq.model || GROQ_MODELS.PRIMARY
+          );
+          if (result) return result;
+        } catch (groqError: any) {
+          console.error("[AI] Groq fallback also failed:", groqError.message || groqError);
+        }
+      } else {
+        console.warn("[AI] Groq fallback requested but GROQ_API_KEY is missing.");
+      }
+      
+      // If we got here, both failed or fallback wasn't possible
+      throw geminiError;
+    }
   }
 }
