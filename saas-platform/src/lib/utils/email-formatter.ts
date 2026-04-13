@@ -102,17 +102,25 @@ export function formatEmailResponse(params: {
   // ── Build plain text ──────────────────────────────────────
   let textBody = params.aiResponse.trim();
 
-  // Sanity Strip: Remove AI-generated greetings or placeholders that leaked through
+  // Sanity Strip: Remove AI-generated greetings or placeholders if they match exactly
   const hallucinationPatterns = [
-    /^(hallo|beste|geachte|hi|hoi|dear|hello|good (morning|afternoon|evening))\s+.*?[,.:!]\s*/i,
+    /^(hallo|beste|geachte|hi|hoi|dear|hello|good (morning|afternoon|evening))\s+[^,\n]+[,!\n]/i,
     /\[name customer\]/gi,
     /\[customer\]/gi,
-    /(met vriendelijke groet|vriendelijke groeten|vriendelijke groet|kind regards|sincerely|best|best regards|regards|atenciosamente|com os melhores cumprimentos)[,.:!]*\s*.*$/i
+    // Only strip sign-offs that are clearly separated by a newline to avoid mid-sentence matches
+    /(\n|^)(met vriendelijke groet|vriendelijke groeten|vriendelijke groet|kind regards|sincerely|best regards|regards|atenciosamente|com os melhores cumprimentos)[,.:!]*\s*.*$/im
   ];
   
   hallucinationPatterns.forEach(pattern => {
     textBody = textBody.replace(pattern, "").trim();
   });
+
+  // Safety Bypass: If the body was truncated down to almost nothing (e.g. just "Uw"),
+  // go back to the original response and just trim it. Better a bit of hallucination than 1 word.
+  if (textBody.length < 5 && params.aiResponse.trim().length > 10) {
+    console.warn("[EmailFormatter] Truncation was too aggressive, bypassing sanity strip.");
+    textBody = params.aiResponse.trim();
+  }
 
   const parts = [greeting];
   if (customIntro) parts.push(customIntro);

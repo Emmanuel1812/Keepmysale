@@ -5,11 +5,17 @@
       "subject": "Status van mijn bestelling #1004",
       "body": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?"
     },
-    "ai_response": {
-      "id": "19d88169795b46b2",
-      "subject": "Re: Status van mijn bestelling #1004",
-      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nBedankt voor het contact over uw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
-    }
+    "turns": [
+      {
+        "turn": 1,
+        "customer_message": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?",
+        "ai_response": {
+          "id": "19d889974c4b6671",
+          "subject": "Re: Status van mijn bestelling #1004",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nUw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      }
+    ]
   },
   {
     "test_case": {
@@ -17,22 +23,53 @@
       "subject": "Vraag over de Multi-managed Snowboard",
       "body": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?"
     },
-    "ai_response": {
-      "id": "19d88184c5950199",
-      "subject": "Re: Vraag over de Multi-managed Snowboard",
-      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nDe Multi-managed Snowboard is een hoogwaardig model dat geschikt is voor\r\nzowel beginners als ervaren snowboarders, maar het hangt af van je\r\npersoonlijke voorkeuren en behoeften. Als beginner raden we aan om eerst te\r\nkijken naar snowboards die specifiek ontworpen zijn voor beginners, omdat\r\ndeze vaak een wat zachte flex hebben en een grotere neus, waardoor ze\r\ngemakkelijker te hanteren zijn. Echter, als je bereid bent om te investeren\r\nin een wat duurdere optie en bereid bent om aan de slag te gaan met wat\r\nmeer geavanceerde techniek, kan de Multi-managed Snowboard een goede keuze\r\nzijn. Zouden you meer informatie willen over de snowboarden in onze\r\ncollectie die specifiek geschikt zijn voor beginners?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
-    }
+    "turns": [
+      {
+        "turn": 1,
+        "customer_message": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?",
+        "ai_response": {
+          "id": "19d889a5ed813666",
+          "subject": "Re: Vraag over de Multi-managed Snowboard",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk zie dat u een vraag heeft over de Multi-managed Snowboard, maar helaas\r\nhebben wij geen ordergegevens kunnen vinden die overeenkomen met uw.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      }
+    ]
   },
   {
     "test_case": {
       "id": "return_negotiation",
       "subject": "Retour aanvraag order #1004",
-      "body": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?"
+      "turns": [
+        "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
+        "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
+        "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
+        "Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie."
+      ]
     },
-    "ai_response": {
-      "id": "19d88194550efc6f",
-      "subject": "Re: Retour aanvraag order #1004",
-      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nHet spijt me om te horen dat het snowboard niet aan uw verwachtingen\r\nvoldoet. Om het retourneringsproces op te starten, hebben wij echter meer\r\ninformatie nodig. Kunt u ons uw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
-    }
+    "turns": [
+      {
+        "turn": 1,
+        "customer_message": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
+        "ai_response": {
+          "id": "19d889b4ff7d4720",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat je snowboard niet helemaal bevalt zoals je had gehoopt.\r\nVoordat we overstappen op de retourprocedure, zouden we graag iets voor je\r\ndoen om je tevredenheid te herstellen. We kunnen je eenmalig een\r\nterugbetaling van 15% aanbieden op de aankoopprijs van het snowboard. Zou\r\nje daarmee akkoord kunnen gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      },
+      {
+        "turn": 2,
+        "customer_message": "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
+        "ai_response": {
+          "id": "19d889c4d6ac381a",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nBedankt voor contact opnemen met EFO Commerces\r\n\r\nIk begrijp dat 15% korting niet voldoende is voor u. Ik wil graag een stap\r\nverder gaan in onze oplossing. We kunnen een aanbod doen van 25%\r\nterugbetaling. Zou dit voor u een acceptabel aanbod zijn?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      },
+      {
+        "turn": 3,
+        "customer_message": "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
+        "ai_response": "TIMED OUT"
+      }
+    ]
   }
 ]

@@ -250,34 +250,30 @@ export class AiService {
           model: GEMINI_MODELS.PRIMARY,
           generationConfig: { 
             responseMimeType: "application/json",
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
             temperature: 0.7 
           },
         });
 
         const prompt = `
-        Je bent een ervaren klantenservice medewerker voor de webshop '${storeName}'. 
+        Je bent een deskundige en behulpzame klantenservice medewerker voor '${storeName}'. 
+        
+        DOEL: Geef de klant een volledig, vriendelijk en accuraat antwoord op hun vraag.
         
         STRIKT PROTOCOL:
-        1. TAAL: Reageer ALTIJD en UITSLUITEND in de taal: ${preferredLanguage}.
-        2. INHOUD: Schrijf alleen het antwoord op de vraag. Gebruik volledige, professionele zinnen.
-        3. GEEN GREETINGS: Gebruik NOOIT "Beste", "Hoi", "Hallo" of andere begroetingen. Start direct met de inhoud.
-        4. GEEN AFSLUITING: Gebruik NOOIT "Met vriendelijke groet" or "Kind regards".
-        5. GEEN PLACEHOLDERS: Gebruik NOOIT [name customer] of soortgelijke tags.
+        1. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
+        2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
+        3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         
-        RICHTLIJNEN:
-        - Wees ${toneDescription}.
-        - ${settingsRulesBlock}
-        - SOURCE OF TRUTH: Gebruik onderstaande Order Context als je enige bron voor order-specifieke feiten.
-        
-        Order Context:
+        CONTEXT:
         ${orderContext}
         
-        Laatste klantbericht: "${input.incomingText}"
+        KLANTBERICHT:
+        "${input.incomingText}"
         
-        Antwoord als JSON:
+        ANTWOORD-FORMAT (JSON):
         {
-          "messageBody": "Schrijf hier je volledige, afgemaakte antwoord in het ${preferredLanguage}..."
+          "messageBody": "<Schrijf hier je volledige, gedetailleerde antwoord. Geef specifieke uitleg over de status of beantwoord de vraag volledig. BELANGRIJK: Stop NOOIT midden in een zin. Maak je verhaal ALTIJD af.>"
         }
         `;
 
@@ -285,13 +281,18 @@ export class AiService {
           gemini: {
             model: GEMINI_MODELS.PRIMARY,
             prompt,
-            jsonMode: true
+            jsonMode: true,
+            config: {
+              maxOutputTokens: 2048,
+              temperature: 0.7
+            }
           },
           groq: {
             messages: [{ role: "user", content: prompt }]
           }
         });
 
+        console.log("[AI] Raw dynamic reply:", resultStr);
         const parsed = JSON.parse(resultStr);
 
         resultAction = {
@@ -317,7 +318,7 @@ export class AiService {
           model: GEMINI_MODELS.PRIMARY,
           generationConfig: { 
             responseMimeType: "application/json",
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
             temperature: 0.7 
           },
         });
@@ -340,8 +341,13 @@ export class AiService {
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
         
         STRATEGIE:
-        - Bekijk het bericht van de klant: "${input.incomingText}"
-        - Als ze ontevreden zijn, bied dan de volgende stap aan:
+        Gespreksgeschiedenis:
+        ${input.history ? input.history.map(h => `${h.role === 'user' ? 'Klant' : 'Assistent'}: ${h.content}`).join('\n') : 'Geen eerdere berichten.'}
+        
+        Laatste klantbericht: "${input.incomingText}"
+        - Als ze ontevreden zijn, bied dan de volgende stap aan uit de lijst. 
+        - KIJK NAAR DE GESCHIEDENIS: Als je in het vorige bericht 25% hebt aangeboden en de klant wijst het af, dan MOET je nu Stap 3 (35% korting) aanbieden. NIET HERHALEN wat je al hebt gezegd.
+        - Ga pas over naar 'reject' (retour accepteren) als ALLES is afgewezen.
         ${stepsContext}
         
         BESLISSING ("negotiationDecision"):
@@ -349,12 +355,15 @@ export class AiService {
         - "reject": Klant wijst aanbod af en wil per se retourneren.
         - "continue": We doen een nieuw aanbod of stellen een verhelderende vraag.
         
+        GESPREKSGESCHIEDENIS:
+        ${historyContext}
+        
         Stijl: ${toneDescription}.
         Context: ${orderContext}
         
         JSON Output:
         {
-          "messageBody": "Je antwoord tekst hier (volledig afgemaakt)...",
+          "messageBody": "Schrijf hier je volledige, overtuigende antwoord op de ontevredenheid van de klant. Stel de volgende compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
           "negotiationDecision": "continue" | "accept" | "reject"
         }
         `;
@@ -363,13 +372,18 @@ export class AiService {
           gemini: {
             model: GEMINI_MODELS.PRIMARY,
             prompt: negotiationPrompt,
-            jsonMode: true
+            jsonMode: true,
+            config: {
+              maxOutputTokens: 2048,
+              temperature: 0.7
+            }
           },
           groq: {
             messages: [{ role: "user", content: negotiationPrompt }]
           }
         });
 
+        console.log("[AI] Raw negotiation reply:", resultStr);
         const parsed = JSON.parse(resultStr) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
 
         resultAction = {
@@ -400,14 +414,22 @@ export class AiService {
   }
 
   private async callResilientAi(options: {
-    gemini: { model: string; prompt: string; jsonMode?: boolean };
+    gemini: { 
+      model: string; 
+      prompt: string; 
+      jsonMode?: boolean;
+      config?: { maxOutputTokens?: number; temperature?: number; stopSequences?: string[] };
+    };
     groq: { messages: any[]; model?: string };
   }): Promise<string> {
     // 1. Attempt Gemini
     try {
       const gModel = this.geminiClient.getGenerativeModel({
         model: options.gemini.model,
-        ...(options.gemini.jsonMode ? { generationConfig: { responseMimeType: "application/json" } } : {}),
+        generationConfig: {
+          ...(options.gemini.jsonMode ? { responseMimeType: "application/json" } : {}),
+          ...options.gemini.config,
+        },
       });
       const result = await callGeminiWithRetry(gModel, options.gemini.prompt);
       const text = result.response.text();

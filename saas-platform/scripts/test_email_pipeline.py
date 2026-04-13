@@ -54,7 +54,12 @@ TEST_CASES = [
     {
         "id": "return_negotiation",
         "subject": "Retour aanvraag order #1004",
-        "body": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?"
+        "turns": [
+            "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
+            "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
+            "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
+            "Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie."
+        ]
     }
 ]
 
@@ -74,7 +79,7 @@ def authenticate_gmail():
         else:
             if not os.path.exists(creds_path):
                 import webbrowser
-                print("\n❌ ERROR: 'credentials.json' is missing.")
+                print("\nERROR: 'credentials.json' is missing.")
                 print("Google requires this file to identify this test script.")
                 print("\nOpening the Google Cloud Console for you now...")
                 webbrowser.open("https://console.cloud.google.com/apis/credentials")
@@ -90,16 +95,25 @@ def authenticate_gmail():
             token.write(creds.to_json())
     return build('gmail', 'v1', credentials=creds)
 
-def send_message(service, to, subject, body):
+def send_message(service, to, subject, body, thread_id=None, in_reply_to=None):
     try:
         message = EmailMessage()
         message.set_content(body)
         message['To'] = to
         message['Subject'] = subject
+        
+        if in_reply_to:
+            message['In-Reply-To'] = in_reply_to
+            message['References'] = in_reply_to
+
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         create_message = {'raw': encoded_message}
+        
+        if thread_id:
+            create_message['threadId'] = thread_id
+
         send_message = (service.users().messages().send(userId="me", body=create_message).execute())
-        print(f"Sent message to {to}. ID: {send_message['id']}")
+        print(f"Sent message to {to}. ID: {send_message['id']} (Thread: {send_message['threadId']})")
         return send_message['id'], send_message['threadId']
     except HttpError as error:
         print(f"An error occurred: {error}")
@@ -153,7 +167,7 @@ def check_for_reply(service, target_email, subject, sent_time_ms):
 
 def cleanup_supabase_for_user(gmail_service, supabase):
     if not supabase:
-        print("⚠️ Supabase cleanup skipped (client not initialized)")
+        print("Supabase cleanup skipped (client not initialized)")
         return
 
     try:
@@ -161,10 +175,10 @@ def cleanup_supabase_for_user(gmail_service, supabase):
         profile = gmail_service.users().getProfile(userId='me').execute()
         email = profile.get('emailAddress')
         if not email:
-            print("⚠️ Could not determine Gmail email for cleanup.")
+            print("Could not determine Gmail email for cleanup.")
             return
 
-        print(f"🧹 Cleaning up Supabase history for {email}...")
+        print(f"Cleaning up Supabase history for {email}...")
 
         # 2. Find customer
         response = supabase.table("customers").select("id").eq("email", email).execute()
@@ -185,9 +199,9 @@ def cleanup_supabase_for_user(gmail_service, supabase):
             supabase.table("messages").delete().eq("conversation_id", conv['id']).execute()
         
         supabase.table("conversations").delete().eq("customer_id", customer_id).execute()
-        print(f"✅ Supabase history cleared for {email}.")
+        print(f"Supabase history cleared for {email}.")
     except Exception as e:
-        print(f"❌ Error during Supabase cleanup: {e}")
+        print(f"Error during Supabase cleanup: {e}")
 
 def main():
     if TARGET_SUPPORT_EMAIL == "your-support-email@example.com":
@@ -202,56 +216,91 @@ def main():
     
     results = []
 
-    print(f"\n🚀 Starting E2E AI Response Test Suite...")
+    print(f"\nStarting E2E AI Response Test Suite...")
     print(f"Target Support Email: {TARGET_SUPPORT_EMAIL}\n")
 
     for case in TEST_CASES:
         print(f"--- Testing: {case['id']} ---")
         
-        # Grab timestamp BEFORE sending
-        start_time_ms = int(time.time() * 1000)
-        
-        msg_id, thread_id = send_message(service, TARGET_SUPPORT_EMAIL, case['subject'], case['body'])
-        
-        if not msg_id:
-            continue
+        # Prepare turns (either a single body or a list of turns)
+        turns = case.get('turns', [case.get('body')])
+        case_results = []
+        thread_id = None
+        last_msg_id = None
 
-        print(f"Waiting for AI reply to '{case['subject']}'...")
-        reply = None
-        for attempt in range(MAX_POLLS):
-            time.sleep(POLL_INTERVAL)
-            reply = check_for_reply(service, TARGET_SUPPORT_EMAIL, case['subject'], start_time_ms)
-            if reply:
-                print(f"✅ Received reply for {case['id']}!")
-                break
+        for turn_idx, turn_body in enumerate(turns):
+            if len(turns) > 1:
+                print(f"\n[Turn {turn_idx + 1}/{len(turns)}]")
+
+            # Grab timestamp BEFORE sending
+            start_time_ms = int(time.time() * 1000)
             
-            print(f"  (Attempt {attempt+1}/{MAX_POLLS}) No reply found in search yet. Still waiting...")
+            # Send message (include thread_id if this is a follow-up)
+            current_subject = case['subject'] if turn_idx == 0 else f"Re: {case['subject']}"
+            msg_id, thread_id = send_message(service, TARGET_SUPPORT_EMAIL, current_subject, turn_body, thread_id=thread_id, in_reply_to=last_msg_id)
+            last_msg_id = f"<{msg_id}@mail.gmail.com>" # Rough approximation for threading headers
+
+            if not msg_id:
+                break
+
+            print(f"Waiting for AI reply...")
+            reply = None
+            for attempt in range(MAX_POLLS):
+                time.sleep(POLL_INTERVAL)
+                reply = check_for_reply(service, TARGET_SUPPORT_EMAIL, case['subject'], start_time_ms)
+                if reply:
+                    print(f"Received reply for turn {turn_idx + 1}!")
+                    break
+                
+                print(f"  (Attempt {attempt+1}/{MAX_POLLS}) No reply found in search yet. Still waiting...")
+
+            case_results.append({
+                "turn": turn_idx + 1,
+                "customer_message": turn_body,
+                "ai_response": reply if reply else "TIMED OUT"
+            })
+
+            if not reply:
+                print(f"Test case {case['id']} failed at turn {turn_idx + 1} due to timeout.")
+                break
 
         results.append({
             "test_case": case,
-            "ai_response": reply if reply else "TIMED OUT"
+            "turns": case_results
         })
 
-        # Cleanup after each test case to keep the next one fresh
+        # Cleanup after THE ENTIRE test case is done to keep history during turns
         cleanup_supabase_for_user(service, supabase)
 
     # Save results
     with open("scripts/test_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
 
     with open("scripts/test_results.md", "w", encoding="utf-8") as f:
         f.write("# AI E2E Test Results\n\n")
         f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         for res in results:
             f.write(f"## Test Case: {res['test_case']['id']}\n")
-            f.write(f"**Subject:** {res['test_case']['subject']}\n")
-            f.write(f"**Customer Message:**\n> {res['test_case']['body']}\n\n")
-            if res['ai_response'] == "TIMED OUT":
-                f.write("**AI Response:** ❌ TIMED OUT\n\n")
-            else:
-                f.write(f"**AI Response (Subject: {res['ai_response']['subject']}):**\n```\n{res['ai_response']['body']}\n```\n\n")
+            f.write(f"**Subject:** {res['test_case']['subject']}\n\n")
+            
+            for turn in res['turns']:
+                if len(res['turns']) > 1:
+                    f.write(f"### Turn {turn['turn']}\n")
+                
+                f.write(f"**Customer Message:**\n> {turn['customer_message']}\n\n")
+                if turn['ai_response'] == "TIMED OUT":
+                    f.write("**AI Response:** TIMED OUT\n\n")
+                else:
+                    f.write(f"**AI Response (Subject: {turn['ai_response']['subject']}):**\n```\n{turn['ai_response']['body']}\n```\n\n")
+            
+            f.write("---\n\n")
+            
+        f.flush()
+        os.fsync(f.fileno())
 
-    print("\n✨ Test suite complete. Results saved to scripts/test_results.md and scripts/test_results.json")
+    print("\nTest suite complete. Results saved to scripts/test_results.md and scripts/test_results.json")
 
 if __name__ == '__main__':
     main()
