@@ -71,11 +71,8 @@ export function getEnv(): z.infer<typeof envSchema> {
 
     // Return the partially valid data cast to the schema type to prevent 500 boot-time crashes.
     // Individual service calls will fail with clearer errors if they need a missing variable.
-    cachedEnv = {
-      ...(rawData as any),
-      ...parsedEnv.data,
-    };
-    return cachedEnv;
+    cachedEnv = rawData as any;
+    return cachedEnv!;
   }
 
   cachedEnv = parsedEnv.data;
