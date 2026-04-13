@@ -28,7 +28,7 @@ const envSchema = z.object({
 
 let cachedEnv: z.infer<typeof envSchema> | null = null;
 
-export function getEnv() {
+export function getEnv(): z.infer<typeof envSchema> {
   if (cachedEnv) return cachedEnv;
 
   const rawData = {
