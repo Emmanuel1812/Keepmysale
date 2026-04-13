@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-13 23:12:53
+Timestamp: 2026-04-13 23:58:08
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -12,18 +12,20 @@ Timestamp: 2026-04-13 23:12:53
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Bedankt voor contact opnemen met EFO Commerces
-
-Bedankt voor uw vraag over de status van uw bestelling. Uw bestelling #1004
-is reeds volledig verzonden, aangezien de fulfillment-status op 'fulfilled'
-staat. Onze leverancier heeft het pakket voor u klaargemaakt en verzonden
-met een trackingnummer van 00446414507764. Het kan zijn dat u nog geen
-updates heeft ontvangen van de vervoerder over de status van uw pakket,
-maar u kunt uw pakket traceren met het trackingnummer op de website van de
-vervoerder. Mocht u nog verdere vragen hebben of als u problemen ondervindt
-met het traceren van uw pakket, kunt u ons altijd contacten en zullen wij
-ons best doen om u te helpen. Uw bestelling bevat één The Multi-managed
-Snowboard, wat een totaal van 629,95 EUR kostte.
+Uw bestelling #1004 is goed ontvangen en verwerkt. Onze gegevens tonen aan
+dat de bestelling reeds is gefulfileerd, wat betekent dat uw pakket
+verzonden is. Het trackingsnummer voor uw pakket is 00446414507764, waarmee
+u de status van uw zending online kunt volgen. Het is mogelijk dat de
+update van de trackinginformatie nog niet zichtbaar is, maar u kunt
+verwachten dat de bezorging binnen de door ons aangegeven levertijd
+plaatsvindt. Als u vragen heeft over de tracking of de status van uw
+pakket, raden we u aan om eerst de Trackingpagina van de bezorgdienst te
+controleren. Mocht u na een paar dagen nog steeds geen informatie over de
+bezorging van uw pakket kunnen vinden, neem dan contact met ons op, zodat
+we u kunnen helpen om de status van uw pakket te achterhalen. U kunt gerust
+zijn dat wij alles doen om ervoor te zorgen dat uw bestelling, die bestaat
+uit 1x The Multi-managed Snowboard met een totaalbedrag van 629.95 EUR, bij
+u aankomt.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -41,18 +43,21 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Bedankt voor contact opnemen met EFO Commerces
-
-Er is helaas geen order gevonden in ons systeem, dus we kunnen niet
-bevestigen dat u de Multi-managed Snowboard bij ons heeft besteld. Om uw
-vraag te beantwoorden: de Multi-managed Snowboard is een geweldige keuze
-voor zowel beginners als gevorderde snowboarders, maar het is belangrijk om
-te kiezen voor een snowboard die past bij uw niveau en stijl. Als beginner
-is het aan te raden om te beginnen met een board dat wat korter en
-flexibeler is, omdat dit makkelijker te hanteren is. Onze klantenservice
-kan u helpen bij het vinden van de juiste snowboard die aansluit bij uw
-specifieke behoeften en niveau. Zodra we uw order hebben gevonden, kunnen
-we ook meer specifieke informatie geven over de status van uw bestelling.
+De Multi-managed Snowboard is een uitstekende keuze voor zowel beginners
+als meer ervaren snowboarders. Het is een all-mountain snowboard, ontworpen
+om goed te presteren op een breed scala aan terreinen en sneeuwcondities.
+Voor beginners is het fijn dat deze snowboard een iets zachtere flex heeft,
+wat het makkelijker maakt om te buigen en te sturen. Bovendien is de
+breedte en lengte van het board geschikt voor de meeste beginners, waardoor
+je een stabiele basis hebt om te leren snowboarden. De snowboard is ook
+uitgerust met een Directional Twin shape, wat betekent dat hij even goed
+presteert bij zowel voorwaartse als achterwaartse rijrichtingen, ideaal
+voor het leren van verschillende technieken. Als je dus een beginner bent,
+zou de Multi-managed Snowboard zeker een geschikte keuze kunnen zijn. Het
+is echter altijd een goed idee om, voordat je een aankoop doet, even naar
+een lokale snowboardschool te gaan om te kijken of ze snowboards ter
+beschikking hebben voor proefritjes, zodat je een idee kunt krijgen van
+welk type snowboard bij je past.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -71,13 +76,10 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Bedankt voor contact opnemen met EFO Commerces
-
-Ik begrijp dat de snowboard niet helemaal is wat u ervan had verwacht.
-Voordat we overgaan tot retourneren, wil ik u graag een alternatief
-aanbieden. Wij kunnen u een compensatie van 15% van de aankoopsom
-aanbieden, zodat u de snowboard toch kunt houden en wij u een gedeeltelijke
-tegemoetkoming kunnen bieden voor eventuele ongemakken.
+Ik begrijp dat de snowboard niet aan uw verwachtingen voldoet. Ik wil graag
+helpen om uw ontevredenheid te verhelpen. In plaats van retournering kunnen
+wij een compensatie aanbieden. We kunnen een 15% terugbetaling aanbieden op
+de aankoopsom van de snowboard. Zou dit voor u een acceptabel aanbod zijn?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -91,13 +93,10 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Bedankt voor contact opnemen met EFO Commerces
-
-Ik begrijp dat de 15% korting niet genoeg is om u tevreden te stellen. Om u
-tegemoet te komen, wil ik een stap verder gaan in ons compensatiebeleid.
-Wij kunnen u een compensatie van 25% van de aankoopsom aanbieden, zodat u
-de snowboard toch kunt houden en wij u een ruimere tegemoetkoming kunnen
-bieden voor eventuele ongemakken.
+Ik begrijp dat de 15% terugbetaling niet voldoende is om uw ontevredenheid
+te verhelpen. Ik wil graag verdergaan met het vinden van een oplossing. We
+kunnen een 25% terugbetaling aanbieden op de aankoopsom van de snowboard.
+Zou dit voor u een acceptabel aanbod zijn?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -107,42 +106,7 @@ efo-testing-store Klantenservice
 **Customer Message:**
 > Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.
 
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedenavond Emmanuel Oudennaarden,
-
-Bedankt voor contact opnemen met EFO Commerces
-
-We begrijpen dat de eerdere aanboden niet voldeden aan uw verwachtingen.
-Omdat we onze klanten tevreden willen stellen, willen we een laatste aanbod
-doen om een retour te voorkomen. We zijn bereid om 50% van de aankoopprijs
-terug te betalen, als compensatie voor het ongemak. Wilt u hiermee akkoord
-gaan of wilt u toch het product retourneren?
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
-
-### Turn 4
-**Customer Message:**
-> Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.
-
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedenavond Emmanuel Oudennaarden,
-
-Bedankt voor contact opnemen met EFO Commerces
-
-We begrijpen dat onze voorgaande aanboden niet voldeden aan uw
-verwachtingen. Omdat we onze klanten tevreden willen stellen, willen we een
-nieuw aanbod doen om een retour te voorkomen. We zijn nu bereid om 50% van
-de aankoopprijs terug te betalen, als compensatie voor het ongemak. Dit is
-ons hoogste aanbod.Als u deze optie ook niet accepteert, zullen we u
-instructies geven over hoe u het snowboard kunt retourneren.
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
+**AI Response:** TIMED OUT
 
 ---
 

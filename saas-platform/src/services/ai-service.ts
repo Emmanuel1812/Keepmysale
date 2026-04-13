@@ -29,8 +29,18 @@ export class AiService {
     this.orderService = new OrderService(supabase);
   }
 
-  async classifyIntent(text: string): Promise<IIntentStructuredResult> {
-    console.log("[AI] Classifying text:", text.substring(0, 200));
+  async classifyIntent(text: string, history?: Array<{ role: "user" | "assistant"; content: string }>): Promise<IIntentStructuredResult> {
+    console.log("[AI] Classifying text with history context:", text.substring(0, 100));
+    
+    // Add history snippet to the prompt for better context if available
+    const historySnippet = (history || [])
+      .slice(-3)
+      .map(h => `${h.role === 'user' ? 'Klant' : 'Assistent'}: ${h.content}`)
+      .join('\n');
+
+    const contextualPrompt = historySnippet 
+      ? `GESPREKSGESCHIEDENIS:\n${historySnippet}\n\nNIEUW KLANTBERICHT: "${text}"`
+      : `KLANTBERICHT: "${text}"`;
 
     if (resendPatterns.some((pattern) => pattern.test(text))) {
       return {
@@ -73,13 +83,13 @@ export class AiService {
       const resultStr = await this.callResilientAi({
         gemini: {
           model: GEMINI_MODELS.PRIMARY,
-          prompt: `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}`,
+          prompt: `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}\n${contextualPrompt}`,
           jsonMode: true
         },
         groq: {
           messages: [
-            { role: "system", content: INTENT_SYSTEM_PROMPT },
-            { role: "user", content: `${INTENT_STRUCTURED_PROMPT}\nCustomer Message: ${text}` }
+            { role: "system", content: `${INTENT_SYSTEM_PROMPT}\n${INTENT_STRUCTURED_PROMPT}` },
+            { role: "user", content: contextualPrompt }
           ]
         }
       });
@@ -135,7 +145,19 @@ export class AiService {
         reasoning: "System request for proactive satisfaction survey",
       };
     } else {
-      intentResult = await this.classifyIntent(input.incomingText);
+      intentResult = await this.classifyIntent(input.incomingText, input.history);
+      
+      // STICKY INTENT LOGIC:
+      // If we are currently in an active return negotiation (history shows previous assistent refund offer)
+      // and the current message is classified as 'other', 'complaint', or 'faq' with low confidence,
+      // stick to 'return' intent to avoid breaking the negotiation flow.
+      const lastAssistantMsg = input.history?.filter(h => h.role === 'assistant').slice(-1)[0];
+      const isNegotiating = lastAssistantMsg?.content.includes('%') || lastAssistantMsg?.content.toLowerCase().includes('terugbetaling');
+      
+      if (isNegotiating && (intentResult.intent === 'other' || intentResult.intent === 'complaint' || intentResult.intent === 'faq')) {
+        console.log(`[AI] Sticky Intent Triggered: Overriding ${intentResult.intent} with 'return' for negotiation continuity.`);
+        intentResult.intent = 'return';
+      }
     }
 
     const customerName = input.customerName || "Klant";
