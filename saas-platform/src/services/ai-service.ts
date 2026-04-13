@@ -156,8 +156,6 @@ export class AiService {
       ...(ms.custom_rules ?? []).map((r) => `EXTRA REGEL: ${r}`),
       ...(ms.forbidden_topics ?? []).map((t) => `VERBODEN ONDERWERP (reageer hier NOOIT op, escaleer in plaats daarvan): ${t}`),
       ...(ms.forbidden_phrases ?? []).map((p) => `ZIN NOOIT GEBRUIKEN: "${p}"`),
-      ...(ms.required_phrases ?? []).map((p) => `ALTIJD VERMELDEN in je antwoord: "${p}"`),
-      ms.custom_intro ? `INTRODUCTIE-ZIN (gebruik dit als start): "${ms.custom_intro.replace("[name customer]", customerName === "Klant" ? "" : customerName)}"` : "",
     ].filter(Boolean).join("\n");
 
     const messagesByLanguage = {
@@ -253,16 +251,17 @@ export class AiService {
 
         const prompt = `
         Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
-        Je spreekt de klant aan met '${customerName}'.
+        De klant heet '${customerName}'.
+        
+        BELANGRIJKE INSTRUCTIE: SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT!
+        Het systeem voegt zelf al een aanhef, de introductiezinnen en een afsluiting toe. Begin dus direct met het antwoord en sluit niet af met een groet.
         
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet. Gebruik '${customerName}' alleen als het een echte naam is (NIET als de naam 'Klant' is). Als de naam 'Klant' is, gebruik dan een algemene begroeting zoals 'Beste klant,' of 'Goedendag,'.
-        2. ${settingsRulesBlock}
-        3. ACCURAATHEID & SOURCE OF TRUTH: 
+        1. ${settingsRulesBlock}
+        2. ACCURAATHEID & SOURCE OF TRUTH: 
            - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
            - Als de klant vraagt naar de STATUS of TRACKING: geef dan het trackingnummer en de status (indien beschikbaar).
            - Gebruik ALTIJD de verstrekte Order Context.
-        4. AFSLUITING: Eindig altijd met een professionele groet gevolgd door de naam van de shop: '${storeName}'.
         
         Taal: ${preferredLanguage}
         
@@ -273,7 +272,7 @@ export class AiService {
         
         Return ONLY valid JSON:
         {
-          "messageBody": "jouw volledige antwoord tekst hier (ZONDER aanhef en afsluiting, die worden apart toegevoegd)"
+          "messageBody": "jouw antwoord tekst hier (ZONDER aanhef en afsluiting)"
         }
         `;
 
@@ -320,24 +319,25 @@ export class AiService {
 
         const negotiationPrompt = `
         Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
-        Je spreekt de klant aan met '${customerName}'.
+        De klant heet '${customerName}'.
 
         De klant wil iets retourneren of is in gesprek over een retour.
         
+        BELANGRIJKE INSTRUCTIE: SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT!
+        Het systeem voegt zelf al een aanhef, de introductiezinnen en een afsluiting toe. Begin dus direct met het antwoord en sluit niet af met een groet.
+
         RICHTLIJNEN VOOR JE ANTWOORD:
-        1. BEGIN altijd met een vriendelijke groet. Gebruik '${customerName}' alleen als het een echte naam is (NIET als de naam 'Klant' is). Als de naam 'Klant' is, gebruik dan een algemene begroeting zoals 'Beste klant,' of 'Goedendag,'.
-        2. ${settingsRulesBlock}
-        3. ACCURAATHEID & SOURCE OF TRUTH: 
+        1. ${settingsRulesBlock}
+        2. ACCURAATHEID & SOURCE OF TRUTH: 
            - Als de klant vraagt naar de INHOUD van de order: som dan de items op uit de sectie 'Producten in deze order' in de context hieronder.
            - Gebruik ALTIJD de verstrekte Order Context als bron van waarheid.
-        4. STRATEGIE:
+        3. STRATEGIE:
            - We proberen retouren te voorkomen door een gedeeltelijke terugbetaling (partial refund) aan te bieden.
            - De merchant heeft de volgende stappen ingesteld voor kortingen:
            ${(ms.negotiation_steps as any[] || [])
             .map((o) => `  * Stap ${o.step}: ${o.percentage}% ${o.type === "store_credit" ? "Store Credit" : "Terugbetaling"}`)
             .join("\n")}
            - Noem GEEN exacte percentages in je EERSTE aanbod tenzij de klant er specifiek om vraagt.
-        5. AFSLUITING: Eindig altijd met een professionele groet gevolgd door de naam van de shop: '${storeName}'.
 
         Taal: ${preferredLanguage}
         
@@ -352,7 +352,7 @@ export class AiService {
         
         Opdracht: 
         1. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
-        2. Schrijf een natuurlijk antwoord (ZONDER aanhef en afsluiting, die worden apart toegevoegd).
+        2. Schrijf een natuurlijk antwoord (ZONDER aanhef en afsluiting).
         
         Return ONLY valid JSON with this shape:
         {
