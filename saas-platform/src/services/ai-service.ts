@@ -244,37 +244,40 @@ export class AiService {
     // Dynamic handling for WISMO, FAQ, Exchange, Return, or General/Other if we have order context
     const hasOrderContext = orderContext !== "Geen order gevonden.";
     
-    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "other" || intentResult.intent === "faq" || intentResult.intent === "exchange" || intentResult.intent === "return")) {
+    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "faq" || intentResult.intent === "other")) {
       try {
         const model = this.geminiClient.getGenerativeModel({
           model: GEMINI_MODELS.PRIMARY,
-          generationConfig: { responseMimeType: "application/json" },
+          generationConfig: { 
+            responseMimeType: "application/json",
+            maxOutputTokens: 1024,
+            temperature: 0.7 
+          },
         });
 
         const prompt = `
-        Je bent een klantenservice medewerker voor de webshop genaamd '${storeName}'. 
+        Je bent een ervaren klantenservice medewerker voor de webshop '${storeName}'. 
         
-        BELANGRIJKE INSTRUCTIES (STRICTE OVERLEVING VEREIST):
-        1. SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT. 
-        2. GEEN AANHEF OF GROET. Start direct met de feitelijke informatie (geen "Hallo", "Beste", "Geachte", "Hi").
-        3. GEEN AFSLUITING OF NAAM. Eindig na je laatste feitelijke zin (geen "Met vriendelijke groet", "Kind regards").
-        4. GEEN PLACEHOLDERS. Gebruik nooit "[name customer]" of "[customer]". Het systeem regelt de namen.
+        STRIKT PROTOCOL:
+        1. TAAL: Reageer ALTIJD en UITSLUITEND in de taal: ${preferredLanguage}.
+        2. INHOUD: Schrijf alleen het antwoord op de vraag. Gebruik volledige, professionele zinnen.
+        3. GEEN GREETINGS: Gebruik NOOIT "Beste", "Hoi", "Hallo" of andere begroetingen. Start direct met de inhoud.
+        4. GEEN AFSLUITING: Gebruik NOOIT "Met vriendelijke groet" or "Kind regards".
+        5. GEEN PLACEHOLDERS: Gebruik NOOIT [name customer] of soortgelijke tags.
         
-        RICHTLIJNEN VOOR JE ANTWOORD:
+        RICHTLIJNEN:
         - Wees ${toneDescription}.
         - ${settingsRulesBlock}
-        - ACCURAATHEID: Gebruik ALTIJD de verstrekte Order Context hieronder als 'Source of Truth'.
-        
-        Taal: ${preferredLanguage}
+        - SOURCE OF TRUTH: Gebruik onderstaande Order Context als je enige bron voor order-specifieke feiten.
         
         Order Context:
         ${orderContext}
         
-        Klantvraag: ${input.incomingText}
+        Laatste klantbericht: "${input.incomingText}"
         
-        Return ONLY valid JSON:
+        Antwoord als JSON:
         {
-          "messageBody": "jouw antwoord tekst hier"
+          "messageBody": "Schrijf hier je volledige, afgemaakte antwoord in het ${preferredLanguage}..."
         }
         `;
 
@@ -312,7 +315,11 @@ export class AiService {
       try {
         const model = this.geminiClient.getGenerativeModel({
           model: GEMINI_MODELS.PRIMARY,
-          generationConfig: { responseMimeType: "application/json" },
+          generationConfig: { 
+            responseMimeType: "application/json",
+            maxOutputTokens: 1024,
+            temperature: 0.7 
+          },
         });
 
         const historyContext = (input.history || [])
@@ -325,27 +332,30 @@ export class AiService {
           : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
 
         const negotiationPrompt = `
-        Je bent een klantenservice medewerker voor '${storeName}'. 
+        Je bent een ervaren klantenservice medewerker voor '${storeName}'. 
         
-        OPLOOP-NEGOTIATIE PROTOCOL (STRICT CONTENT ONLY):
-        1. SCHRIJF ALLEEN DE INHOUD VAN HET BERICHT.
-        2. GEEN GREETINGS, GEEN AFSLUITING, GEEN NAMEN.
-        3. Analyseer of de klant akkoord gaat met een aanbod ("accept"), het afwijst ("reject"), of dat we het gesprek moeten voortzetten ("continue").
+        NEGOTIATIE PROTOCOL (STRIKT):
+        1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
+        2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
+        3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
+        
+        STRATEGIE:
+        - Bekijk het bericht van de klant: "${input.incomingText}"
+        - Als ze ontevreden zijn, bied dan de volgende stap aan:
+        ${stepsContext}
+        
+        BESLISSING ("negotiationDecision"):
+        - "accept": Klant gaat akkoord met een eerder aanbod.
+        - "reject": Klant wijst aanbod af en wil per se retourneren.
+        - "continue": We doen een nieuw aanbod of stellen een verhelderende vraag.
         
         Stijl: ${toneDescription}.
         Context: ${orderContext}
         
-        NEGOTIATIE RICHTLIJNEN:
-        ${stepsContext}
-        - Probeer de klant te overtuigen de producten te houden in ruil voor de bovenstaande compensatie.
-        
-        Laatste bericht van de klant:
-        ${input.incomingText}
-        
-        Return ONLY valid JSON shape:
+        JSON Output:
         {
-          "messageBody": "jouw antwoord tekst hier",
-          "negotiationDecision": "accept" | "reject" | "continue"
+          "messageBody": "Je antwoord tekst hier (volledig afgemaakt)...",
+          "negotiationDecision": "continue" | "accept" | "reject"
         }
         `;
 

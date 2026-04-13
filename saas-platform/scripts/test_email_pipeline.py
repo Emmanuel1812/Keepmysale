@@ -8,9 +8,31 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from supabase import create_client, Client
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly']
+
+# Load Supabase credentials from .env.local
+def load_env():
+    env = {}
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env.local')
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                if '=' in line and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    env[key] = value
+    return env
+
+ENV = load_env()
+SUPABASE_URL = ENV.get('NEXT_PUBLIC_SUPABASE_URL')
+SUPABASE_KEY = ENV.get('SUPABASE_SERVICE_ROLE_KEY')
+
+def get_supabase_client():
+    if SUPABASE_URL and SUPABASE_KEY:
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    return None
 
 # --- CONFIGURATION (FILL THIS IN) ---
 TARGET_SUPPORT_EMAIL = "eo.commerces@gmail.com"  # The email connected to your SaaS
@@ -129,12 +151,55 @@ def check_for_reply(service, target_email, subject, sent_time_ms):
         print(f"An error occurred during polling: {error}")
         return None
 
+def cleanup_supabase_for_user(gmail_service, supabase):
+    if not supabase:
+        print("⚠️ Supabase cleanup skipped (client not initialized)")
+        return
+
+    try:
+        # 1. Get current Gmail user email
+        profile = gmail_service.users().getProfile(userId='me').execute()
+        email = profile.get('emailAddress')
+        if not email:
+            print("⚠️ Could not determine Gmail email for cleanup.")
+            return
+
+        print(f"🧹 Cleaning up Supabase history for {email}...")
+
+        # 2. Find customer
+        response = supabase.table("customers").select("id").eq("email", email).execute()
+        if not response.data:
+            print("  (No existing customer record found in Supabase to clean)")
+            return
+
+        customer_id = response.data[0]['id']
+
+        # 3. Delete everything related to this customer
+        # We delete conversations, which should cascade if set up, 
+        # but we'll be safe and hit messages/negotiations too if needed.
+        supabase.table("negotiations").delete().eq("customer_id", customer_id).execute()
+        
+        # Get conversation IDs to delete messages first (if no cascade)
+        convs = supabase.table("conversations").select("id").eq("customer_id", customer_id).execute()
+        for conv in convs.data:
+            supabase.table("messages").delete().eq("conversation_id", conv['id']).execute()
+        
+        supabase.table("conversations").delete().eq("customer_id", customer_id).execute()
+        print(f"✅ Supabase history cleared for {email}.")
+    except Exception as e:
+        print(f"❌ Error during Supabase cleanup: {e}")
+
 def main():
     if TARGET_SUPPORT_EMAIL == "your-support-email@example.com":
         print("!!! WARNING: You need to set TARGET_SUPPORT_EMAIL in the script configuration block.")
         # return
 
     service = authenticate_gmail()
+    supabase = get_supabase_client()
+    
+    # Optional: Initial cleanup to have a fresh start for the whole suite
+    cleanup_supabase_for_user(service, supabase)
+    
     results = []
 
     print(f"\n🚀 Starting E2E AI Response Test Suite...")
@@ -166,6 +231,9 @@ def main():
             "test_case": case,
             "ai_response": reply if reply else "TIMED OUT"
         })
+
+        # Cleanup after each test case to keep the next one fresh
+        cleanup_supabase_for_user(service, supabase)
 
     # Save results
     with open("scripts/test_results.json", "w", encoding="utf-8") as f:

@@ -5,7 +5,11 @@
       "subject": "Status van mijn bestelling #1004",
       "body": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?"
     },
-    "ai_response": "TIMED OUT"
+    "ai_response": {
+      "id": "19d88169795b46b2",
+      "subject": "Re: Status van mijn bestelling #1004",
+      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nBedankt voor het contact over uw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+    }
   },
   {
     "test_case": {
@@ -13,7 +17,11 @@
       "subject": "Vraag over de Multi-managed Snowboard",
       "body": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?"
     },
-    "ai_response": "TIMED OUT"
+    "ai_response": {
+      "id": "19d88184c5950199",
+      "subject": "Re: Vraag over de Multi-managed Snowboard",
+      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nDe Multi-managed Snowboard is een hoogwaardig model dat geschikt is voor\r\nzowel beginners als ervaren snowboarders, maar het hangt af van je\r\npersoonlijke voorkeuren en behoeften. Als beginner raden we aan om eerst te\r\nkijken naar snowboards die specifiek ontworpen zijn voor beginners, omdat\r\ndeze vaak een wat zachte flex hebben en een grotere neus, waardoor ze\r\ngemakkelijker te hanteren zijn. Echter, als je bereid bent om te investeren\r\nin een wat duurdere optie en bereid bent om aan de slag te gaan met wat\r\nmeer geavanceerde techniek, kan de Multi-managed Snowboard een goede keuze\r\nzijn. Zouden you meer informatie willen over de snowboarden in onze\r\ncollectie die specifiek geschikt zijn voor beginners?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+    }
   },
   {
     "test_case": {
@@ -21,6 +29,10 @@
       "subject": "Retour aanvraag order #1004",
       "body": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?"
     },
-    "ai_response": "TIMED OUT"
+    "ai_response": {
+      "id": "19d88194550efc6f",
+      "subject": "Re: Retour aanvraag order #1004",
+      "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nThanks for Contacting EFO Commerces\r\n\r\nHet spijt me om te horen dat het snowboard niet aan uw verwachtingen\r\nvoldoet. Om het retourneringsproces op te starten, hebben wij echter meer\r\ninformatie nodig. Kunt u ons uw\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+    }
   }
 ]
