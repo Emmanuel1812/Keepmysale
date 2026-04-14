@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 
 interface ThreadMessage {
   id: string;
-  sender: "customer" | "ai" | "human_agent" | "system";
+  sender: "customer" | "ai" | "human_agent" | "system" | "ai_draft";
   body: string;
   createdAt?: string;
 }
