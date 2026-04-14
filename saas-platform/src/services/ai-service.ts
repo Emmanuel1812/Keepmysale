@@ -7,6 +7,7 @@ import type { IMerchantSettings } from "@/types/merchant";
 import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/gemini/client";
 import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
+import type { INegotiation } from "@/types/negotiation";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -129,6 +130,7 @@ export class AiService {
     shopDomain: string;
     shopAccessToken: string;
     merchantSettings: IMerchantSettings;
+    activeNegotiation?: INegotiation;
   }): Promise<ActionResult> {
     let intentResult: IIntentStructuredResult;
     const ms = input.merchantSettings;
@@ -245,19 +247,21 @@ export class AiService {
         const includeLineItems = ms.include_line_items_in_wismo !== false;
 
         const lineItemsStr = includeLineItems
-          ? (order.lineItems || [])
+          ? (order.line_items || []) // Note: changed from .lineItems to match DAL/API conventions where possible, or just be safe
             .map((item: any) => `${item.quantity}x ${item.title}`)
             .join(", ")
           : "";
 
+        const sanitize = (val: any) => (val === null || val === undefined || val === "undefined" ? "onbekend" : val);
+
         const parts = [
-          `Order ${order.shopifyOrderNumber || order.name}:`,
-          `- Status: ${order.financialStatus}`,
-          `- Fulfillment: ${order.fulfillmentStatus}`,
+          `Order ${order.shopify_order_number || order.name || order.shopifyOrderId || "onbekend"}:`,
+          `- Financiële Status: ${sanitize(order.financial_status || order.financialStatus)}`,
+          `- Fulfillment Status: ${sanitize(order.fulfillment_status || order.fulfillmentStatus)}`,
         ];
-        if (includeTracking) parts.push(`- Tracking: ${order.trackingNumber || "geen"}`);
+        if (includeTracking) parts.push(`- Tracking: ${sanitize(order.tracking_number || order.trackingNumber)}`);
         if (includeLineItems && lineItemsStr) parts.push(`- Producten in deze order: ${lineItemsStr}`);
-        parts.push(`- Totaal: ${order.totalPrice} ${currencyDisplay}`);
+        parts.push(`- Totaal: ${order.totalPrice || order.total_price} ${currencyDisplay}`);
 
         orderContext = parts.join("\n          ");
       }
@@ -350,9 +354,36 @@ export class AiService {
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
 
-        const steps = (ms.negotiation_steps as any[] || []);
+        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
+        
+        // --- STEP DETECTION LOGIC ---
+        const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
+        
+        // Use DB state if available, otherwise fallback to history detection
+        let currentStepIndex = -1;
+        if (input.activeNegotiation) {
+          currentStepIndex = input.activeNegotiation.currentStep - 1; 
+          console.log(`[AI] Using DB state: currentStep = ${input.activeNegotiation.currentStep}, index = ${currentStepIndex}`);
+        } else if (lastOfferedPct !== null) {
+          currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
+          console.log(`[AI] Using history state: lastPercentage = ${lastOfferedPct}, index = ${currentStepIndex}`);
+        }
+
+        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+        const nextStep = steps[nextStepIndex];
+        
+        // We are on the last step IF we just calculated the final available step AND we have a history of offering something before
+        const isLastStep = nextStepIndex === steps.length - 1 && currentStepIndex !== -1;
+
         const stepsContext = steps.length > 0
-          ? `De merchant heeft de volgende oploop-stappen ingesteld:\n${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}`
+          ? `BESCHIKBARE STAPPEN CONFIGURATIE:
+${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
+
+STATE:
+- Laatst aangeboden percentage: ${lastOfferedPct !== null ? lastOfferedPct + "%" : "Geen"}
+- DB Huidige Stap: ${input.activeNegotiation?.currentStep || "Geen"}
+- VOLGENDE STAP OM AAN TE BIEDEN: Stap ${nextStepIndex + 1} (${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"})
+- Is dit de laatste mogelijkheid? ${isLastStep ? "JA. Als ze nu weigeren, MOET je overgaan naar 'reject'." : "NEE"}`
           : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
 
         const negotiationPrompt = `
@@ -379,8 +410,9 @@ export class AiService {
         
         BESLISSING ("negotiationDecision"):
         - "accept": Klant gaat akkoord met een eerder aanbod.
-        - "reject": Klant wijst aanbod af en wil per se retourneren.
-        - "continue": We doen een nieuw aanbod of stellen een verhelderende vraag.
+        - "next_step": Klant wijst het aanbod af, maar we hebben een VOLGENDE stap (zie STATE boven). Bied de volgende stap aan.
+        - "reject": Klant wijst alles af OF we hebben geen stappen meer over. Accepteer de retour.
+        - "continue": We stellen een verhelderende vraag zonder een nieuw aanbod te doen.
         
         GESPREKSGESCHIEDENIS:
         ${historyContext}
@@ -390,8 +422,8 @@ export class AiService {
         
         JSON Output:
         {
-          "messageBody": "Schrijf hier je volledige, overtuigende antwoord op de ontevredenheid van de klant. Stel de volgende compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
-          "negotiationDecision": "continue" | "accept" | "reject"
+          "messageBody": "Schrijf hier je overtuigende antwoord. Als je een nieuw aanbod doet (next_step), noem dan het percentage uit de 'VOLGENDE STAP'.",
+          "negotiationDecision": "next_step" | "accept" | "reject" | "continue"
         }
         `;
 
@@ -413,9 +445,20 @@ export class AiService {
         console.log("[AI] Raw negotiation reply:", resultStr);
         const parsed = JSON.parse(resultStr) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
 
+        let finalMessage = parsed.messageBody;
+        if (!finalMessage || finalMessage.trim().length < 5) {
+          if (parsed.negotiationDecision === 'reject') {
+            finalMessage = preferredLanguage === 'en' 
+              ? "I understand. I will now hand you over to a human colleague to process your return labels."
+              : "Ik begrijp het. Ik ga u nu overdragen aan een menselijke collega om uw retourlabels te verwerken.";
+          } else {
+            finalMessage = localText.negotiation;
+          }
+        }
+
         resultAction = {
           action: "offer_partial_refund",
-          messageBody: parsed.messageBody || localText.negotiation,
+          messageBody: finalMessage,
           negotiationDecision: parsed.negotiationDecision || "continue",
         };
       } catch (error) {
@@ -438,6 +481,20 @@ export class AiService {
 
     console.log("[AI] Action result:", resultAction.action, resultAction.messageBody?.substring(0, 200));
     return resultAction;
+  }
+
+  private detectLastOfferedPercentage(history: Array<{ role: string; content: string }>): number | null {
+    // Look for patterns like "20%", "20 %", "20 procent" in assistant messages, starting from the most recent
+    const assistantMessages = history.filter(h => h.role === 'assistant').reverse();
+    const pctRegex = /(\d{1,2})\s*(?:%|procent|percent)/i;
+    
+    for (const msg of assistantMessages) {
+      const match = msg.content.match(pctRegex);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    return null;
   }
 
   private async callResilientAi(options: {

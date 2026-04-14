@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-13 23:58:08
+Timestamp: 2026-04-14 18:24:23
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -10,22 +10,17 @@ Timestamp: 2026-04-13 23:58:08
 
 **AI Response (Subject: Re: Status van mijn bestelling #1004):**
 ```
-Goedenavond Emmanuel Oudennaarden,
+Goedemiddag Emmanuel Oudennaarden,
 
-Uw bestelling #1004 is goed ontvangen en verwerkt. Onze gegevens tonen aan
-dat de bestelling reeds is gefulfileerd, wat betekent dat uw pakket
-verzonden is. Het trackingsnummer voor uw pakket is 00446414507764, waarmee
-u de status van uw zending online kunt volgen. Het is mogelijk dat de
-update van de trackinginformatie nog niet zichtbaar is, maar u kunt
-verwachten dat de bezorging binnen de door ons aangegeven levertijd
-plaatsvindt. Als u vragen heeft over de tracking of de status van uw
-pakket, raden we u aan om eerst de Trackingpagina van de bezorgdienst te
-controleren. Mocht u na een paar dagen nog steeds geen informatie over de
-bezorging van uw pakket kunnen vinden, neem dan contact met ons op, zodat
-we u kunnen helpen om de status van uw pakket te achterhalen. U kunt gerust
-zijn dat wij alles doen om ervoor te zorgen dat uw bestelling, die bestaat
-uit 1x The Multi-managed Snowboard met een totaalbedrag van 629.95 EUR, bij
-u aankomt.
+Uw bestelling #1004 is reeds verzonden en heeft de status 'fulfilled', wat
+betekent dat uw pakket al bij de bezorger is afgeleverd. De trackingcode
+voor uw bestelling is 00446414507764, waarmee u de status van uw pakket
+kunt volgen. Het kan zijn dat de bezorger nog geen update heeft gegeven
+over de status van uw pakket, maar met de trackingcode kunt u de voortgang
+van uw bestelling bekijken. Als u nog vragen heeft of twijfelt over de
+status van uw bestelling, kunt u altijd contact met ons opnemen. Uw
+bestelling bevat 1x The Multi-managed Snowboard en had een totaalbedrag van
+629.95 EUR.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -41,23 +36,23 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Vraag over de Multi-managed Snowboard):**
 ```
-Goedenavond Emmanuel Oudennaarden,
+Goedemiddag Emmanuel Oudennaarden,
 
-De Multi-managed Snowboard is een uitstekende keuze voor zowel beginners
-als meer ervaren snowboarders. Het is een all-mountain snowboard, ontworpen
-om goed te presteren op een breed scala aan terreinen en sneeuwcondities.
-Voor beginners is het fijn dat deze snowboard een iets zachtere flex heeft,
-wat het makkelijker maakt om te buigen en te sturen. Bovendien is de
-breedte en lengte van het board geschikt voor de meeste beginners, waardoor
-je een stabiele basis hebt om te leren snowboarden. De snowboard is ook
-uitgerust met een Directional Twin shape, wat betekent dat hij even goed
-presteert bij zowel voorwaartse als achterwaartse rijrichtingen, ideaal
-voor het leren van verschillende technieken. Als je dus een beginner bent,
-zou de Multi-managed Snowboard zeker een geschikte keuze kunnen zijn. Het
-is echter altijd een goed idee om, voordat je een aankoop doet, even naar
-een lokale snowboardschool te gaan om te kijken of ze snowboards ter
-beschikking hebben voor proefritjes, zodat je een idee kunt krijgen van
-welk type snowboard bij je past.
+De Multi-managed Snowboard is een zeer veelzijdig model dat geschikt is
+voor een breed scala aan snowboarders, inclusief beginners. Het heeft een
+zachte flex, wat het gemakkelijker maakt om te sturen en te controleren, en
+de breedte en lengte zijn zo ontworpen dat ze stabiliteit bieden zonder al
+te moeilijk te zijn om te hanteren. Bovendien is de snowboard uitgerust met
+technologie die het makkelijker maakt om te draaien en te remmen, waardoor
+het een ideale keuze is voor diegenen die nog nieuwe zijn in de wereld van
+het snowboarden. Het is echter altijd verstandig om te overwegen wat je
+specifieke behoeften en voorkeuren zijn, zoals je gewicht, lengte en de
+soort terrein waarop je het meest gaat snowboarden, om er zeker van te zijn
+dat je de perfecte snowboard voor jezelf kiest. De Multi-managed Snowboard
+is over het algemeen een uitstekende keuze voor beginners vanwege zijn
+gebruiksvriendelijke ontwerp en de mate van controle die hij biedt, dus je
+zou goed uitgerust moeten zijn om je snowboardavonturen te beginnen met dit
+model.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -74,12 +69,14 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Retour aanvraag order #1004):**
 ```
-Goedenavond Emmanuel Oudennaarden,
+Goedemiddag Emmanuel Oudennaarden,
 
-Ik begrijp dat de snowboard niet aan uw verwachtingen voldoet. Ik wil graag
-helpen om uw ontevredenheid te verhelpen. In plaats van retournering kunnen
-wij een compensatie aanbieden. We kunnen een 15% terugbetaling aanbieden op
-de aankoopsom van de snowboard. Zou dit voor u een acceptabel aanbod zijn?
+Ik begrijp dat onze snowboard niet aan uw verwachtingen voldoet. Ik wil u
+graag helpen om tot een bevredigende oplossing te komen. Voordat we
+overgaan tot een retour, zou ik u een aanbod willen doen. Wij kunnen u een
+terugbetaling van 20% aanbieden op de aankoopprijs van de snowboard. Dit is
+een eenmalig aanbod om uw tevredenheid te waarborgen. Zou u hiervan gebruik
+willen maken?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -91,12 +88,14 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Retour aanvraag order #1004):**
 ```
-Goedenavond Emmanuel Oudennaarden,
+Goedemiddag Emmanuel Oudennaarden,
 
-Ik begrijp dat de 15% terugbetaling niet voldoende is om uw ontevredenheid
-te verhelpen. Ik wil graag verdergaan met het vinden van een oplossing. We
-kunnen een 25% terugbetaling aanbieden op de aankoopsom van de snowboard.
-Zou dit voor u een acceptabel aanbod zijn?
+Ik begrijp dat de 20% korting die wij eerder hebben aangeboden, niet
+voldoende is om uw ontevredenheid te verzachten. Wij willen graag verder
+gaan met het vinden van een oplossing die beter aansluit bij uw
+verwachtingen. Als volgende stap kunnen wij u een terugbetaling van 35%
+aanbieden op de aankoopprijs van de snowboard. Dit is een eenmalig aanbod
+om uw tevredenheid te waarborgen. Zou u hiervan gebruik willen maken?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 

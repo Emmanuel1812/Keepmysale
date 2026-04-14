@@ -207,6 +207,9 @@ export class WebhookService {
       }
     }
 
+    const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
+    const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
+
     const action = await this.aiService.buildAutomatedAction({
       incomingText: cleanBody,
       history: recentHistory,
@@ -216,6 +219,7 @@ export class WebhookService {
       shopDomain: merchant.shopDomain,
       shopAccessToken: decryptedShopifyAccessToken,
       merchantSettings: merchant.settings,
+      activeNegotiation: activeNeg,
     });
 
     console.log("[WEBHOOK] Action:", action.action);
@@ -223,15 +227,21 @@ export class WebhookService {
     console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);
     console.log("[WEBHOOK] shouldSkipAutoReply:", shouldSkipAutoReply, "| shadow_mode:", settings.shadow_mode);
 
-    // Sync negotiation status if requested by AI
-    const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
-    const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
-
     if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
       console.log("[WEBHOOK] Updating negotiation status to:", action.negotiationDecision);
+      let input: "accept_offer" | "reject_offer" | "request_full_return" = "reject_offer";
+      
+      if (action.negotiationDecision === "accept") {
+        input = "accept_offer";
+      } else if (action.negotiationDecision === "reject") {
+        input = "request_full_return";
+      } else if (action.negotiationDecision === "next_step") {
+        input = "reject_offer";
+      }
+
       await this.negotiationService.processCustomerResponse(
         activeNeg.id,
-        action.negotiationDecision === "accept" ? "accept_offer" : "reject_offer",
+        input,
         settings,
       );
     }
