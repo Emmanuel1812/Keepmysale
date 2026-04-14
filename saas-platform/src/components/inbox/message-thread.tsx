@@ -47,21 +47,21 @@ export function MessageThread({ messages }: MessageThreadProps) {
                 className={`rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm ${
                   isCustomer
                     ? "bg-[#f1f5f9] text-[#111827] rounded-tl-sm border border-zinc-200/60"
-                    : isAi
+                    : isAi || message.sender === "ai_draft"
                       ? "bg-teal-600 text-white rounded-tr-sm"
                       : "bg-blue-600 text-white rounded-tr-sm"
-                }`}
+                } ${message.sender === "ai_draft" ? "opacity-75 border border-dashed border-teal-300" : ""}`}
               >
                 {message.body}
               </div>
               
               <div className={`flex items-center gap-1.5 mt-1 mx-1 text-[11px] font-medium text-zinc-400 ${isCustomer ? "justify-start" : "justify-end"}`}>
-                {isAi && (
+                {(isAi || message.sender === "ai_draft") && (
                   <span className="flex items-center gap-1 text-teal-600">
-                    <BotIconSmall /> AI Agent
+                    <BotIconSmall /> {message.sender === "ai_draft" ? "AI Agent (Draft)" : "AI Agent"}
                   </span>
                 )}
-                {!isAi && !isCustomer && "You"}
+                {!(isAi || message.sender === "ai_draft") && !isCustomer && "You"}
                 <span>•</span>
                 <span>{message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}</span>
               </div>

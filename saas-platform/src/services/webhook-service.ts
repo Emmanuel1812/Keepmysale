@@ -225,6 +225,13 @@ export class WebhookService {
     console.log("[WEBHOOK] Action:", action.action);
     console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
     console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);
+
+    // ── Special Case: Automated WISMO Bypass ───────────────
+    if (classification.intent === "wismo" && action.action === "send_tracking_status" && shouldAutoReply) {
+      console.log("[WEBHOOK] WISMO successfully generated tracking status. Bypassing skip guards.");
+      shouldSkipAutoReply = false;
+    }
+
     console.log("[WEBHOOK] shouldSkipAutoReply:", shouldSkipAutoReply, "| shadow_mode:", settings.shadow_mode);
 
     if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
