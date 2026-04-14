@@ -152,9 +152,15 @@ export class AiService {
       // If we are currently in an active return negotiation (history shows previous assistent refund offer)
       // and the current message is classified as 'other', 'complaint', or 'faq' with low confidence,
       // stick to 'return' intent to avoid breaking the negotiation flow.
-      const lastAssistantMsg = input.history?.filter(h => h.role === 'assistant').slice(-1)[0];
-      const isNegotiating = lastAssistantMsg?.content.includes('%') || lastAssistantMsg?.content.toLowerCase().includes('terugbetaling');
+      const assistantMsgs = input.history?.filter(h => h.role === 'assistant') || [];
+      const lastAssistantMsg = assistantMsgs[assistantMsgs.length - 1];
       
+      const isNegotiating = lastAssistantMsg?.content.includes('%') || 
+                           lastAssistantMsg?.content.toLowerCase().includes('terugbetaling') ||
+                           lastAssistantMsg?.content.toLowerCase().includes('tegoed');
+      
+      console.log(`[AI] Sticky Check: lastMsg="${lastAssistantMsg?.content.substring(0, 50)}...", isNegotiating=${isNegotiating}, currentIntent=${intentResult.intent}`);
+
       if (isNegotiating && (intentResult.intent === 'other' || intentResult.intent === 'complaint' || intentResult.intent === 'faq')) {
         console.log(`[AI] Sticky Intent Triggered: Overriding ${intentResult.intent} with 'return' for negotiation continuity.`);
         intentResult.intent = 'return';
