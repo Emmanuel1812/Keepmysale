@@ -139,14 +139,12 @@ export class WebhookService {
     let shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
     
     // ── Special Case: Automated Negotiation Bypass ───────────────
-    // If the merchant enabled auto-negotiate, we WANT the offer to go out even if 
-    // it technically 'requires human' or has lower confidence.
     if (isNegotiation) {
-      console.log("[WEBHOOK] Negotiation detected and auto_negotiate is ON. Bypassing skip guards.");
+      console.log("[WEBHOOK] Negotiation intent detected. Bypassing skip guards.");
       shouldSkipAutoReply = false;
     }
 
-    console.log(`[WEBHOOK] Auto-reply Decision -> shouldAutoReply: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
+    console.log(`[WEBHOOK] Initial Decision -> autoReplyEnabled: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
 
     const history = await this.messageService.findByConversation(conversation.id);
     const recentHistory = history.slice(-10).map((m) => ({
@@ -210,9 +208,12 @@ export class WebhookService {
     const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
     const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
 
-    if (activeNeg && settings.auto_negotiate !== false) {
-      console.log("[WEBHOOK] Continued active negotiation loop detected. Bypassing skip guards.");
-      shouldSkipAutoReply = false;
+    if (activeNeg) {
+      console.log(`[WEBHOOK] Active negotiation loop: ID=${activeNeg.id}, Status=${activeNeg.status}, Step=${activeNeg.currentStep}`);
+      if (settings.auto_negotiate !== false) {
+        console.log("[WEBHOOK] Active negotiation loop detected. Bypassing skip guards.");
+        shouldSkipAutoReply = false;
+      }
     }
 
     const action = await this.aiService.buildAutomatedAction({
@@ -324,13 +325,20 @@ export class WebhookService {
           : belowThreshold
             ? "below_confidence_threshold"
             : "requires_human";
-      console.log(`[WEBHOOK] Email NOT sent (${reason}). Draft saved for merchant review.`);
+      
+      console.log(`[WEBHOOK] BLOCK: Email NOT sent. Reason: ${reason} (shouldSkip: ${shouldSkipAutoReply}, shadow: ${isShadowMode})`);
+      
       logger({
         level: "info",
         eventType: "automation.draft.saved",
         merchantId: input.merchantId,
         message: `Draft created: ${reason}`,
-        details: { intent: classification.intent, confidence: classification.confidence },
+        details: { 
+          intent: classification.intent, 
+          confidence: classification.confidence,
+          shouldSkipAutoReply,
+          isShadowMode
+        },
       });
       return { deduplicated: false as const, action: "draft_saved", reason };
     }
