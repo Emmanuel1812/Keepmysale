@@ -206,8 +206,7 @@ export class WebhookService {
     }
 
     const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
-    // Broaden search: only exclude truly 'dead' states. We want to send replies for offer_accepted and return_initiated too.
-    const activeNeg = activeNegotiations.find((n) => !["completed", "expired"].includes(n.status));
+    const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
 
     if (activeNeg) {
       console.log(`[WEBHOOK] Active negotiation loop: ID=${activeNeg.id}, Status=${activeNeg.status}, Step=${activeNeg.currentStep}`);
@@ -275,8 +274,6 @@ export class WebhookService {
     // ── Determine if we should send or just draft ─────────────
     const isShadowMode = settings.shadow_mode === true;
     let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
-
-    console.log(`[WEBHOOK] Final Decision -> senderLabel: ${senderLabel} (shouldSkip: ${shouldSkipAutoReply}, shadow: ${isShadowMode})`);
 
     try {
       await this.messageService.create({
