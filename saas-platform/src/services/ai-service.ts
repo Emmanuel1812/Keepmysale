@@ -7,7 +7,6 @@ import type { IMerchantSettings } from "@/types/merchant";
 import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/gemini/client";
 import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
-import type { INegotiation } from "@/types/negotiation";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -130,7 +129,7 @@ export class AiService {
     shopDomain: string;
     shopAccessToken: string;
     merchantSettings: IMerchantSettings;
-    activeNegotiation?: INegotiation;
+    activeNegotiation?: any;
   }): Promise<ActionResult> {
     let intentResult: IIntentStructuredResult;
     const ms = input.merchantSettings;
@@ -354,36 +353,35 @@ export class AiService {
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
 
-        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
-        
         // --- STEP DETECTION LOGIC ---
-        const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
-        
-        // Use DB state if available, otherwise fallback to history detection
+        // Prioritize actual database state if passed in
+        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
         let currentStepIndex = -1;
-        if (input.activeNegotiation) {
-          currentStepIndex = input.activeNegotiation.currentStep - 1; 
-          console.log(`[AI] Using DB state: currentStep = ${input.activeNegotiation.currentStep}, index = ${currentStepIndex}`);
-        } else if (lastOfferedPct !== null) {
-          currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
-          console.log(`[AI] Using history state: lastPercentage = ${lastOfferedPct}, index = ${currentStepIndex}`);
+        
+        if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
+           currentStepIndex = steps.findIndex(s => s.step === input.activeNegotiation.currentStep);
+        } else {
+           // Fallback to text detection if no active DB negotiation yet
+           const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
+           if (lastOfferedPct !== null) {
+             currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
+           }
         }
-
+        
         const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
         const nextStep = steps[nextStepIndex];
-        
-        // We are on the last step IF we just calculated the final available step AND we have a history of offering something before
         const isLastStep = nextStepIndex === steps.length - 1 && currentStepIndex !== -1;
+        const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
 
         const stepsContext = steps.length > 0
-          ? `BESCHIKBARE STAPPEN CONFIGURATIE:
+          ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
 ${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
 
-STATE:
-- Laatst aangeboden percentage: ${lastOfferedPct !== null ? lastOfferedPct + "%" : "Geen"}
-- DB Huidige Stap: ${input.activeNegotiation?.currentStep || "Geen"}
-- VOLGENDE STAP OM AAN TE BIEDEN: Stap ${nextStepIndex + 1} (${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"})
-- Is dit de laatste mogelijkheid? ${isLastStep ? "JA. Als ze nu weigeren, MOET je overgaan naar 'reject'." : "NEE"}`
+STRIKT_SYSTEEM_OVERRIDE:
+- Huidige Actieve Stap in Database: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%)` : "Geen (dit is het eerste aanbod)"}
+- Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
+- JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
+- Is dit de laatste stap? ${isLastStep ? "JA. Als ze het huidge aanbod weigeren en er is geen volgende stap, MOET je overgaan naar 'reject' en de retour accepteren/escaleren." : "NEE"}`
           : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
 
         const negotiationPrompt = `
@@ -394,25 +392,25 @@ STATE:
         2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
         
-        CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the CURRENT active step. 
-        DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the current step.
-        If the user rejects the current step, you must ONLY offer the NEXT sequential step in your upcoming response, or wait for system state updates. Do not invent your own percentages.
+        CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the NEXT step. 
+        DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the NEXT step.
+        If the user rejects the current active step, you must ONLY offer the NEXT sequential step in your upcoming response. Do not invent your own percentages.
         
         STRATEGIE:
         Gespreksgeschiedenis:
         ${input.history ? input.history.map(h => `${h.role === 'user' ? 'Klant' : 'Assistent'}: ${h.content}`).join('\n') : 'Geen eerdere berichten.'}
         
         Laatste klantbericht: "${input.incomingText}"
-        - Als ze ontevreden zijn, bied dan de volgende stap aan uit de lijst. 
-        - KIJK NAAR DE GESCHIEDENIS: Als je in het vorige bericht 25% hebt aangeboden en de klant wijst het af, dan MOET je nu Stap 3 (35% korting) aanbieden. NIET HERHALEN wat je al hebt gezegd.
-        - Ga pas over naar 'reject' (retour accepteren) als ALLES is afgewezen.
+        - Als ze ontevreden zijn of weigeren, bied dan de volgende stap aan uit de configuratie.
+        - KIJK NAAR DE STRIKT_SYSTEEM_OVERRIDE: Als de database zegt dat we op Stap 1 zijn, bied dan nu Stap 2 aan. NIET HERHALEN wat je al hebt gezegd.
+        - Ga pas over naar 'reject' (retour accepteren) als ALLES is afgewezen en er geen stappen meer zijn.
         ${stepsContext}
         
         BESLISSING ("negotiationDecision"):
-        - "accept": Klant gaat akkoord met een eerder aanbod.
-        - "next_step": Klant wijst het aanbod af, maar we hebben een VOLGENDE stap (zie STATE boven). Bied de volgende stap aan.
-        - "reject": Klant wijst alles af OF we hebben geen stappen meer over. Accepteer de retour.
-        - "continue": We stellen een verhelderende vraag zonder een nieuw aanbod te doen.
+        - "accept": Klant gaat expliciet akkoord met het huidge of eerder gedane aanbod.
+        - "next_step": Klant weigert het huidige aanbod, we stellen nu de volgende stap (korting) voor. Gebruik dit ALTIJD als je een nieuw percentage aanbiedt uit de lijst.
+        - "reject": Klant weigert het aanbod en er zijn geen stappen meer over (of klant is zo boos dat hij per se wil retourneren).
+        - "continue": Klant stelt een algemene vraag, geeft verwarrende input, of we herhalen het bestaande scenario zonder een nieuwe stap aan te bieden.
         
         GESPREKSGESCHIEDENIS:
         ${historyContext}
@@ -422,8 +420,8 @@ STATE:
         
         JSON Output:
         {
-          "messageBody": "Schrijf hier je overtuigende antwoord. Als je een nieuw aanbod doet (next_step), noem dan het percentage uit de 'VOLGENDE STAP'.",
-          "negotiationDecision": "next_step" | "accept" | "reject" | "continue"
+          "messageBody": "Schrijf hier je volledige, overtuigende antwoord. Stel de compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
+          "negotiationDecision": "continue" | "accept" | "next_step" | "reject"
         }
         `;
 
@@ -443,7 +441,7 @@ STATE:
         });
 
         console.log("[AI] Raw negotiation reply:", resultStr);
-        const parsed = JSON.parse(resultStr) as { messageBody: string; negotiationDecision: "accept" | "reject" | "continue" };
+        const parsed = JSON.parse(resultStr) as { messageBody: string; negotiationDecision: "accept" | "reject" | "next_step" | "continue" };
 
         let finalMessage = parsed.messageBody;
         if (!finalMessage || finalMessage.trim().length < 5) {

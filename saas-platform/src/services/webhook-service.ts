@@ -229,21 +229,13 @@ export class WebhookService {
 
     if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
       console.log("[WEBHOOK] Updating negotiation status to:", action.negotiationDecision);
-      let input: "accept_offer" | "reject_offer" | "request_full_return" = "reject_offer";
-      
       if (action.negotiationDecision === "accept") {
-        input = "accept_offer";
-      } else if (action.negotiationDecision === "reject") {
-        input = "request_full_return";
+        await this.negotiationService.processCustomerResponse(activeNeg.id, "accept_offer", settings);
       } else if (action.negotiationDecision === "next_step") {
-        input = "reject_offer";
+        await this.negotiationService.processCustomerResponse(activeNeg.id, "reject_offer", settings);
+      } else if (action.negotiationDecision === "reject") {
+        await this.negotiationService.processCustomerResponse(activeNeg.id, "request_full_return", settings);
       }
-
-      await this.negotiationService.processCustomerResponse(
-        activeNeg.id,
-        input,
-        settings,
-      );
     }
 
     // ── Build formatted email using full settings FIRST to save to DB ─────────────
