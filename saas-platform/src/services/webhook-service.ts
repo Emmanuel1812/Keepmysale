@@ -210,6 +210,11 @@ export class WebhookService {
     const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
     const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
 
+    if (activeNeg && settings.auto_negotiate !== false) {
+      console.log("[WEBHOOK] Continued active negotiation loop detected. Bypassing skip guards.");
+      shouldSkipAutoReply = false;
+    }
+
     const action = await this.aiService.buildAutomatedAction({
       incomingText: cleanBody,
       history: recentHistory,
