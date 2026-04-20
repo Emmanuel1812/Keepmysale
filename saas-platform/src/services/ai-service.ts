@@ -354,6 +354,37 @@ export class AiService {
     }
 
     if (!resultAction && intentResult.intent === "return") {
+      // --- STEP DETECTION LOGIC (hoisted above try for catch block access) ---
+      // Prioritize actual database state if passed in
+      const steps = (ms.negotiation_steps as any[] || []).sort((a: any, b: any) => a.step - b.step);
+      let currentStepIndex = -1;
+      
+      if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
+         currentStepIndex = steps.findIndex((s: any) => s.step === input.activeNegotiation.currentStep);
+      } else {
+         // Fallback to text detection if no active DB negotiation yet
+         const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
+         if (lastOfferedPct !== null) {
+           currentStepIndex = steps.findIndex((s: any) => s.percentage === lastOfferedPct);
+         }
+      }
+      
+      const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+      const nextStep = steps[nextStepIndex];
+      const isLastStep = currentStepIndex >= steps.length - 1;
+      const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
+
+      const stepsContext = steps.length > 0
+        ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
+${steps.map((s: any) => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
+
+STRIKT_SYSTEEM_OVERRIDE:
+- LAATST AANGEBODEN stap: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%) — dit is AL aangeboden en de klant reageert hier nu op` : "Geen — er is nog geen aanbod gedaan, dit wordt het EERSTE aanbod"}
+- Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
+- JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
+- Is dit de laatste stap? ${isLastStep ? "JA — de klant heeft zojuist ons LAATSTE en HOOGSTE aanbod afgewezen. Er zijn GEEN verdere stappen. Je MOET nu negotiationDecision op 'reject' zetten en de klant informeren dat je een menselijke collega inschakelt om de retour te verwerken. Bied GEEN nieuw percentage aan." : `NEE — er zijn nog stappen over. Je MOET nu exact ${nextStep?.percentage}% aanbieden als compensatie. Gebruik GEEN ander percentage. Zet negotiationDecision op 'next_step'.`}`
+        : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
+
       // Dynamic negotiation via Gemini
       try {
         const model = this.geminiClient.getGenerativeModel({
@@ -368,37 +399,6 @@ export class AiService {
         const historyContext = (input.history || [])
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
-
-        // --- STEP DETECTION LOGIC ---
-        // Prioritize actual database state if passed in
-        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
-        let currentStepIndex = -1;
-        
-        if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
-           currentStepIndex = steps.findIndex(s => s.step === input.activeNegotiation.currentStep);
-        } else {
-           // Fallback to text detection if no active DB negotiation yet
-           const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
-           if (lastOfferedPct !== null) {
-             currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
-           }
-        }
-        
-        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
-        const nextStep = steps[nextStepIndex];
-        const isLastStep = currentStepIndex >= steps.length - 1;
-        const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
-
-        const stepsContext = steps.length > 0
-          ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
-${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
-
-STRIKT_SYSTEEM_OVERRIDE:
-- LAATST AANGEBODEN stap: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%) — dit is AL aangeboden en de klant reageert hier nu op` : "Geen — er is nog geen aanbod gedaan, dit wordt het EERSTE aanbod"}
-- Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
-- JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
-- Is dit de laatste stap? ${isLastStep ? "JA — de klant heeft zojuist ons LAATSTE en HOOGSTE aanbod afgewezen. Er zijn GEEN verdere stappen. Je MOET nu negotiationDecision op 'reject' zetten en de klant informeren dat je een menselijke collega inschakelt om de retour te verwerken. Bied GEEN nieuw percentage aan." : `NEE — er zijn nog stappen over. Je MOET nu exact ${nextStep?.percentage}% aanbieden als compensatie. Gebruik GEEN ander percentage. Zet negotiationDecision op 'next_step'.`}`
-          : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
 
         const negotiationPrompt = `
         Je bent een ervaren klantenservice medewerker voor '${storeName}'. 
