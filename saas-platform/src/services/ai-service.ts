@@ -376,7 +376,7 @@ export class AiService {
         
         const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
         const nextStep = steps[nextStepIndex];
-        const isLastStep = nextStepIndex === steps.length - 1 && currentStepIndex !== -1;
+        const isLastStep = currentStepIndex >= steps.length - 1;
         const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
 
         const stepsContext = steps.length > 0
@@ -384,10 +384,10 @@ export class AiService {
 ${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
 
 STRIKT_SYSTEEM_OVERRIDE:
-- Huidige Actieve Stap in Database: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%)` : "Geen (dit is het eerste aanbod)"}
+- LAATST AANGEBODEN stap: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%) — dit is AL aangeboden en de klant reageert hier nu op` : "Geen — er is nog geen aanbod gedaan, dit wordt het EERSTE aanbod"}
 - Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
 - JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
-- Is dit de laatste stap? ${isLastStep ? "JA. Als ze het huidge aanbod weigeren en er is geen volgende stap, MOET je overgaan naar 'reject' en de retour accepteren/escaleren." : "NEE"}`
+- Is dit de laatste stap? ${isLastStep ? "JA — de klant heeft zojuist ons LAATSTE en HOOGSTE aanbod afgewezen. Er zijn GEEN verdere stappen. Je MOET nu negotiationDecision op 'reject' zetten en de klant informeren dat je een menselijke collega inschakelt om de retour te verwerken. Bied GEEN nieuw percentage aan." : `NEE — er zijn nog stappen over. Je MOET nu exact ${nextStep?.percentage}% aanbieden als compensatie. Gebruik GEEN ander percentage. Zet negotiationDecision op 'next_step'.`}`
           : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
 
         const negotiationPrompt = `

@@ -10,9 +10,9 @@
         "turn": 1,
         "customer_message": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?",
         "ai_response": {
-          "id": "19d8dfc40c8e93ee",
+          "id": "19dac04a2773fc9a",
           "subject": "Re: Status van mijn bestelling #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nUw bestelling #1004 is reeds klaargemaakt en verzonden. De financi\u00eble\r\nstatus is op dit moment onbekend, maar dit heeft geen invloed op de\r\nlevering van uw pakket. Onze logistieke dienst heeft uw pakket afgeleverd\r\nbij de vervoerder en het volgnummer is 00446414507764. U kunt de status van\r\nuw pakket zelf nakijken op de website van de vervoerder door het volgnummer\r\nin te voeren. Mocht u nog vragen hebben of problemen ondervinden met de\r\nlevering, neem dan gerust contact met ons op zodat we u verder kunnen\r\nhelpen.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nBedankt voor uw bericht over bestelling #1004. Ik kan bevestigen dat uw\r\nbestelling al is verwerkt en verzonden vanuit ons magazijn. De fulfillment\r\nstatus is 'fulfilled'. U kunt de meest recente status van uw zending volgen\r\nmet het trackingnummer 00446414507764. Hiermee kunt u op de website van de\r\nvervoerder precies zien waar uw pakket zich bevindt en wanneer u het kunt\r\nverwachten.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -28,9 +28,9 @@
         "turn": 1,
         "customer_message": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?",
         "ai_response": {
-          "id": "19d8dfd2e025ecd2",
+          "id": "19dac05b770ca688",
           "subject": "Re: Vraag over de Multi-managed Snowboard",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nDe Multi-managed Snowboard is een geweldige keuze voor zowel beginners als\r\nervaren snowboarders. Het is een all-mountain snowboard, wat betekent dat\r\nhet goed presteert op verschillende soorten sneeuw en terrein, van\r\nglooiende hellingen tot off-piste gebieden. Voor beginners is het\r\nbelangrijk om te weten dat de Multi-managed Snowboard een vriendelijke flex\r\nheeft, wat betekent dat het minder stug is dan sommige andere snowboards,\r\nen daardoor gemakkelijker te hanteren is. Bovendien is het snowboard\r\nontworpen om stabiliteit en controle te bieden, waardoor het ideaal is voor\r\nwie nog aan het leren is. Als je dus op zoek bent naar een snowboard dat\r\nzowel geschikt is voor beginners als voor gevorderden, zou de Multi-managed\r\nSnowboard een uitstekende keuze zijn. Het is echter belangrijk om te\r\nonthouden dat de juiste maat en binding ook cruciaal zijn voor een\r\ncomfortabele en veilige rit, dus zorg ervoor dat je deze goed aanschaft en\r\nhebt aangepast aan je eigen behoeften.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nHet Multi-managed Snowboard is ontworpen om veelzijdig te zijn en biedt\r\ndoorgaans een goede balans tussen controle en flexibiliteit, wat het een\r\ninteressante optie maakt voor een breed scala aan snowboarders. Voor\r\nbeginners is het echter cruciaal om een board te kiezen dat\r\nvergevingsgezind is en gemakkelijk te manoeuvreren, zodat u snel vertrouwen\r\nkunt opbouwen en de basistechnieken onder de knie krijgt. Specifieke\r\nkenmerken zoals de flexibiliteit van het board (hoe stijf het is), het\r\nprofiel (camber, rocker of hybride), en de lengte in verhouding tot uw\r\ngewicht en lengte zijn hierbij doorslaggevend. Hoewel een veelzijdig board\r\nzoals het Multi-managed Snowboard u op de lange termijn veel plezier kan\r\nbieden, adviseren wij beginners vaak een board met een zachtere flex en een\r\nspecifiek beginner-vriendelijk profiel voor de eerste lessen en het oefenen\r\nop de piste. Dit maakt het inzetten van bochten en het corrigeren van\r\nfouten een stuk eenvoudiger. Als u meer wilt weten over de specifieke\r\neigenschappen van het Multi-managed Snowboard om te bepalen of het perfect\r\naansluit bij uw beginnende niveau, kunnen we daar dieper op ingaan.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -51,24 +51,37 @@
         "turn": 1,
         "customer_message": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
         "ai_response": {
-          "id": "19d8dfe2797fb827",
+          "id": "19dac0673720c052",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de snowboard niet aan uw verwachtingen voldoet. Voor we over\r\ntot retourneren overgaan, zou ik graag een alternatief aanbieden. We kunnen\r\neen eenmalige tegemoetkoming van 20% van de aankoopsom aanbieden. Zou dit\r\niets zijn wat u in overweging zou willen nemen?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat het snowboard niet helemaal naar wens is en dat u het wilt\r\nretourneren. Voordat we de retourprocedure starten, wil ik u graag een\r\nalternatief aanbieden. We kunnen u een gedeeltelijke terugbetaling van 20%\r\nvan het aankoopbedrag aanbieden, zodat u het snowboard kunt behouden. Wat\r\nvindt u hiervan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 2,
         "customer_message": "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
         "ai_response": {
-          "id": "19d8dfefb415b19d",
+          "id": "19dac076adf81750",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de eerder aangeboden korting van 20% niet voldoende is. We\r\nwillen u graag een verdere tegemoetkoming bieden. We kunnen nu een korting\r\nvan 35% van de aankoopsom aanbieden. Zou dit een acceptabel alternatief\r\nzijn voor u?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat het aanbod van 20% korting niet voldoende was en dat u het\r\nsnowboard liever wilt retourneren. Om u tegemoet te komen en u te helpen\r\nhet snowboard te behouden, wil ik u een verbeterd aanbod doen. We kunnen u\r\neen gedeeltelijke terugbetaling van 35% van het aankoopbedrag aanbieden.\r\nWat denkt u hiervan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 3,
         "customer_message": "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
-        "ai_response": "TIMED OUT"
+        "ai_response": {
+          "id": "19dac08a44c54d5f",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nWe kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke\r\nterugbetaling aanbieden om een retourzending te vermijden.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
+      },
+      {
+        "turn": 4,
+        "customer_message": "Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.",
+        "ai_response": {
+          "id": "19dac097c4fb7a6d",
+          "subject": "Re: Retour aanvraag order #1004",
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nWe kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke\r\nterugbetaling aanbieden om een retourzending te vermijden.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+        }
       }
     ]
   }
