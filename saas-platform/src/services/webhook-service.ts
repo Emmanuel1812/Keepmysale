@@ -234,10 +234,15 @@ export class WebhookService {
 
     console.log("[WEBHOOK] shouldSkipAutoReply:", shouldSkipAutoReply, "| shadow_mode:", settings.shadow_mode);
 
-    // ── Final Safety Bypass: If AI identified this as a clear negotiation move ─────────
+    // ── Final Safety Bypass ─────────
     if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
-      console.log(`[WEBHOOK] AI Decision '${action.negotiationDecision}' detected for active negotiation. Forcing email send.`);
-      shouldSkipAutoReply = false;
+      if (action.negotiationDecision === "reject") {
+        console.log(`[WEBHOOK] AI Decision is 'reject', escalating to human (creating draft).`);
+        shouldSkipAutoReply = true;
+      } else {
+        console.log(`[WEBHOOK] AI Decision '${action.negotiationDecision}' detected for active negotiation. Forcing email send.`);
+        shouldSkipAutoReply = false;
+      }
     }
 
     if (activeNeg && action.negotiationDecision && action.negotiationDecision !== "continue") {
