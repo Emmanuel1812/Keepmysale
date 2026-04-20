@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-20 19:56:46
+Timestamp: 2026-04-20 20:45:25
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -10,14 +10,16 @@ Timestamp: 2026-04-20 19:56:46
 
 **AI Response (Subject: Re: Status van mijn bestelling #1004):**
 ```
-Goedemiddag Emmanuel Oudennaarden,
+Goedenavond Emmanuel Oudennaarden,
 
-Bedankt voor uw bericht over bestelling #1004. Ik kan bevestigen dat uw
-bestelling al is verwerkt en verzonden vanuit ons magazijn. De fulfillment
-status is 'fulfilled'. U kunt de meest recente status van uw zending volgen
-met het trackingnummer 00446414507764. Hiermee kunt u op de website van de
-vervoerder precies zien waar uw pakket zich bevindt en wanneer u het kunt
-verwachten.
+Uw bestelling #1004 is succesvol afgehandeld en heeft de status
+'fulfilled', wat betekent dat uw pakket reeds is verstuurd. Het
+trackingnummer voor uw zending is 00446414507764, waarmee u de status van
+uw pakket kunt opvolgen via de bezorgdienst. Het kan enkele dagen duren
+voordat de bezorgdienst de status van uw zending bijwerkt, maar u kunt
+verwachten dat uw pakket binnenkort zal aankomen. Mocht u nog vragen hebben
+over de status van uw bestelling of het trackingnummer, neem dan gerust
+contact op.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -33,24 +35,24 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Vraag over de Multi-managed Snowboard):**
 ```
-Goedemiddag Emmanuel Oudennaarden,
+Goedenavond Emmanuel Oudennaarden,
 
-Het Multi-managed Snowboard is ontworpen om veelzijdig te zijn en biedt
-doorgaans een goede balans tussen controle en flexibiliteit, wat het een
-interessante optie maakt voor een breed scala aan snowboarders. Voor
-beginners is het echter cruciaal om een board te kiezen dat
-vergevingsgezind is en gemakkelijk te manoeuvreren, zodat u snel vertrouwen
-kunt opbouwen en de basistechnieken onder de knie krijgt. Specifieke
-kenmerken zoals de flexibiliteit van het board (hoe stijf het is), het
-profiel (camber, rocker of hybride), en de lengte in verhouding tot uw
-gewicht en lengte zijn hierbij doorslaggevend. Hoewel een veelzijdig board
-zoals het Multi-managed Snowboard u op de lange termijn veel plezier kan
-bieden, adviseren wij beginners vaak een board met een zachtere flex en een
-specifiek beginner-vriendelijk profiel voor de eerste lessen en het oefenen
-op de piste. Dit maakt het inzetten van bochten en het corrigeren van
-fouten een stuk eenvoudiger. Als u meer wilt weten over de specifieke
-eigenschappen van het Multi-managed Snowboard om te bepalen of het perfect
-aansluit bij uw beginnende niveau, kunnen we daar dieper op ingaan.
+De Multi-managed Snowboard is een geweldige keuze voor zowel beginners als
+gevorderde snowboarders. Het is een all-mountain snowboard, wat betekent
+dat het ontworpen is om goed te presteren op verschillende soorten sneeuw
+en terrein. De flexibiliteit van dit board is gemiddeld, waardoor het
+gemakkelijk is om te manoeuvreren en controleren, zelfs voor beginners.
+Bovendien heeft het een breedte die geschikt is voor de meeste schoenmaten,
+waardoor de kans op edge-catch (het vastlopen van de rand van het board)
+wordt verkleind. Voor beginners is het echter wel belangrijk om te letten
+op de juiste maat van het board en de bindings. Het is aanbevolen om een
+board te kiezen dat lichter is en makkelijker te controleren, zodat je
+gemakkelijker kunt leren en oefenen. Als je nog geen snowboarduitrusting
+hebt, raden we je aan om eerst een paar lessen te nemen bij een
+professionele instructeur om te leren hoe je moet snowboarden en om de
+juiste techniek te leren. Zeker met de Multi-managed Snowboard, die een
+uitstekende allround-prestatie biedt, zul je snel op weg zijn om van het
+snowboarden te genieten.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -67,13 +69,13 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Retour aanvraag order #1004):**
 ```
-Goedemiddag Emmanuel Oudennaarden,
+Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat het snowboard niet helemaal naar wens is en dat u het wilt
-retourneren. Voordat we de retourprocedure starten, wil ik u graag een
-alternatief aanbieden. We kunnen u een gedeeltelijke terugbetaling van 20%
-van het aankoopbedrag aanbieden, zodat u het snowboard kunt behouden. Wat
-vindt u hiervan?
+Ik begrijp dat de snowboard niet helemaal aan uw verwachtingen voldoet.
+Voordat we overgaan tot een retour, zouden we graag een compensatie
+aanbieden om uw onvrede te verlichten. We kunnen een terugbetaling van 20%
+van het aankoopbedrag aanbieden. Zou dit een voor u acceptabel alternatief
+zijn in plaats van een retour?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -85,13 +87,12 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Retour aanvraag order #1004):**
 ```
-Goedemiddag Emmanuel Oudennaarden,
+Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat het aanbod van 20% korting niet voldoende was en dat u het
-snowboard liever wilt retourneren. Om u tegemoet te komen en u te helpen
-het snowboard te behouden, wil ik u een verbeterd aanbod doen. We kunnen u
-een gedeeltelijke terugbetaling van 35% van het aankoopbedrag aanbieden.
-Wat denkt u hiervan?
+Ik begrijp dat de eerder aangeboden 20% terugbetaling niet voldoende was om
+uw onvrede te verlichten. Als volgende stap in ons compensatiebeleid kunnen
+wij een terugbetaling van 35% van het aankoopbedrag aanbieden. Zou dit een
+voor u acceptabel alternatief zijn in plaats van een retour?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -101,31 +102,7 @@ efo-testing-store Klantenservice
 **Customer Message:**
 > Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.
 
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedemiddag Emmanuel Oudennaarden,
-
-We kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke
-terugbetaling aanbieden om een retourzending te vermijden.
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
-
-### Turn 4
-**Customer Message:**
-> Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.
-
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedemiddag Emmanuel Oudennaarden,
-
-We kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke
-terugbetaling aanbieden om een retourzending te vermijden.
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
+**AI Response:** TIMED OUT
 
 ---
 

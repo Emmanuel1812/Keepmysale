@@ -77,6 +77,7 @@ export class WebhookService {
     });
 
     console.log(`[WEBHOOK] Processing inbound email from: ${input.from} | Subject: ${input.subject}`);
+    console.log(`[WEBHOOK] Resolved conversation: ${conversation.id} (status: ${conversation.status}) | Customer: ${customer.id}`);
     console.log(`[WEBHOOK] Body snippet: ${cleanBody.substring(0, 500)}`);
 
     await this.messageService.create({
@@ -205,15 +206,32 @@ export class WebhookService {
       }
     }
 
+    // ── Lookup active negotiation: try by conversation first, then fall back to customer ──
     const activeNegotiations = await this.negotiationService.findByConversation(conversation.id);
-    const activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
+    console.log(`[WEBHOOK] Negotiations for conv ${conversation.id}: found ${activeNegotiations.length}, statuses: [${activeNegotiations.map(n => `${n.status}(step=${n.currentStep})`).join(', ')}]`);
+    
+    let activeNeg = activeNegotiations.find((n) => !["completed", "expired", "return_initiated"].includes(n.status));
+
+    // Fallback: if no active negotiation found for this conversation, check by customer
+    // This handles the case where the conversation threading diverged
+    if (!activeNeg) {
+      console.log(`[WEBHOOK] No active negotiation found for conversation. Trying fallback by customer ${customer.id}...`);
+      const customerNegs = await this.negotiationService.findActiveByCustomer(input.merchantId, customer.id);
+      console.log(`[WEBHOOK] Customer fallback: found ${customerNegs.length} active negotiations`);
+      if (customerNegs.length > 0) {
+        activeNeg = customerNegs[0];
+        console.log(`[WEBHOOK] Using customer fallback negotiation: ID=${activeNeg.id}, Status=${activeNeg.status}, Step=${activeNeg.currentStep}, ConvID=${activeNeg.conversationId}`);
+      }
+    }
 
     if (activeNeg) {
-      console.log(`[WEBHOOK] Active negotiation loop: ID=${activeNeg.id}, Status=${activeNeg.status}, Step=${activeNeg.currentStep}`);
+      console.log(`[WEBHOOK] Active negotiation found: ID=${activeNeg.id}, Status=${activeNeg.status}, Step=${activeNeg.currentStep}`);
       if (settings.auto_negotiate !== false) {
         console.log("[WEBHOOK] Active negotiation loop detected. Bypassing skip guards.");
         shouldSkipAutoReply = false;
       }
+    } else {
+      console.log(`[WEBHOOK] NO active negotiation found. shouldSkipAutoReply remains: ${shouldSkipAutoReply}`);
     }
 
     const action = await this.aiService.buildAutomatedAction({
