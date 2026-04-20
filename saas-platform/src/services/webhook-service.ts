@@ -294,8 +294,30 @@ export class WebhookService {
       settings,
     });
 
+    // ── NUCLEAR OVERRIDE: If AI returned a negotiation decision that ──────────
+    // ── is not "reject", ALWAYS send — regardless of intent classification, ──
+    // ── requires_human, or any other flag. ────────────────────────────────────
+    if (action.negotiationDecision &&
+        action.negotiationDecision !== "reject" &&
+        action.negotiationDecision !== "continue") {
+      console.log("[WEBHOOK] NUCLEAR OVERRIDE: Negotiation decision is " +
+        action.negotiationDecision + ", forcing send regardless of all flags.");
+      shouldSkipAutoReply = false;
+    }
+
     // ── Determine if we should send or just draft ─────────────
     const isShadowMode = settings.shadow_mode === true;
+
+    // ── FINAL STATE LOG ──────────────────────────────────────────────────────
+    console.log("[WEBHOOK] FINAL STATE:", JSON.stringify({
+      shouldSkipAutoReply,
+      isShadowMode: settings.shadow_mode,
+      negotiationDecision: action.negotiationDecision,
+      activeNegId: activeNeg?.id || null,
+      intent: classification.intent,
+      requiresHuman: classification.requires_human
+    }));
+
     let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
 
     try {

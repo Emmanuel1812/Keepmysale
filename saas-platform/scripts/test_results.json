@@ -10,9 +10,9 @@
         "turn": 1,
         "customer_message": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?",
         "ai_response": {
-          "id": "19dac2d34ad09a12",
+          "id": "19dac4e1a265de43",
           "subject": "Re: Status van mijn bestelling #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nUw bestelling #1004 is succesvol afgehandeld en heeft de status\r\n'fulfilled', wat betekent dat uw pakket reeds is verstuurd. Het\r\ntrackingnummer voor uw zending is 00446414507764, waarmee u de status van\r\nuw pakket kunt opvolgen via de bezorgdienst. Het kan enkele dagen duren\r\nvoordat de bezorgdienst de status van uw zending bijwerkt, maar u kunt\r\nverwachten dat uw pakket binnenkort zal aankomen. Mocht u nog vragen hebben\r\nover de status van uw bestelling of het trackingnummer, neem dan gerust\r\ncontact op.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nUw bestelling #1004 is succesvol verwerkt en verzonden. De financi\u00eble\r\nstatus van uw bestelling is op dit moment onbekend, maar dit heeft geen\r\ninvloed op de verzending van uw pakket. De fulfillment status is\r\n'fulfilled', wat aangeeft dat uw bestelling volledig is verpakt en\r\nverzonden. Uw pakket heeft het trackingsnummer 00446414507764, waarmee u de\r\nvoortgang van de verzending kunt volgen. U kunt de status van uw pakket\r\ncontroleren op de website van de vervoerder door het trackingsnummer in te\r\nvoeren. Als u na 5-7 werkdagen nog niets van uw pakket hebt vernomen, kunt\r\nu contact met ons opnemen voor verdere assistentie. Ons team zal dan verder\r\nonderzoek doen naar de status van uw pakket en u zo snel mogelijk\r\ninformeren over de verdere procedure. Uw totale bestelling bedroeg 629.95\r\nEUR en wij zijn ervan overtuigd dat u uw pakket spoedig zult ontvangen. Wij\r\nhopen dat u spoedig van uw aankoop zult genieten.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -28,9 +28,9 @@
         "turn": 1,
         "customer_message": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?",
         "ai_response": {
-          "id": "19dac2ef9f772156",
+          "id": "19dac4f048e88f32",
           "subject": "Re: Vraag over de Multi-managed Snowboard",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nDe Multi-managed Snowboard is een geweldige keuze voor zowel beginners als\r\ngevorderde snowboarders. Het is een all-mountain snowboard, wat betekent\r\ndat het ontworpen is om goed te presteren op verschillende soorten sneeuw\r\nen terrein. De flexibiliteit van dit board is gemiddeld, waardoor het\r\ngemakkelijk is om te manoeuvreren en controleren, zelfs voor beginners.\r\nBovendien heeft het een breedte die geschikt is voor de meeste schoenmaten,\r\nwaardoor de kans op edge-catch (het vastlopen van de rand van het board)\r\nwordt verkleind. Voor beginners is het echter wel belangrijk om te letten\r\nop de juiste maat van het board en de bindings. Het is aanbevolen om een\r\nboard te kiezen dat lichter is en makkelijker te controleren, zodat je\r\ngemakkelijker kunt leren en oefenen. Als je nog geen snowboarduitrusting\r\nhebt, raden we je aan om eerst een paar lessen te nemen bij een\r\nprofessionele instructeur om te leren hoe je moet snowboarden en om de\r\njuiste techniek te leren. Zeker met de Multi-managed Snowboard, die een\r\nuitstekende allround-prestatie biedt, zul je snel op weg zijn om van het\r\nsnowboarden te genieten.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nDe Multi-managed Snowboard is een uitstekend model dat zeker geschikt is\r\nvoor beginners. Het heeft namelijk een zachte flex, wat het makkelijker\r\nmaakt om te manoeuvreren en je evenwicht te bewaren op de piste. Bovendien\r\nis de snowboard voorzien van een breedte en lengte die ideaal zijn voor het\r\nleren van de basisvaardigheden, zoals het maken van bochten en het controle\r\nhouden over je snelheid. Verder is de snowboard gemaakt van duurzame\r\nmaterialen, waardoor je er zeker van kunt zijn dat hij lang mee zal gaan.\r\nAls beginner is het ook belangrijk om te investeren in een goede set van\r\nbindingen die comfortabel zitten en makkelijk te gebruiken zijn. Onze\r\nsnowboard is compatibel met een breed aanbod van bindingen, zodat je\r\ngemakkelijk de juiste set kunt vinden die bij je noden past. In het\r\nalgemeen is de Multi-managed Snowboard een prima keuze voor zowel beginners\r\nals gevorderde snowboarders, dankzij zijn uitstekende prestaties en\r\ngebruiksvriendelijkheid.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -51,18 +51,18 @@
         "turn": 1,
         "customer_message": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
         "ai_response": {
-          "id": "19dac2febdf2e754",
+          "id": "19dac50d8ac57877",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de snowboard niet helemaal aan uw verwachtingen voldoet.\r\nVoordat we overgaan tot een retour, zouden we graag een compensatie\r\naanbieden om uw onvrede te verlichten. We kunnen een terugbetaling van 20%\r\nvan het aankoopbedrag aanbieden. Zou dit een voor u acceptabel alternatief\r\nzijn in plaats van een retour?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de snowboard niet naar uw verwachting is gebleken. In plaats\r\nvan de snowboard te retourneren, zouden we u graag een compensatie\r\naanbieden van 20% van de aankoopprijs. Dit is een eenmalig aanbod om uw\r\nklant-tevredenheid te waarborgen. Zoudt u hiermee akkoord gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 2,
         "customer_message": "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
         "ai_response": {
-          "id": "19dac30c3b04b2d2",
+          "id": "19dac51dc1cadb02",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de eerder aangeboden 20% terugbetaling niet voldoende was om\r\nuw onvrede te verlichten. Als volgende stap in ons compensatiebeleid kunnen\r\nwij een terugbetaling van 35% van het aankoopbedrag aanbieden. Zou dit een\r\nvoor u acceptabel alternatief zijn in plaats van een retour?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedenavond Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de eerdere compensatie van 20% niet aan uw verwachtingen\r\nvoldoet. Ik wil u laten weten dat wij waarde hechten aan uw tevredenheid en\r\ndaarom een volgende stap willen zetten. Wij zijn bereid om u als\r\ncompensatie 35% van de aankoopprijs te bieden. Zoudt u hiermee akkoord\r\nkunnen gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
