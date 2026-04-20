@@ -122,6 +122,9 @@ export function formatEmailResponse(params: {
     textBody = params.aiResponse.trim();
   }
 
+  // ── Sanitize spacing: collapse 3+ newlines into exactly one blank line ──
+  textBody = textBody.replace(/\n{3,}/g, '\n\n');
+
   const parts = [greeting];
   if (customIntro) parts.push(customIntro);
   parts.push("", textBody);
@@ -129,13 +132,16 @@ export function formatEmailResponse(params: {
     parts.push("", requiredPhrases.join("\n"));
   }
   parts.push("", closing);
-  const text = parts.join("\n");
+  let text = parts.join("\n");
+  // Collapse any triple+ newlines introduced by parts assembly
+  text = text.replace(/\n{3,}/g, '\n\n');
 
   // ── Build HTML ────────────────────────────────────────────
   const htmlBody = textBody
     .split(/\n\n+/)
+    .filter((para) => para.trim().length > 0)
     .map((para) => para.replace(/\n/g, "<br>"))
-    .map((para) => `<p style="margin-bottom: 16px;">${para}</p>`)
+    .map((para) => `<p style="margin: 0 0 10px 0;">${para}</p>`)
     .join("");
 
   const htmlClosing = closing.replace(/\n/g, "<br>");
@@ -148,7 +154,7 @@ export function formatEmailResponse(params: {
 
   const html = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
-  <p style="margin-bottom: 16px;">${greeting}</p>
+  <p style="margin: 0 0 10px 0;">${greeting}</p>
   ${htmlIntro}
   ${htmlBody}
   ${htmlRequired}
