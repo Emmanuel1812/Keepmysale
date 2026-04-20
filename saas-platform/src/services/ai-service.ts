@@ -507,13 +507,31 @@ STRIKT_SYSTEEM_OVERRIDE:
           negotiationDecision: parsed.negotiationDecision || "continue",
         };
       } catch (error) {
-        console.error("[AI] Dynamic negotiation error:", error);
-        // Fallback to static
-        resultAction = {
-          action: "offer_partial_refund",
-          messageBody: localText.negotiation,
-          negotiationDecision: "continue",
-        };
+        console.error("[AI] Dynamic negotiation error:", error instanceof Error ? error.message : error, error);
+        
+        // Smart fallback: if we know the next step, construct a proper offer message
+        if (nextStep && !isLastStep) {
+          const pct = nextStep.percentage;
+          const typeLabel = nextStep.type === 'store_credit' ? 'store credit' : 'gedeeltelijke terugbetaling';
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: `Ik begrijp dat de eerdere aanbiedingen niet voldoende waren.\n\nAls volgende stap in ons compensatiebeleid kunnen wij een ${typeLabel} van ${pct}% van het aankoopbedrag aanbieden.\n\nZou dit voor u een acceptabel alternatief zijn in plaats van een retour?`,
+            negotiationDecision: "next_step",
+          };
+        } else if (isLastStep) {
+          // All steps exhausted — escalate to human
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: "Ik begrijp uw beslissing volledig. Ik schakel nu een collega in die u verder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons.",
+            negotiationDecision: "reject",
+          };
+        } else {
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: localText.negotiation,
+            negotiationDecision: "continue",
+          };
+        }
       }
     }
 
