@@ -416,6 +416,12 @@ STRIKT_SYSTEEM_OVERRIDE:
         - "accept": Klant gaat expliciet akkoord met het huidge of eerder gedane aanbod.
         - "next_step": Klant weigert het huidige aanbod, we stellen nu de volgende stap (korting) voor. Gebruik dit ALTIJD als je een nieuw percentage aanbiedt uit de lijst.
         - "reject": Klant weigert het aanbod en er zijn geen stappen meer over (of klant is zo boos dat hij per se wil retourneren).
+           BELANGRIJK BIJ "reject":
+           - Herhaal GEEN enkel eerder aanbod of percentage.
+           - Noem GEEN korting, compensatie, of percentage meer.
+           - Erken de beslissing van de klant empathisch in 2-3 zinnen.
+           - Vertel de klant dat een menselijke collega het overneemt om de retour te verwerken.
+           - Voorbeeld: "Ik begrijp uw beslissing volledig. Ik schakel nu een collega in die u verder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons."
         - "continue": Klant stelt een algemene vraag, geeft verwarrende input, of we herhalen het bestaande scenario zonder een nieuwe stap aan te bieden.
         
         GESPREKSGESCHIEDENIS:
@@ -457,6 +463,20 @@ STRIKT_SYSTEEM_OVERRIDE:
               : "Ik begrijp het. Ik ga u nu overdragen aan een menselijke collega om uw retourlabels te verwerken.";
           } else {
             finalMessage = localText.negotiation;
+          }
+        }
+
+        // HARD CHECK: If decision is "reject" but AI still mentions a percentage,
+        // override with a clean handoff message to prevent repeated offers.
+        if (parsed.negotiationDecision === 'reject' && finalMessage.includes('%')) {
+          console.warn('[AI] REJECT SAFETY: AI returned reject but messageBody contains %. Overriding with clean handoff.');
+          const lang = (preferredLanguage || 'nl').toLowerCase();
+          if (lang === 'en') {
+            finalMessage = "I completely understand your decision. I'm connecting you with a colleague who will help you with the return process. You'll hear from us shortly.";
+          } else if (lang === 'pt') {
+            finalMessage = "Compreendo perfeitamente a sua decisão. Vou encaminhá-lo para um colega que o ajudará com o processo de devolução. Entrará em contacto consigo em breve.";
+          } else {
+            finalMessage = "Ik begrijp uw beslissing volledig. Ik schakel nu een collega in die u verder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons.";
           }
         }
 
