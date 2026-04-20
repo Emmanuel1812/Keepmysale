@@ -300,6 +300,12 @@ export class AiService {
            - Alinea 1: Erken het probleem of de vraag van de klant
            - Alinea 2: Geef de relevante informatie of oplossing
            - Alinea 3: Bied verdere hulp aan of rond af
+        6. SCHRIJFSTIJL:
+           - Schrijf zoals een ervaren, vriendelijke klantenservice medewerker. NIET zoals een robot of AI.
+           - Gebruik elk woord MAXIMAAL één keer per alinea. Herhaal NOOIT dezelfde term (zoals 'bestelling', 'status', 'informatie') meerdere keren in je bericht.
+           - Houd het KORT. Maximaal 3-4 zinnen per alinea, maximaal 3 alinea's voor de body.
+           - Wees direct. Geen opvulzinnen zoals 'we hopen dat dit u verder helpt' of 'aarzel niet om contact op te nemen'.
+           - Eindig met een simpele, directe vraag als dat past. Bijvoorbeeld: 'Kan ik u verder nog ergens mee helpen?'
         
         CONTEXT:
         ${orderContext}
@@ -405,6 +411,13 @@ STRIKT_SYSTEEM_OVERRIDE:
            - Alinea 1: Erken de onvrede van de klant en toon begrip
            - Alinea 2: Bied de compensatie/korting aan met duidelijke uitleg
            - Alinea 3: Vraag of dit een acceptabel alternatief is in plaats van een retour
+        5. SCHRIJFSTIJL:
+           - Schrijf zoals een ervaren, vriendelijke klantenservice medewerker. NIET zoals een robot of AI.
+           - Gebruik elk woord MAXIMAAL één keer per alinea. Herhaal NOOIT dezelfde term (zoals 'compensatie', 'ontevredenheid', 'aanbod') meerdere keren in je bericht.
+           - Houd het KORT. Maximaal 3-4 zinnen per alinea, maximaal 3 alinea's voor de body.
+           - Wees direct. Geen opvulzinnen zoals 'we hopen dat dit meer in overeenstemming is met uw verwachtingen'.
+           - Eindig met een simpele, directe vraag. Bijvoorbeeld: 'Zou dit voor u werken?' of 'Wat vindt u hiervan?'
+           - NIET herhalen wat je al hebt aangeboden. Verwijs er kort naar ('de eerdere aanbiedingen') en ga direct naar het nieuwe aanbod.
         
         CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the NEXT step. 
         DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the NEXT step.
