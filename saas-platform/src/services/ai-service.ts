@@ -296,16 +296,6 @@ export class AiService {
         2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
-        5. FORMATTING: Structureer je antwoord met lege regels (dubbele newlines \n\n) tussen alinea's. Schrijf NIET alles in één doorlopende alinea. Gebruik minimaal 2-3 korte alinea's. Bijvoorbeeld:
-           - Alinea 1: Erken het probleem of de vraag van de klant
-           - Alinea 2: Geef de relevante informatie of oplossing
-           - Alinea 3: Bied verdere hulp aan of rond af
-        6. SCHRIJFSTIJL:
-           - Schrijf zoals een ervaren, vriendelijke klantenservice medewerker. NIET zoals een robot of AI.
-           - Gebruik elk woord MAXIMAAL één keer per alinea. Herhaal NOOIT dezelfde term (zoals 'bestelling', 'status', 'informatie') meerdere keren in je bericht.
-           - Houd het KORT. Maximaal 3-4 zinnen per alinea, maximaal 3 alinea's voor de body.
-           - Wees direct. Geen opvulzinnen zoals 'we hopen dat dit u verder helpt' of 'aarzel niet om contact op te nemen'.
-           - Eindig met een simpele, directe vraag als dat past. Bijvoorbeeld: 'Kan ik u verder nog ergens mee helpen?'
         
         CONTEXT:
         ${orderContext}
@@ -315,7 +305,7 @@ export class AiService {
         
         ANTWOORD-FORMAT (JSON):
         {
-          "messageBody": "<Schrijf hier je volledige, gedetailleerde antwoord MET dubbele newlines (\n\n) tussen alinea's. Geef specifieke uitleg over de status of beantwoord de vraag volledig. BELANGRIJK: Stop NOOIT midden in een zin. Maak je verhaal ALTIJD af.>"
+          "messageBody": "<Schrijf hier je volledige, gedetailleerde antwoord. Geef specifieke uitleg over de status of beantwoord de vraag volledig. BELANGRIJK: Stop NOOIT midden in een zin. Maak je verhaal ALTIJD af.>"
         }
         `;
 
@@ -354,37 +344,6 @@ export class AiService {
     }
 
     if (!resultAction && intentResult.intent === "return") {
-      // --- STEP DETECTION LOGIC (hoisted above try for catch block access) ---
-      // Prioritize actual database state if passed in
-      const steps = (ms.negotiation_steps as any[] || []).sort((a: any, b: any) => a.step - b.step);
-      let currentStepIndex = -1;
-      
-      if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
-         currentStepIndex = steps.findIndex((s: any) => s.step === input.activeNegotiation.currentStep);
-      } else {
-         // Fallback to text detection if no active DB negotiation yet
-         const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
-         if (lastOfferedPct !== null) {
-           currentStepIndex = steps.findIndex((s: any) => s.percentage === lastOfferedPct);
-         }
-      }
-      
-      const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
-      const nextStep = steps[nextStepIndex];
-      const isLastStep = currentStepIndex >= steps.length - 1;
-      const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
-
-      const stepsContext = steps.length > 0
-        ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
-${steps.map((s: any) => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
-
-STRIKT_SYSTEEM_OVERRIDE:
-- LAATST AANGEBODEN stap: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%) — dit is AL aangeboden en de klant reageert hier nu op` : "Geen — er is nog geen aanbod gedaan, dit wordt het EERSTE aanbod"}
-- Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
-- JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
-- Is dit de laatste stap? ${isLastStep ? "JA — de klant heeft zojuist ons LAATSTE en HOOGSTE aanbod afgewezen. Er zijn GEEN verdere stappen. Je MOET nu negotiationDecision op 'reject' zetten en de klant informeren dat je een menselijke collega inschakelt om de retour te verwerken. Bied GEEN nieuw percentage aan." : `NEE — er zijn nog stappen over. Je MOET nu exact ${nextStep?.percentage}% aanbieden als compensatie. Gebruik GEEN ander percentage. Zet negotiationDecision op 'next_step'.`}`
-        : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
-
       // Dynamic negotiation via Gemini
       try {
         const model = this.geminiClient.getGenerativeModel({
@@ -400,6 +359,37 @@ STRIKT_SYSTEEM_OVERRIDE:
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
 
+        // --- STEP DETECTION LOGIC ---
+        // Prioritize actual database state if passed in
+        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
+        let currentStepIndex = -1;
+        
+        if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
+           currentStepIndex = steps.findIndex(s => s.step === input.activeNegotiation.currentStep);
+        } else {
+           // Fallback to text detection if no active DB negotiation yet
+           const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
+           if (lastOfferedPct !== null) {
+             currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
+           }
+        }
+        
+        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+        const nextStep = steps[nextStepIndex];
+        const isLastStep = currentStepIndex >= steps.length - 1;
+        const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
+
+        const stepsContext = steps.length > 0
+          ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
+${steps.map(s => `- Stap ${s.step}: ${s.percentage}% ${s.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling'}`).join('\n')}
+
+STRIKT_SYSTEEM_OVERRIDE:
+- LAATST AANGEBODEN stap: ${currentActiveStep ? `Stap ${currentActiveStep.step} (${currentActiveStep.percentage}%) — dit is AL aangeboden en de klant reageert hier nu op` : "Geen — er is nog geen aanbod gedaan, dit wordt het EERSTE aanbod"}
+- Huidige Stap-Index: ${nextStepIndex + 1} van de ${steps.length}
+- JE MOET VOOR JE VOLGENDE AANBOD DIT GEBRUIKEN: ${nextStep ? nextStep.percentage + "% " + (nextStep.type === 'store_credit' ? 'Store Credit' : 'Terugbetaling') : "Geen"}
+- Is dit de laatste stap? ${isLastStep ? "JA — de klant heeft zojuist ons LAATSTE en HOOGSTE aanbod afgewezen. Er zijn GEEN verdere stappen. Je MOET nu negotiationDecision op 'reject' zetten en de klant informeren dat je een menselijke collega inschakelt om de retour te verwerken. Bied GEEN nieuw percentage aan." : `NEE — er zijn nog stappen over. Je MOET nu exact ${nextStep?.percentage}% aanbieden als compensatie. Gebruik GEEN ander percentage. Zet negotiationDecision op 'next_step'.`}`
+          : "Bied een kleine korting naar eigen inzicht om de retour te voorkomen (bijv. 15-20%).";
+
         const negotiationPrompt = `
         Je bent een ervaren klantenservice medewerker voor '${storeName}'. 
         
@@ -407,17 +397,6 @@ STRIKT_SYSTEEM_OVERRIDE:
         1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
         2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
-        4. FORMATTING: Structureer je antwoord met lege regels (dubbele newlines \n\n) tussen alinea's. Schrijf NIET alles in één doorlopende alinea. Gebruik minimaal 2-3 korte alinea's:
-           - Alinea 1: Erken de onvrede van de klant en toon begrip
-           - Alinea 2: Bied de compensatie/korting aan met duidelijke uitleg
-           - Alinea 3: Vraag of dit een acceptabel alternatief is in plaats van een retour
-        5. SCHRIJFSTIJL:
-           - Schrijf zoals een ervaren, vriendelijke klantenservice medewerker. NIET zoals een robot of AI.
-           - Gebruik elk woord MAXIMAAL één keer per alinea. Herhaal NOOIT dezelfde term (zoals 'compensatie', 'ontevredenheid', 'aanbod') meerdere keren in je bericht.
-           - Houd het KORT. Maximaal 3-4 zinnen per alinea, maximaal 3 alinea's voor de body.
-           - Wees direct. Geen opvulzinnen zoals 'we hopen dat dit meer in overeenstemming is met uw verwachtingen'.
-           - Eindig met een simpele, directe vraag. Bijvoorbeeld: 'Zou dit voor u werken?' of 'Wat vindt u hiervan?'
-           - NIET herhalen wat je al hebt aangeboden. Verwijs er kort naar ('de eerdere aanbiedingen') en ga direct naar het nieuwe aanbod.
         
         CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the NEXT step. 
         DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the NEXT step.
@@ -453,7 +432,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         
         JSON Output:
         {
-          "messageBody": "Schrijf hier je volledige, overtuigende antwoord MET dubbele newlines (\n\n) tussen alinea's. Stel de compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
+          "messageBody": "Schrijf hier je volledige, overtuigende antwoord. Stel de compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
           "negotiationDecision": "continue" | "accept" | "next_step" | "reject"
         }
         `;
@@ -507,31 +486,13 @@ STRIKT_SYSTEEM_OVERRIDE:
           negotiationDecision: parsed.negotiationDecision || "continue",
         };
       } catch (error) {
-        console.error("[AI] Dynamic negotiation error:", error instanceof Error ? error.message : error, error);
-        
-        // Smart fallback: if we know the next step, construct a proper offer message
-        if (nextStep && !isLastStep) {
-          const pct = nextStep.percentage;
-          const typeLabel = nextStep.type === 'store_credit' ? 'store credit' : 'gedeeltelijke terugbetaling';
-          resultAction = {
-            action: "offer_partial_refund",
-            messageBody: `Ik begrijp dat de eerdere aanbiedingen niet voldoende waren.\n\nAls volgende stap in ons compensatiebeleid kunnen wij een ${typeLabel} van ${pct}% van het aankoopbedrag aanbieden.\n\nZou dit voor u een acceptabel alternatief zijn in plaats van een retour?`,
-            negotiationDecision: "next_step",
-          };
-        } else if (isLastStep) {
-          // All steps exhausted — escalate to human
-          resultAction = {
-            action: "offer_partial_refund",
-            messageBody: "Ik begrijp uw beslissing volledig. Ik schakel nu een collega in die u verder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons.",
-            negotiationDecision: "reject",
-          };
-        } else {
-          resultAction = {
-            action: "offer_partial_refund",
-            messageBody: localText.negotiation,
-            negotiationDecision: "continue",
-          };
-        }
+        console.error("[AI] Dynamic negotiation error:", error);
+        // Fallback to static
+        resultAction = {
+          action: "offer_partial_refund",
+          messageBody: localText.negotiation,
+          negotiationDecision: "continue",
+        };
       }
     }
 
