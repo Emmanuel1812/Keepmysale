@@ -15,11 +15,11 @@ export function useIsEmbedded() {
     // 1. Check if the app is in an iframe
     const inIframe = window.self !== window.top;
     
-    // 2. Check for Shopify-specific parameters in the URL
-    const hasShopifyParams = searchParams.has("shop") || searchParams.has("host") || searchParams.has("embedded");
+    // 2. Check for explicit Shopify embedded flag
+    const isExplicitlyEmbedded = searchParams.get("embedded") === "1";
 
     // 3. Update state
-    setIsEmbedded(inIframe || hasShopifyParams);
+    setIsEmbedded(inIframe || isExplicitlyEmbedded);
   }, [searchParams]);
 
   return isEmbedded;

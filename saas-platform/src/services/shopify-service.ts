@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { buildShopifyInstallUrl, verifyShopifyHmac } from "@/lib/shopify/auth";
 import { MerchantsDal } from "@/dal/merchants";
-import { decryptAes256 } from "@/lib/encryption";
+import { encryptAes256, decryptAes256 } from "@/lib/encryption";
+import { getEnv } from "@/lib/env";
 
 export class ShopifyService {
   constructor(private readonly supabase: SupabaseClient) {}
@@ -164,7 +165,7 @@ export class ShopifyService {
           body: JSON.stringify({
             webhook: {
               topic,
-              address: "https://keepmysale.vercel.app/api/webhooks/shopify",
+              address: `${getEnv().NEXT_PUBLIC_APP_URL}/api/webhooks/shopify`,
               format: "json",
             },
           }),
