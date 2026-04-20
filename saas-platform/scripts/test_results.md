@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-20 21:52:03
+Timestamp: 2026-04-20 22:16:50
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -12,17 +12,15 @@ Timestamp: 2026-04-20 21:52:03
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-uw bestelling #1004 is al enige tijd geleden verzonden. De financiële
-status van uw bestelling is op dit moment onbekend, maar de fulfillment
-status is reeds fulfilled, wat betekent dat uw pakket succesvol is verpakt
-en verzonden. Uw pakket heeft een trackingsnummer van 00446414507764,
-waarmee u de status van uw pakket online kunt volgen. U kunt de website van
-de vervoerder bezoeken en het trackingsnummer invoeren om de meest actuele
-informatie over de locatie en de verwachte levertijd van uw pakket te
-bekijken. Indien u nog vragen heeft of verdere assistentie nodig heeft,
-staan wij u graag te woord. Uw totale bestelling van 629.95 EUR is verwerkt
-en de producten zijn reeds onderweg naar u. We zijn ervan overtuigd dat uw
-pakket spoedig bij u zal aankomen.
+Uw bestelling #1004 is succesvol verwerkt en verzonden. De financiële
+status van uw bestelling is op dit moment onbekend, maar dit heeft geen
+invloed op de levering van uw pakket. De fulfillment status is 'fulfilled',
+wat betekent dat uw pakket al door ons is verzonden. Het trackingsnummer
+van uw pakket is 00446414507764, waarmee u de status van uw zending kunt
+volgen bij de bezorgdienst. U kunt dit nummer gebruiken om te controleren
+waar uw pakket zich bevindt en wanneer u het kunt verwachten. Als u nog
+vragen heeft over de status van uw pakket of als er problemen zijn met de
+bezorging, neem dan gerust contact met ons op zodat we u kunnen helpen.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -40,20 +38,23 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-De Multi-managed Snowboard is in principe een veelzijdige snowboard die
-geschikt is voor een breed bereik van snowboarders, inclusief beginners. De
-reden hiervoor ligt in het feit dat deze snowboard ontworpen is om
-gemakkelijk te zijn om mee te leren en te groeien. De soft-flex constructie
-maakt het makkelijker om de basics van het snowboarden te leren en te
-beheersen, terwijl de Directional Twin vorm zowel stabiel als wendbaar is,
-waardoor het ideaal is voor zowel beginners als gevorderden. Bovendien
-zorgt de rocker-technologie ervoor dat je makkelijker kan draaien en sturen
-op de piste, wat weer gunstig is voor beginners die nog wennen aan de
-verschillende soorten sneeuw en pistes. Daarom zou de Multi-managed
-Snowboard een uitstekende keuze zijn als eerste snowboard voor een
-beginner, aangezien deze alle belangrijke kenmerken combineert die nodig
-zijn om snel en veilig te leren snowboarden, zonder direct een specifieke
-directional of all-mountain snowboard te hoeven kiezen.
+De Multi-managed Snowboard is in principe een all-mountain snowboard,
+geschikt voor snowboarders met verschillende niveaus van ervaring,
+inclusief beginners. Hij biedt een goede balans tussen stabiliteit en
+flexibiliteit, waardoor hij gemakkelijk te hanteren is voor wie net begint.
+Echter, het is belangrijk om te overwegen dat snowboards voor beginners
+vaak een wat zachtere flex hebben, wat het makkelijker maakt om te leren
+draaien en te stabiliseren. De Multi-managed Snowboard heeft een medium
+flex, wat betekent dat hij een goed compromis biedt tussen de stabiliteit
+die nodig is voor hogere snelheden en de flexibiliteit die nodig is voor
+makkelijke draaien. Als beginner zou je wellicht een snowboard met een
+zachtere flex overwegen, maar de Multi-managed Snowboard kan zeker een
+goede keuze zijn als je bereid bent om even te oefenen en de techniek onder
+de knie te krijgen. Verder is het ook belangrijk om te kijken naar factoren
+zoals je lengte, gewicht en de maat van je voeten om de juiste snowboard te
+kiezen. Als je nog vragen hebt of twijfelt over de keuze van je snowboard,
+raden we je aan om contact op te nemen met een van onze specialisten voor
+meer persoonlijk advies.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -72,11 +73,11 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat u niet tevreden bent met uw snowboard. Voordat we overgaan
-tot de retourprocedure, zou ik graag een alternatief aanbieden. We zouden u
-een compensatie van 20% van de originele aankoopprijs kunnen bieden. Deze
-compensatie zou als een terugbetaling kunnen worden verwerkt. Wilt u dit
-aanbod in overweging nemen?
+Ik begrijp dat de snowboard niet helemaal aan uw verwachtingen voldoet.
+Voordat we overgaan tot een retour, zou ik graag een compensatie aanbieden
+van 20% van de aankoopsom. Dit is een eenmalig aanbod om te zien of we uw
+onvrede kunnen wegnemen. Wilt u hier gebruik van maken of heeft u behoefte
+aan meer informatie?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -90,10 +91,11 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat de eerder aangeboden compensatie van 20% niet voldoende was
-om u tevreden te stellen. Als alternatief kunnen we een compensatie van 35%
-van de originele aankoopprijs aanbieden. Deze compensatie zou als een
-terugbetaling kunnen worden verwerkt. Wilt u dit aanbod in overweging nemen?
+Ik begrijp dat onze eerder aangeboden compensatie van 20% niet voldoende
+was om uw onvrede weg te nemen. Ik wil u graag een nieuwe compensatie
+aanbieden van 35% van de aankoopsom. Dit is een eenmalig aanbod om te zien
+of we uw onvrede kunnen wegnemen. Wilt u hier gebruik van maken of heeft u
+behoefte aan meer informatie?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -107,11 +109,11 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat de eerder aangeboden compensaties nog niet voldoende waren
-om u tevreden te stellen. Als alternatief kunnen we een compensatie van 45%
-van de originele aankoopprijs als store credit aanbieden. Deze compensatie
-kan worden gebruikt voor toekomstige aankopen in onze winkel. Wilt u dit
-aanbod in overweging nemen?
+Ik begrijp dat de eerdere aangeboden compensaties niet voldoende waren om
+uw onvrede weg te nemen. Ik wil u graag een nieuwe compensatie aanbieden
+van 45% van de aankoopsom in de vorm van een store credit. Dit is een
+eenmalig aanbod om te zien of we uw onvrede kunnen wegnemen. Wilt u hier
+gebruik van maken of heeft u behoefte aan meer informatie?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 

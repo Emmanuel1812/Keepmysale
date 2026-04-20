@@ -296,6 +296,10 @@ export class AiService {
         2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
+        5. FORMATTING: Structureer je antwoord met lege regels (dubbele newlines \n\n) tussen alinea's. Schrijf NIET alles in één doorlopende alinea. Gebruik minimaal 2-3 korte alinea's. Bijvoorbeeld:
+           - Alinea 1: Erken het probleem of de vraag van de klant
+           - Alinea 2: Geef de relevante informatie of oplossing
+           - Alinea 3: Bied verdere hulp aan of rond af
         
         CONTEXT:
         ${orderContext}
@@ -305,7 +309,7 @@ export class AiService {
         
         ANTWOORD-FORMAT (JSON):
         {
-          "messageBody": "<Schrijf hier je volledige, gedetailleerde antwoord. Geef specifieke uitleg over de status of beantwoord de vraag volledig. BELANGRIJK: Stop NOOIT midden in een zin. Maak je verhaal ALTIJD af.>"
+          "messageBody": "<Schrijf hier je volledige, gedetailleerde antwoord MET dubbele newlines (\n\n) tussen alinea's. Geef specifieke uitleg over de status of beantwoord de vraag volledig. BELANGRIJK: Stop NOOIT midden in een zin. Maak je verhaal ALTIJD af.>"
         }
         `;
 
@@ -397,6 +401,10 @@ STRIKT_SYSTEEM_OVERRIDE:
         1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
         2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
+        4. FORMATTING: Structureer je antwoord met lege regels (dubbele newlines \n\n) tussen alinea's. Schrijf NIET alles in één doorlopende alinea. Gebruik minimaal 2-3 korte alinea's:
+           - Alinea 1: Erken de onvrede van de klant en toon begrip
+           - Alinea 2: Bied de compensatie/korting aan met duidelijke uitleg
+           - Alinea 3: Vraag of dit een acceptabel alternatief is in plaats van een retour
         
         CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the NEXT step. 
         DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the NEXT step.
@@ -432,7 +440,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         
         JSON Output:
         {
-          "messageBody": "Schrijf hier je volledige, overtuigende antwoord. Stel de compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
+          "messageBody": "Schrijf hier je volledige, overtuigende antwoord MET dubbele newlines (\n\n) tussen alinea's. Stel de compensatie-stap voor of geef retour-instructies als alle stappen zijn doorlopen.",
           "negotiationDecision": "continue" | "accept" | "next_step" | "reject"
         }
         `;
