@@ -344,6 +344,24 @@ export class AiService {
     }
 
     if (!resultAction && intentResult.intent === "return") {
+      // --- STEP DETECTION LOGIC (hoisted for catch block access) ---
+      const steps = (ms.negotiation_steps as any[] || []).sort((a: any, b: any) => a.step - b.step);
+      let currentStepIndex = -1;
+      
+      if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
+         currentStepIndex = steps.findIndex((s: any) => s.step === input.activeNegotiation!.currentStep);
+      } else {
+         const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
+         if (lastOfferedPct !== null) {
+           currentStepIndex = steps.findIndex((s: any) => s.percentage === lastOfferedPct);
+         }
+      }
+      
+      const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+      const nextStep = steps[nextStepIndex];
+      const isLastStep = currentStepIndex >= steps.length - 1;
+      const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
+
       // Dynamic negotiation via Gemini
       try {
         const model = this.geminiClient.getGenerativeModel({
@@ -358,26 +376,6 @@ export class AiService {
         const historyContext = (input.history || [])
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
           .join("\n");
-
-        // --- STEP DETECTION LOGIC ---
-        // Prioritize actual database state if passed in
-        const steps = (ms.negotiation_steps as any[] || []).sort((a, b) => a.step - b.step);
-        let currentStepIndex = -1;
-        
-        if (input.activeNegotiation && input.activeNegotiation.currentStep > 0) {
-           currentStepIndex = steps.findIndex(s => s.step === input.activeNegotiation.currentStep);
-        } else {
-           // Fallback to text detection if no active DB negotiation yet
-           const lastOfferedPct = this.detectLastOfferedPercentage(input.history || []);
-           if (lastOfferedPct !== null) {
-             currentStepIndex = steps.findIndex(s => s.percentage === lastOfferedPct);
-           }
-        }
-        
-        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
-        const nextStep = steps[nextStepIndex];
-        const isLastStep = currentStepIndex >= steps.length - 1;
-        const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
 
         const stepsContext = steps.length > 0
           ? `BESCHIKBARE STAPPEN CONFIGURATIE (Merchant instellingen):
