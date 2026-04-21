@@ -573,7 +573,7 @@ STRIKT_SYSTEEM_OVERRIDE:
           const result = await callGroqWithRetry(
             this.groqClient,
             options.groq.messages,
-            options.groq.model || GROQ_MODELS.PRIMARY
+            options.groq.model || GROQ_MODELS.LIGHT
           );
           if (result) return result;
         } catch (groqError: any) {
