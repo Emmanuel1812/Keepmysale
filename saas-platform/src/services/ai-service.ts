@@ -487,12 +487,34 @@ STRIKT_SYSTEEM_OVERRIDE:
         };
       } catch (error) {
         console.error("[AI] Dynamic negotiation error:", error);
-        // Fallback to static
-        resultAction = {
-          action: "offer_partial_refund",
-          messageBody: localText.negotiation,
-          negotiationDecision: "continue",
-        };
+        
+        if (nextStep && !isLastStep) {
+          const pct = nextStep.percentage;
+          const type = nextStep.type === 'store_credit' 
+            ? 'store credit' : 'terugbetaling';
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: `We begrijpen dat het eerdere aanbod niet voldoende was. We bieden u nu ${pct}% ${type} aan. Zou dit voor u werken?`,
+            negotiationDecision: "next_step",
+          };
+        } else if (isLastStep) {
+          const msg = preferredLanguage === 'en'
+            ? "I understand. I will now connect you with a colleague to process your return."
+            : preferredLanguage === 'pt'
+              ? "Compreendo. Vou encaminhá-lo para um colega para processar a devolução."
+              : "Ik begrijp uw beslissing. Ik schakel nu een collega in die u verder helpt met de retourprocedure.";
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: msg,
+            negotiationDecision: "reject",
+          };
+        } else {
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: localText.negotiation,
+            negotiationDecision: "continue",
+          };
+        }
       }
     }
 

@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-20 23:33:48
+Timestamp: 2026-04-21 01:59:43
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -12,21 +12,15 @@ Timestamp: 2026-04-20 23:33:48
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Uw bestelling #1004 is succesvol verwerkt en verzonden. Onze fulfillment
-status toont aan dat de order fulfilled is, wat betekent dat het pakket bij
-de vervoerder is afgeleverd en onderweg is naar uw adres.
-
-
-De trackingcode die u ontvangt heeft, 00446414507764, kunt u gebruiken om
-de status van uw pakket te volgen op de website van de vervoerder. Dit
-geeft u de meest actuele informatie over de locatie van uw pakket en de
-verwachte levertijd.
-
-
-Mocht u ondanks de trackinginformatie nog vragen hebben over de status van
-uw bestelling of hulp nodig hebben bij het opvolgen van uw pakket, bent u
-van harte welkom om contact met ons op te nemen. Wij zijn hier om te helpen
-en zullen ons best doen om u zo snel mogelijk van een antwoord te voorzien.
+Uw bestelling #1004 is volledig verwerkt en het pakket is reeds verzonden.
+De financiële status van uw bestelling is op dit moment nog onbekend, maar
+dit heeft geen invloed op de levering van uw pakket. Uw pakket heeft het
+trackingsnummer 00446414507764, waarmee u de status van uw pakket kunt
+volgen bij de pakketdienst. Het totale bedrag van uw bestelling was 629,95
+EUR. Als u de zending nog niet heeft ontvangen, raden wij u aan om de
+trackinginformatie na te gaan op de website van de pakketdienst om een
+bijgewerkte status te krijgen. Indien u nog verdere vragen heeft of
+problemen ondervindt met de levering, dan zijn wij hier om u te helpen.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -44,22 +38,25 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-De Multi-managed Snowboard is een populair model onder snowboarders vanwege
-zijn veelzijdigheid. Hij is dan ook geschikt voor een breed scala aan
-vaardigheidsniveaus, inclusief beginners.
-
-De reden hiervoor is dat hij ontworpen is om zowel stabiliteit als
-wendbaarheid te bieden, wat essentieel is voor beginners die nog steeds aan
-het leren zijn om hun evenwicht te houden en te manoeuvreren op de piste.
-Bovendien kan de snowboard op verschillende manieren worden afgesteld om
-aan individuele voorkeuren te voldoen, wat het gemakkelijker maakt voor
-beginners om te wennen aan het board.
-
-Als je nog niet eerder hebt gesnowboard, raden we je aan om misschien eerst
-een paar lessen te nemen om de basisvaardigheden te leren. Ons team kan je
-ook helpen met eventuele vragen over accessoires of kleding die je nodig
-hebt om veilig en comfortabel te snowboarden. We zijn hier om je te
-ondersteunen en je snowboard-ervaring zo leuk mogelijk te maken.
+De Multi-managed Snowboard is inderdaad een geweldige keuze, maar of hij
+geschikt is voor beginners hangt af van enkele factoren. Het is belangrijk
+om te overwegen dat een snowboard voor beginners idealiter een paar
+specifieke kenmerken zou moeten hebben, zoals een zachte flexibiliteit die
+het makkelijker maakt om te buigen en te sturen, en een bredere, langere
+ski die stabiliteit biedt bij hogere snelheden. De Multi-managed Snowboard
+heeft een medium flex, wat betekent dat hij een goede balans biedt tussen
+stabiliteit en buigzaamheid, waardoor hij geschikt kan zijn voor zowel
+beginners als gevorderden. Echter, het is essentieel om te noteren dat de
+grootte van de snowboard ook een cruciale rol speelt. Een te lange
+snowboard kan moeilijk zijn om te controleren voor een beginner, terwijl
+een te korte snowboard mogelijk onstabiel is. De Multi-managed Snowboard is
+verkrijgbaar in verschillende maten, dus het is een goed idee om je lengte
+en gewicht te overwegen bij het kiezen van de juiste maat. Als beginner is
+het ook aan te raden om lessen te nemen van een professionele instructeur
+om je vaardigheden te verbeteren en je veiligheid te waarborgen op de
+piste. In samenvatting, de Multi-managed Snowboard kan een goede keuze zijn
+voor beginners, mits je de juiste maat kiest en bereid bent om te leren en
+je vaardigheden te ontwikkelen.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -78,18 +75,8 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat u niet tevreden bent met uw snowboard en dat u hem graag
-wilt retourneren. Het spijt ons dat het product niet aan uw verwachtingen
-voldoet.
-
-We zouden graag willen helpen om uw ontevredenheid te compenseren. We
-bieden u een compensatie van 20% van de aankoopwaarde aan, zodat u deze
-krediet kunt gebruiken voor een toekomstige aankoop of om een deel van het
-aankoopbedrag terug te krijgen.
-
-Is deze compensatie voor u een acceptabel alternatief in plaats van een
-retour? We zijn hier om te helpen en willen graag uw ontevredenheid
-tevreden stellen.
+We kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke
+terugbetaling aanbieden om een retourzending te vermijden.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -103,19 +90,8 @@ efo-testing-store Klantenservice
 ```
 Goedenavond Emmanuel Oudennaarden,
 
-Ik begrijp dat u niet tevreden bent met de eerder aangeboden compensatie
-van 20% en dat u liever uw snowboard terugstuurt.
-
-We begrijpen dat de voorgaande compensatie niet aan uw verwachtingen
-voldeed. Daarom willen we een volgende stap voorstellen om uw
-ontevredenheid te compenseren. We bieden u nu een compensatie van 35% van
-de aankoopwaarde aan. Dit is een eenmalige aanbod om uw ontevredenheid te
-compenseren en we hopen dat dit aanbod meer in overeenstemming is met uw
-verwachtingen.
-
-Is deze compensatie van 35% voor u een acceptabel alternatief in plaats van
-een retour? We zijn hier om te helpen en willen graag uw ontevredenheid
-tevreden stellen.
+We kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke
+terugbetaling aanbieden om een retourzending te vermijden.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -125,47 +101,7 @@ efo-testing-store Klantenservice
 **Customer Message:**
 > Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.
 
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedenavond Emmanuel Oudennaarden,
-
-Ik begrijp dat u nog steeds niet tevreden bent met de eerder aangeboden
-compensatie en dat u het snowboard graag wilt retourneren. We begrijpen dat
-het product niet aan uw verwachtingen voldoet en dat u teleurgesteld bent.
-
-We willen graag helpen om uw ontevredenheid te compenseren. We bieden u nu
-een compensatie van 45% van de aankoopwaarde aan in de vorm van store
-credit. Dit is een eenmalige aanbod om uw ontevredenheid te compenseren en
-we hopen dat dit aanbod meer in overeenstemming is met uw verwachtingen.
-
-Is deze compensatie van 45% store credit voor u een acceptabel alternatief
-in plaats van een retour? We zijn hier om te helpen en willen graag uw
-ontevredenheid tevreden stellen.
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
-
-### Turn 4
-**Customer Message:**
-> Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.
-
-**AI Response (Subject: Re: Retour aanvraag order #1004):**
-```
-Goedenavond Emmanuel Oudennaarden,
-
-Ik begrijp uw beslissing volledig. Het spijt ons dat geen van de eerder
-aangeboden compensaties uw ontevredenheid heeft kunnen wegnemen.
-
-Ik schakel nu een collega in die u verder zal helpen met de
-retourprocedure. U hoort zo snel mogelijk van ons.
-
-Onze collega zal alle benodigde stappen met u doornemen en ervoor zorgen
-dat de retour zo soepel mogelijk verloopt.
-Met vriendelijke groet,
-efo-testing-store Klantenservice
-
-```
+**AI Response:** TIMED OUT
 
 ---
 
