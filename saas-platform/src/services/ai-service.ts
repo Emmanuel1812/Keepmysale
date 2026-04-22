@@ -274,6 +274,16 @@ export class AiService {
         if (includeTracking) parts.push(`- Tracking: ${sanitize(order.tracking_number || order.trackingNumber)}`);
         if (includeLineItems && lineItemsStr) parts.push(`- Producten in deze order: ${lineItemsStr}`);
         parts.push(`- Totaal: ${order.totalPrice || order.total_price} ${currencyDisplay}`);
+        
+        const fulfillmentExplanation: Record<string, string> = {
+          'fulfilled': 'De bestelling is volledig verzonden/afgeleverd.',
+          'partial': 'De bestelling is gedeeltelijk verzonden.',
+          'unfulfilled': 'De bestelling is nog niet verzonden.',
+          'restocked': 'De bestelling is geretourneerd en opnieuw op voorraad.',
+        };
+
+        const statusKey = (order.fulfillment_status || order.fulfillmentStatus || "").toLowerCase();
+        parts.push(`- Status uitleg: ${fulfillmentExplanation[statusKey] || 'De fulfillment status is onbekend.'}`);
 
         orderContext = parts.join("\n          ");
       }
@@ -299,11 +309,12 @@ export class AiService {
         DOEL: Geef de klant een volledig, vriendelijk en accuraat antwoord op hun vraag.
         
         STRIKT PROTOCOL:
-        1. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
+        1. TAAL: Reageer ALTIJD in de taal van het klantbericht. De klant schreef in het ${intentResult.language_detected}. Als de gedetecteerde taal 'other' is, gebruik dan ${preferredLanguage}.
         2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
         5. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
+        6. BELANGRIJK: Als de fulfillment status 'fulfilled' is, betekent dit dat het pakket AL verzonden en waarschijnlijk bezorgd is. Zeg NIET dat het 'in behandeling' of 'onderweg' is als de status fulfilled is. Controleer de tracking info en geef een accuraat antwoord.
         
         CONTEXT:
         ${orderContext}
@@ -401,7 +412,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         
         NEGOTIATIE PROTOCOL (STRIKT):
         1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
-        2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
+        2. TAAL: Reageer ALTIJD in de taal van het klantbericht. De klant schreef in het ${intentResult.language_detected}. Als de gedetecteerde taal 'other' is, gebruik dan ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
         4. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
         

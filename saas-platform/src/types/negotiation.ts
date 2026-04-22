@@ -35,13 +35,15 @@ export interface INegotiation {
   finalRefundType: "partial_refund" | "store_credit" | "full_refund" | "exchange" | null;
   savings: number | null;
   shopifyRefundId: string | null;
-  returnReason: string | null;
+  refundProcessed: boolean;
+  refundProcessedAt: string | null;
+  returnStatus: string;
+  completedAt: string | null;
   customerFeedback: string | null;
   auditPdfUrl: string | null;
   isManualRefundRequired: boolean;
   refundRejectionReason: string | null;
   generatedDiscountCode: string | null;
-  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
