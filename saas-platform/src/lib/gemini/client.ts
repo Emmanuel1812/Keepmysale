@@ -2,8 +2,8 @@ import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai"
 import { getEnv } from "@/lib/env";
 
 export const GEMINI_MODELS = {
-  PRIMARY: "gemini-2.5-flash",
-  FALLBACK: "gemini-2.5-flash-lite",
+  PRIMARY: "gemini-2.0-flash",
+  FALLBACK: "gemini-2.0-flash-lite", // updated to match too, or left alone.
 } as const;
 
 export function createGeminiClient() {

@@ -566,18 +566,36 @@ STRIKT_SYSTEEM_OVERRIDE:
     } catch (geminiError: any) {
       console.error("[AI] Gemini failed, checking fallback:", geminiError.message || geminiError);
       
-      // 2. Fallback to Groq if available
+      // 2. Fallback to Groq 70B if available
       if (this.groqClient) {
+        let groqError70b: any;
+        
         try {
-          console.log("[AI] Falling back to Groq...");
+          console.log("[AI] Falling back to Groq 70B...");
           const result = await callGroqWithRetry(
             this.groqClient,
             options.groq.messages,
-            options.groq.model || GROQ_MODELS.LIGHT
+            GROQ_MODELS.PRIMARY, // 70b
+            0 // 0 max retries = exactly 1 attempt
           );
           if (result) return result;
-        } catch (groqError: any) {
-          console.error("[AI] Groq fallback also failed:", groqError.message || groqError);
+        } catch (error: any) {
+          console.error("[AI] Groq 70B fallback failed:", error.message || error);
+          groqError70b = error;
+        }
+
+        // 3. Fallback to Groq 8B if 70B failed
+        try {
+          console.log("[AI] Falling back to Groq 8B as absolute last resort...");
+          const result = await callGroqWithRetry(
+            this.groqClient,
+            options.groq.messages,
+            GROQ_MODELS.LIGHT, // 8b
+            0 // exactly 1 attempt
+          );
+          if (result) return result;
+        } catch (error: any) {
+          console.error("[AI] Groq 8B fallback also failed:", error.message || error);
         }
       } else {
         console.warn("[AI] Groq fallback requested but GROQ_API_KEY is missing.");

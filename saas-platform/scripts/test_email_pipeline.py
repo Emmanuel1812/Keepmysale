@@ -124,14 +124,22 @@ def check_for_reply(service, target_email, subject, sent_time_ms):
         # Search for messages from the target email with the search-friendly subject
         # Re: [Subject] is the standard reply format
         query = f"from:{target_email} subject:({subject})"
-        results = service.users().messages().list(userId="me", q=query).execute()
+        try:
+            results = service.users().messages().list(userId="me", q=query).execute()
+        except (ConnectionResetError, ConnectionError, OSError) as net_err:
+            print(f"  [Network error during Gmail search: {net_err}. Will retry on next poll.]")
+            return None
         messages = results.get('messages', [])
         
         if not messages:
             return None
 
         for msg_summary in messages:
-            msg = service.users().messages().get(userId="me", id=msg_summary['id']).execute()
+            try:
+                msg = service.users().messages().get(userId="me", id=msg_summary['id']).execute()
+            except (ConnectionResetError, ConnectionError, OSError) as net_err:
+                print(f"  [Network error fetching message: {net_err}. Skipping.]")
+                continue
             msg_date = int(msg['internalDate'])
             
             # Only consider messages that arrived AFTER we sent ours
@@ -247,7 +255,11 @@ def main():
             reply = None
             for attempt in range(MAX_POLLS):
                 time.sleep(POLL_INTERVAL)
-                reply = check_for_reply(service, TARGET_SUPPORT_EMAIL, case['subject'], start_time_ms)
+                try:
+                    reply = check_for_reply(service, TARGET_SUPPORT_EMAIL, case['subject'], start_time_ms)
+                except Exception as poll_err:
+                    print(f"  (Attempt {attempt+1}/{MAX_POLLS}) Poll error: {poll_err}. Retrying...")
+                    continue
                 if reply:
                     print(f"Received reply for turn {turn_idx + 1}!")
                     break
