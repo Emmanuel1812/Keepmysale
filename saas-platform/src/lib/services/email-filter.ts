@@ -39,20 +39,20 @@ export class EmailFilterService {
     const skipDomains = [
       // Banks
       "ing.com", "ing.nl", "rabobank.nl", "abnamro.nl", "knab.nl", "bunq.com", 
-      "revolut.com", "paypal.com", "stripe.com", "mollie.com", "adyen.com",
+      "revolut.com", "paypal.com", "paypal.nl", "stripe.com", "mollie.com", "adyen.com", "paddle.com",
       // Government/tax
       "belastingdienst.nl", "fiscaal-online.nl", "kvk.nl", "uwv.nl", "duo.nl",
-      // Newsletter/marketing
+      // Newsletter/marketing/System
       "mailchimp.com", "sendgrid.net", "amazonses.com", "campaign-monitor.com", 
-      "hubspot.com", "klaviyo.com",
+      "hubspot.com", "klaviyo.com", "mailer.shopify.com", "shopify.com", "google.com", "googlemail.com", "amazon.com",
       // Other high-traffic spammy domains from previous version
       "uber.com", "tiktok.com", "facebook.com", "facebookmail.com", "instagram.com", 
       "twitter.com", "linkedin.com", "pinterest.com", "netlify.com", 
       "vercel.com", "github.com"
     ];
 
-    // Transactional prefixes
-    const skipSenderRegex = /^(noreply|no-reply|mailer-daemon|postmaster|notifications?|alerts?|system|auto|bounce)/i;
+    // Transactional, marketing, and support prefixes
+    const skipSenderRegex = /^(noreply-.*|noreply|no-reply|donotreply|mailer-daemon|postmaster|notifications?|alerts?|system|auto|bounce|updates?|billing|invoices?|newsletter|marketing|promo|info|support)/i;
     
     // Check domains
     if (skipDomains.some(d => fromLower.endsWith(`@${d}`) || fromLower.endsWith(`.${d}`))) {
@@ -64,32 +64,10 @@ export class EmailFilterService {
       return { shouldProcess: false, reason: `Sender pattern blocked: ${fromAddress}`, layer: 1 };
     }
 
-    // Special check for info@*.nl (only if not matching a customer)
-    if (fromLower.startsWith("info@") && fromLower.endsWith(".nl")) {
-      try {
-        const { data: customerMatch, error } = await this.supabase
-          .from("orders")
-          .select("id")
-          .eq("merchant_id", merchantId)
-          .eq("email", fromLower)
-          .maybeSingle();
-
-        if (!error && !customerMatch) {
-          return { shouldProcess: false, reason: `Generic info@ address blocked: ${fromAddress}`, layer: 1 };
-        }
-        
-        if (customerMatch) {
-          knownCustomer = true;
-        }
-        // If error or customerMatch exists, fall through to next layers
-      } catch (err) {
-        console.error(`[EmailFilter] Layer 1 info@ DB check failed, passing through:`, err);
-      }
-    }
-
+    // Special check for info@*.nl (only if not matching a customer) - removed local info@ check because the regex above catches it directly now.
 
     // --- LAYER 2: SUBJECT BLOCKLIST ---
-    const bulkSubjectsRegex = /automatic reply|auto-reply|out of office|delivery status|undeliverable|mailer\.daemon|account.*(statement|update|security|verify)|nieuwsbrief|newsletter|aangifte|belasting|factuur van|your.*invoice|payment.*received|payment.*confirmation|abonnement|subscription.*confirm/i;
+    const bulkSubjectsRegex = /automatic reply|auto-reply|out of office|delivery status|undeliverable|mailer\.daemon|account.*(statement|update|security|verify)|nieuwsbrief|newsletter|aangifte|belasting|factuur van|your.*invoice|payment.*received|payment.*confirmation|abonnement|subscription|invoice|payment.*failed|betaling.*ontvangen|betaling.*mislukt|chargeback|your.*receipt|sent you money|heeft.*overgemaakt|betalingsgegevens|Update je betalingsgegevens|unsubscribe/i;
     
     if (bulkSubjectsRegex.test(subject)) {
       return { shouldProcess: false, reason: `Subject pattern blocked: ${subject}`, layer: 2 };

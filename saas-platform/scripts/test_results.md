@@ -1,6 +1,6 @@
 # AI E2E Test Results
 
-Timestamp: 2026-04-21 03:06:34
+Timestamp: 2026-04-22 14:00:48
 
 ## Test Case: wismo
 **Subject:** Status van mijn bestelling #1004
@@ -12,11 +12,20 @@ Timestamp: 2026-04-21 03:06:34
 ```
 Goedemorgen Emmanuel Oudennaarden,
 
-Het spijt ons dat u nog geen update heeft over uw bestelling #1004. De
-status van uw pakket is op dit moment 'bezorgd' aangegeven, aangezien de
-bestelling is voltooid. Om nog meer inzicht te krijgen in de status van uw
-pakket, kunt u de trackingcode 00446414507764 gebruiken voor het
-controleren van de laatste updates op de website van de bezorgers.
+Uw bestelling #1004 is reeds verzonden en de financiële status is op dit
+moment onbekend, maar de fulfillment status is fulfilled, wat betekent dat
+uw pakket in behandeling is genomen en verzonden.
+
+De trackingcode van uw pakket is 00446414507764, waarmee u de status van uw
+pakket kunt volgen via de website van de vervoerder.
+
+Het totale bedrag van uw bestelling bedraagt 629.95 EUR. Als u nog vragen
+heeft of meer informatie wilt over de status van uw pakket, kunt u contact
+met ons opnemen en wij zullen onze uiterste best doen om u te helpen.
+
+Houd er rekening mee dat het soms enige tijd kan duren voordat de
+trackinginformatie beschikbaar is, dus het is mogelijk dat uw pakket
+inmiddels onderweg is en de trackinginformatie nog niet beschikbaar is.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -34,17 +43,20 @@ efo-testing-store Klantenservice
 ```
 Goedemorgen Emmanuel Oudennaarden,
 
-Bedankt voor je vraag over het Multi-managed Snowboard. Deze board is
-absoluut geschikt voor beginners. Het heeft een speciale manier om de
-bindingen aan te passen aan je gewicht, waardoor het een perfecte optie is
-voor beginners die hun krachten nog moeten vinden op de slopes. Daarnaast
-heeft het een stabiele en betrouwbare constructie, waardoor je je op de
-sneeuw kunt concentreren in plaats van je zorgen te maken over het board.
-Alleen al de aanpasbare bindingslengte maakt het een uitstekende keuze voor
-mensen die nog experimenteren met het snowboarden, maar ook als je al wat
-meer ervaring hebt kan het wel degelijk nuttig zijn om een board met
-dergelijke eigenschappen te hebben. We denken dat je er absoluut blij mee
-zult zijn!
+De Multi-managed Snowboard is een veelzijdig model dat zowel beginners als
+gevorderden kan accommoderen, dankzij zijn stabiliteit en gemakkelijke
+bochten.
+
+De snowboard is gemaakt met een zachte flex, wat het ideaal maakt voor
+beginners die nog wennen aan het rijden op sneeuw.
+
+Het ontwerp en de constructie van de snowboard zorgen ervoor dat deze
+soepel en comfortabel rijdt, waardoor het een goede keuze is voor zowel
+beginners als gevorderde snowboarders.
+
+De breedte en de lengte van de snowboard zijn ook zo gekozen dat ze voor de
+meeste snowboarders comfortabel zijn, zodat je niet perse een andere
+snowboard hoeft te zoeken als beginner.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -63,8 +75,9 @@ efo-testing-store Klantenservice
 ```
 Goedemorgen Emmanuel Oudennaarden,
 
-U bent ontevreden met uw aankoop. Ik kan u nu aanbieden om 20% van uw
-aankoopprijs terug te krijgen. Kunt u hiermee akkoord gaan?
+Ik begrijp dat de snowboard niet aan uw verwachtingen voldoet. Onze eerste
+stap om u tevreden te stellen is een tegoed van 20% van de aankoopprijs aan
+te bieden. Zou dit een passende oplossing zijn voor u?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -78,8 +91,10 @@ efo-testing-store Klantenservice
 ```
 Goedemorgen Emmanuel Oudennaarden,
 
-Ik kan u nu aanbieden om 35% van uw aankoopprijs terug te betalen. Kunt u
-hiermee akkoord gaan?
+Ik begrijp dat de eerder aangeboden 20% tegoed niet voldoende was. We
+willen u graag een nieuwe stap aanbieden om tot een oplossing te komen. Ons
+volgende aanbod is een tegoed van 35% van de aankoopprijs. Zou dit een
+passende oplossing zijn voor u?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -93,9 +108,9 @@ efo-testing-store Klantenservice
 ```
 Goedemorgen Emmanuel Oudennaarden,
 
-Ik begrijp dat u nog steeds tevreden niet bent met uw aankoop. Ik kan u nu
-aanbieden om 45% van uw aankoopprijs in de vorm van store credit te
-ontvangen. Kunt u hiermee akkoord gaan?
+Ik begrijp dat de eerder aangeboden percentages niet voldoende waren. Ons
+volgende aanbod is een tegoed van 45% van de aankoopprijs. Zou dit een
+passende oplossing zijn voor u?
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 
@@ -107,11 +122,10 @@ efo-testing-store Klantenservice
 
 **AI Response (Subject: Re: Retour aanvraag order #1004):**
 ```
-Goedemorgen Emmanuel Oudennaarden,
+Goedemiddag Emmanuel Oudennaarden,
 
-Ik begrijp uw beslissing volledig. Een menselijke collega neemt nu de
-communicatie over om u te helpen met de retourprocedure. U hoort zo snel
-mogelijk van ons.
+Ik begrijp uw beslissing volledig. Ik schakel nu een collega in die u
+verder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons.
 Met vriendelijke groet,
 efo-testing-store Klantenservice
 

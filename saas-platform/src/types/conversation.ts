@@ -22,6 +22,7 @@ export interface IConversation {
   status: TConversationStatus;
   subject: string | null;
   intent: TConversationIntent | null;
+  category: string | null;
   assignedTo: string | null;
   aiResolved: boolean;
   shopifyOrderId: string | null;
@@ -41,6 +42,7 @@ export interface IConversationCreate {
   status?: TConversationStatus;
   subject?: string | null;
   intent?: TConversationIntent | null;
+  category?: string | null;
   assignedTo?: string | null;
   aiResolved?: boolean;
   shopifyOrderId?: string | null;
@@ -50,6 +52,7 @@ export interface IConversationCreate {
 export interface IConversationUpdate {
   status?: TConversationStatus;
   intent?: TConversationIntent | null;
+  category?: string | null;
   assignedTo?: string | null;
   aiResolved?: boolean;
   resolvedAt?: string | null;
@@ -61,6 +64,7 @@ export interface IConversationFilters {
   customerId?: string;
   channel?: TConversationChannel;
   status?: TConversationStatus;
+  category?: string;
   intent?: TConversationIntent;
   assignedTo?: string;
   limit?: number;

@@ -10,9 +10,9 @@
         "turn": 1,
         "customer_message": "Hallo, ik heb een paar dagen geleden bestelling #1004 geplaatst maar nog niks gehoord. Waar blijft mijn pakket?",
         "ai_response": {
-          "id": "19dad89a7578e629",
+          "id": "19db507ee6c48428",
           "subject": "Re: Status van mijn bestelling #1004",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nHet spijt ons dat u nog geen update heeft over uw bestelling #1004. De\r\nstatus van uw pakket is op dit moment 'bezorgd' aangegeven, aangezien de\r\nbestelling is voltooid. Om nog meer inzicht te krijgen in de status van uw\r\npakket, kunt u de trackingcode 00446414507764 gebruiken voor het\r\ncontroleren van de laatste updates op de website van de bezorgers.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nUw bestelling #1004 is reeds verzonden en de financi\u00eble status is op dit\r\nmoment onbekend, maar de fulfillment status is fulfilled, wat betekent dat\r\nuw pakket in behandeling is genomen en verzonden.\r\n\r\nDe trackingcode van uw pakket is 00446414507764, waarmee u de status van uw\r\npakket kunt volgen via de website van de vervoerder.\r\n\r\nHet totale bedrag van uw bestelling bedraagt 629.95 EUR. Als u nog vragen\r\nheeft of meer informatie wilt over de status van uw pakket, kunt u contact\r\nmet ons opnemen en wij zullen onze uiterste best doen om u te helpen.\r\n\r\nHoud er rekening mee dat het soms enige tijd kan duren voordat de\r\ntrackinginformatie beschikbaar is, dus het is mogelijk dat uw pakket\r\ninmiddels onderweg is en de trackinginformatie nog niet beschikbaar is.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -28,9 +28,9 @@
         "turn": 1,
         "customer_message": "Hoi, ik zie dat ik de Multi-managed Snowboard heb besteld. Is deze ook geschikt voor beginners of moet ik een andere hebben?",
         "ai_response": {
-          "id": "19dad8b73ede588d",
+          "id": "19db5097a8affbaf",
           "subject": "Re: Vraag over de Multi-managed Snowboard",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nBedankt voor je vraag over het Multi-managed Snowboard. Deze board is\r\nabsoluut geschikt voor beginners. Het heeft een speciale manier om de\r\nbindingen aan te passen aan je gewicht, waardoor het een perfecte optie is\r\nvoor beginners die hun krachten nog moeten vinden op de slopes. Daarnaast\r\nheeft het een stabiele en betrouwbare constructie, waardoor je je op de\r\nsneeuw kunt concentreren in plaats van je zorgen te maken over het board.\r\nAlleen al de aanpasbare bindingslengte maakt het een uitstekende keuze voor\r\nmensen die nog experimenteren met het snowboarden, maar ook als je al wat\r\nmeer ervaring hebt kan het wel degelijk nuttig zijn om een board met\r\ndergelijke eigenschappen te hebben. We denken dat je er absoluut blij mee\r\nzult zijn!\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nDe Multi-managed Snowboard is een veelzijdig model dat zowel beginners als\r\ngevorderden kan accommoderen, dankzij zijn stabiliteit en gemakkelijke\r\nbochten.\r\n\r\nDe snowboard is gemaakt met een zachte flex, wat het ideaal maakt voor\r\nbeginners die nog wennen aan het rijden op sneeuw.\r\n\r\nHet ontwerp en de constructie van de snowboard zorgen ervoor dat deze\r\nsoepel en comfortabel rijdt, waardoor het een goede keuze is voor zowel\r\nbeginners als gevorderde snowboarders.\r\n\r\nDe breedte en de lengte van de snowboard zijn ook zo gekozen dat ze voor de\r\nmeeste snowboarders comfortabel zijn, zodat je niet perse een andere\r\nsnowboard hoeft te zoeken als beginner.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]
@@ -51,36 +51,36 @@
         "turn": 1,
         "customer_message": "Goedenavond, ik wil graag mijn snowboard retourneren. Hij bevalt toch niet zo goed als ik dacht. Hoe stuur ik dit terug?",
         "ai_response": {
-          "id": "19dad8d449e86743",
+          "id": "19db50aaa42e6748",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nU bent ontevreden met uw aankoop. Ik kan u nu aanbieden om 20% van uw\r\naankoopprijs terug te krijgen. Kunt u hiermee akkoord gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de snowboard niet aan uw verwachtingen voldoet. Onze eerste\r\nstap om u tevreden te stellen is een tegoed van 20% van de aankoopprijs aan\r\nte bieden. Zou dit een passende oplossing zijn voor u?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 2,
         "customer_message": "Nee, 15% korting is niet genoeg. Ik wil hem echt liever gewoon terugsturen en mijn geld terug.",
         "ai_response": {
-          "id": "19dad8f180bc00e9",
+          "id": "19db50c43fbd7e6c",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk kan u nu aanbieden om 35% van uw aankoopprijs terug te betalen. Kunt u\r\nhiermee akkoord gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de eerder aangeboden 20% tegoed niet voldoende was. We\r\nwillen u graag een nieuwe stap aanbieden om tot een oplossing te komen. Ons\r\nvolgende aanbod is een tegoed van 35% van de aankoopprijs. Zou dit een\r\npassende oplossing zijn voor u?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 3,
         "customer_message": "Nog steeds niet overtuigd. Het snowboard is echt niet wat ik verwachtte, dus 25% maakt het niet goed.",
         "ai_response": {
-          "id": "19dad90ee78e7157",
+          "id": "19db50e0b0b378f4",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat u nog steeds tevreden niet bent met uw aankoop. Ik kan u nu\r\naanbieden om 45% van uw aankoopprijs in de vorm van store credit te\r\nontvangen. Kunt u hiermee akkoord gaan?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk begrijp dat de eerder aangeboden percentages niet voldoende waren. Ons\r\nvolgende aanbod is een tegoed van 45% van de aankoopprijs. Zou dit een\r\npassende oplossing zijn voor u?\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       },
       {
         "turn": 4,
         "customer_message": "Nee, ook voor 35% korting houd ik hem niet. Vertel me nu gewoon hoe ik het snowboard kan terugsturen naar jullie.",
         "ai_response": {
-          "id": "19dad92cb35c3f2a",
+          "id": "19db50feb5853fe8",
           "subject": "Re: Retour aanvraag order #1004",
-          "body": "Goedemorgen Emmanuel Oudennaarden,\r\n\r\nIk begrijp uw beslissing volledig. Een menselijke collega neemt nu de\r\ncommunicatie over om u te helpen met de retourprocedure. U hoort zo snel\r\nmogelijk van ons.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
+          "body": "Goedemiddag Emmanuel Oudennaarden,\r\n\r\nIk begrijp uw beslissing volledig. Ik schakel nu een collega in die u\r\nverder zal helpen met de retourprocedure. U hoort zo snel mogelijk van ons.\r\nMet vriendelijke groet,\r\nefo-testing-store Klantenservice\r\n"
         }
       }
     ]

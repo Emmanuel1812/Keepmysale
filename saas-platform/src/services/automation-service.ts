@@ -38,13 +38,19 @@ export class AutomationService {
           merchant.id
         );
         
-        if (!filterResult.shouldProcess) {
-          console.log(`[AutomationService] SKIPPED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
-          await markAsRead(accessToken, email.id);
-          continue;
-        }
+        let blockedCategory: string | undefined = undefined;
 
-        console.log(`[AutomationService] ALLOWED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
+        if (!filterResult.shouldProcess) {
+          console.log(`[AutomationService] BLOCKED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
+          
+          if (filterResult.layer === 2 || filterResult.reason.includes("paypal") || filterResult.reason.includes("stripe") || filterResult.reason.includes("adyen") || filterResult.reason.includes("paddle") || filterResult.reason.includes("mollie")) {
+             blockedCategory = "financial";
+          } else {
+             blockedCategory = "spam";
+          }
+        } else {
+          console.log(`[AutomationService] ALLOWED (L${filterResult.layer}): ${email.subject} | From: ${email.from} | Reason: ${filterResult.reason}`);
+        }
         
         const automationResult = await this.webhookService.handleInboundEmail({
           messageId: email.id,
@@ -53,7 +59,10 @@ export class AutomationService {
           subject: email.subject,
           textBody: email.body,
           gmailThreadId: email.threadId,
-          metadata: { source: "automation_service_poll" }
+          metadata: { 
+            source: "automation_service_poll",
+            ...(blockedCategory ? { blockedByCategory: blockedCategory, blockReason: filterResult.reason } : {})
+          }
         });
         
         console.log(`[AutomationService] Automation Result for ${email.id}:`, automationResult.action);

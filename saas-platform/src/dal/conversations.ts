@@ -12,6 +12,7 @@ function mapConversationRow(row: ConversationRow): IConversation {
     status: row.status as IConversation["status"],
     subject: (row.subject as string | null) ?? null,
     intent: (row.intent as IConversation["intent"] | null) ?? null,
+    category: (row.category as string | null) ?? null,
     assignedTo: (row.assigned_to as string | null) ?? null,
     aiResolved: Boolean(row.ai_resolved),
     shopifyOrderId: (row.shopify_order_id as string | null) ?? null,
@@ -72,6 +73,7 @@ export class ConversationsDal {
         status: input.status ?? "open",
         subject: input.subject ?? null,
         intent: input.intent ?? null,
+        category: input.category ?? null,
         assigned_to: input.assignedTo ?? null,
         ai_resolved: input.aiResolved ?? false,
         shopify_order_id: input.shopifyOrderId ?? null,
@@ -89,6 +91,7 @@ export class ConversationsDal {
       .update({
         status: input.status,
         intent: input.intent,
+        category: input.category,
         assigned_to: input.assignedTo,
         ai_resolved: input.aiResolved,
         resolved_at: input.resolvedAt,

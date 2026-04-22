@@ -60,16 +60,18 @@ export function InboxSidebar() {
   const [conversations, setConversations] = useState<ApiConversation[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TFilter>("All");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [syncing, setSyncing] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const loadConversations = useCallback(async () => {
     try {
-      const response = await fetch("/api/inbox/conversations", { cache: "no-store" });
+      const url = categoryFilter === "All" ? "/api/inbox/conversations" : `/api/inbox/conversations?category=${encodeURIComponent(categoryFilter)}`;
+      const response = await fetch(url, { cache: "no-store" });
       const payload = await response.json();
       if (payload.success) setConversations(payload.data?.conversations ?? []);
     } catch {}
-  }, []);
+  }, [categoryFilter]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -196,6 +198,27 @@ export function InboxSidebar() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        
+        {/* Category Dropdown */}
+        <div className="mb-4">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="block w-full py-1.5 pl-3 pr-8 text-sm font-medium rounded-lg border border-zinc-200 bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-zinc-700"
+          >
+            <option value="All">All Categories</option>
+            <option value="shipping">Shipping (WISMO)</option>
+            <option value="returns">Returns</option>
+            <option value="product">Product (FAQ)</option>
+            <option value="human_required">Human Required</option>
+            <option value="negotiation_active">Negotiation: Active</option>
+            <option value="negotiation_accepted">Negotiation: Accepted</option>
+            <option value="negotiation_rejected">Negotiation: Rejected</option>
+            <option value="financial">Financial (Blocked)</option>
+            <option value="spam">Spam (Blocked)</option>
+            <option value="unknown">Unknown Sender</option>
+          </select>
         </div>
 
         {/* Filter Tabs */}

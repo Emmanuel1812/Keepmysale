@@ -2,7 +2,7 @@ import { apiError, apiResponse } from "@/lib/api-helpers";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getMerchantFromSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   let merchantId = "";
   try {
     const merchant = await getMerchantFromSession();
@@ -12,12 +12,22 @@ export async function GET() {
   }
   const supabase = createSupabaseServiceClient();
   
+  // Extract URL params
+  const { searchParams } = new URL(request.url);
+  const categoryFilter = searchParams.get("category");
+  
   // Custom query to fetch conversations and their customers
-  const { data: rawData, error } = await supabase
+  let query = supabase
       .from("conversations")
       .select("*, customer:customers(name, email)")
       .eq("merchant_id", merchantId)
       .order("updated_at", { ascending: false });
+
+  if (categoryFilter) {
+      query = query.eq("category", categoryFilter);
+  }
+
+  const { data: rawData, error } = await query;
       
   if (error) {
     return apiError("INTERNAL_ERROR", error.message, 500);

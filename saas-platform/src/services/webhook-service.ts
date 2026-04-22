@@ -95,6 +95,31 @@ export class WebhookService {
       },
     });
 
+    const existingOrders = await this.orderService.findByMerchant(input.merchantId);
+    const isKnownCustomer = existingOrders.some((o) => o.email?.toLowerCase() === cleanFrom.toLowerCase());
+    
+    const historyCheck = await this.messageService.findByConversation(conversation.id);
+    const isActiveConversation = historyCheck.length > 1;
+
+    if (!isKnownCustomer && !isActiveConversation) {
+      console.log("[WEBHOOK] Sender not a known customer, skipping AI processing");
+      
+      await this.conversationService.update(conversation.id, {
+        category: "unknown",
+        metadata: { ...((conversation.metadata as Record<string, unknown>) || {}) }
+      });
+
+      return { deduplicated: false as const, action: "blocked_unknown" };
+    }
+
+    if (input.metadata?.blockedByCategory) {
+      console.log(`[WEBHOOK] Email pre-blocked by automation filter as: ${input.metadata.blockedByCategory}`);
+      await this.conversationService.update(conversation.id, {
+        category: input.metadata.blockedByCategory
+      });
+      return { deduplicated: false as const, action: "blocked_prefilter" };
+    }
+
     const classification = await this.aiService.classifyIntent(cleanBody);
     console.log("[WEBHOOK] Classification Result:", JSON.stringify(classification, null, 2));
     const settings = merchant.settings;
@@ -372,6 +397,29 @@ export class WebhookService {
         throw err;
       }
     }
+
+    let assignedCategory: string | undefined = undefined;
+    
+    if (activeNeg && action.negotiationDecision) {
+      if (action.negotiationDecision === "accept") assignedCategory = "negotiation_accepted";
+      else if (action.negotiationDecision === "next_step" || action.negotiationDecision === "continue") assignedCategory = "negotiation_active";
+      else if (action.negotiationDecision === "reject") assignedCategory = "negotiation_rejected";
+    }
+
+    if (!assignedCategory) {
+      if (shouldSkipAutoReply && !isShadowMode && belowThreshold) {
+        assignedCategory = "human_required";
+      } else if (classification.requires_human) {
+        assignedCategory = "human_required";
+      } else {
+        if (classification.intent === "wismo" || classification.intent === "resend_confirmation") assignedCategory = "shipping";
+        else if (classification.intent === "return" || classification.intent === "exchange") assignedCategory = "returns";
+        else if (classification.intent === "faq") assignedCategory = "product";
+        else assignedCategory = "human_required"; // Fallback for complaint/other
+      }
+    }
+
+    await this.conversationService.update(conversation.id, { category: assignedCategory });
 
     // If auto-reply is blocked, shadow mode is on, or human review is needed → don't send
     if (shouldSkipAutoReply || isShadowMode) {
