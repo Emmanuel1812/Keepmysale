@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // --- [ICONS] ---
 const SearchIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>);
@@ -22,6 +23,18 @@ interface ApiConversation {
 }
 
 type TFilter = "All" | "Needs Reply" | "AI Managed" | "Drafts" | "Resolved";
+
+const CATEGORIES = [
+  { id: "All", label: "All" },
+  { id: "shipping", label: "Shipping" },
+  { id: "returns", label: "Returns" },
+  { id: "product", label: "Products" },
+  { id: "negotiation_active", label: "Negotiating" },
+  { id: "human_required", label: "Human Req" },
+  { id: "financial", label: "Financial" },
+  { id: "spam", label: "Spam" },
+  { id: "unknown", label: "Unknown" },
+];
 
 function formatRelativeTime(dateString: string) {
   if (!dateString) return "";
@@ -66,12 +79,22 @@ export function InboxSidebar() {
 
   const loadConversations = useCallback(async () => {
     try {
-      const url = categoryFilter === "All" ? "/api/inbox/conversations" : `/api/inbox/conversations?category=${encodeURIComponent(categoryFilter)}`;
-      const response = await fetch(url, { cache: "no-store" });
+      const url = new URL("/api/inbox/conversations", window.location.origin);
+      if (categoryFilter !== "All") url.searchParams.set("category", categoryFilter);
+      
+      let statusParam = "";
+      if (filter === "Needs Reply") statusParam = "needs_reply";
+      else if (filter === "AI Managed") statusParam = "ai_managed";
+      else if (filter === "Drafts") statusParam = "drafts";
+      else if (filter === "Resolved") statusParam = "resolved";
+      
+      if (statusParam) url.searchParams.set("status", statusParam);
+
+      const response = await fetch(url.toString(), { cache: "no-store" });
       const payload = await response.json();
       if (payload.success) setConversations(payload.data?.conversations ?? []);
     } catch {}
-  }, [categoryFilter]);
+  }, [categoryFilter, filter]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -200,28 +223,7 @@ export function InboxSidebar() {
           />
         </div>
         
-        {/* Category Dropdown */}
-        <div className="mb-4">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="block w-full py-1.5 pl-3 pr-8 text-sm font-medium rounded-lg border border-zinc-200 bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-zinc-700"
-          >
-            <option value="All">All Categories</option>
-            <option value="shipping">Shipping (WISMO)</option>
-            <option value="returns">Returns</option>
-            <option value="product">Product (FAQ)</option>
-            <option value="human_required">Human Required</option>
-            <option value="negotiation_active">Negotiation: Active</option>
-            <option value="negotiation_accepted">Negotiation: Accepted</option>
-            <option value="negotiation_rejected">Negotiation: Rejected</option>
-            <option value="financial">Financial (Blocked)</option>
-            <option value="spam">Spam (Blocked)</option>
-            <option value="unknown">Unknown Sender</option>
-          </select>
-        </div>
-
-        {/* Filter Tabs */}
+        {/* Filter Tabs - ROW 1: STATUS */}
         <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
           {(["All", "Needs Reply", "Drafts", "AI Managed", "Resolved"] as TFilter[]).map((f) => {
             const count = f === "Needs Reply" ? needsReplyCount : f === "Drafts" ? draftCount : null;
@@ -244,6 +246,21 @@ export function InboxSidebar() {
               </button>
             );
           })}
+        </div>
+
+        {/* Filter Tabs - ROW 2: CATEGORY PILLS */}
+        <div className="flex gap-1 overflow-x-auto pb-1 mt-2 scrollbar-hide -mx-1 px-1">
+          {CATEGORIES.map((cat) => (
+            <Button
+              key={cat.id}
+              variant={categoryFilter === cat.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCategoryFilter(cat.id)}
+              className="rounded-full !py-0.5 !px-3 font-semibold tracking-tight"
+            >
+              {cat.label}
+            </Button>
+          ))}
         </div>
       </div>
 

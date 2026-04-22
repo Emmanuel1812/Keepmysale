@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   // Extract URL params
   const { searchParams } = new URL(request.url);
   const categoryFilter = searchParams.get("category");
+  const statusFilter = searchParams.get("status");
   
   // Custom query to fetch conversations and their customers
   let query = supabase
@@ -25,6 +26,25 @@ export async function GET(request: Request) {
 
   if (categoryFilter) {
       query = query.eq("category", categoryFilter);
+  }
+
+  if (statusFilter) {
+      if (statusFilter === "resolved") {
+          query = query.in("status", ["resolved", "closed"]);
+      } else if (statusFilter === "needs_reply") {
+          // Open conversations where last message was from customer
+          query = query.not("status", "in", '("resolved","closed")')
+                       .eq("last_message_sender_type", "customer");
+      } else if (statusFilter === "drafts") {
+          query = query.not("status", "in", '("resolved","closed")')
+                       .eq("last_message_sender_type", "ai_draft");
+      } else if (statusFilter === "ai_managed") {
+          // We can't do complex ORs easily in simple postgrest chain for nested logic like 
+          // (last_message_sender_type = ai OR status = negotiating)
+          // We apply an OR filter format:
+          query = query.not("status", "in", '("resolved","closed")')
+                       .or("last_message_sender_type.eq.ai,status.eq.negotiating");
+      }
   }
 
   const { data: rawData, error } = await query;
