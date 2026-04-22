@@ -384,7 +384,6 @@ export class WebhookService {
       requiresHuman: classification.requires_human
     }));
 
-    const isShadowMode = settings.shadow_mode === true;
     let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
 
     // --- SCHEDULING LOGIC ---
