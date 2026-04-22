@@ -15,6 +15,7 @@ interface ApiConversation {
   status: string;
   subject: string | null;
   intent: string | null;
+  category?: string | null;
   aiResolved: boolean;
   lastMessageAt: string;
   lastMessageSenderType: string | null;
@@ -22,19 +23,8 @@ interface ApiConversation {
   customer?: { name?: string | null; email?: string | null };
 }
 
-type TFilter = "All" | "Needs Reply" | "AI Managed" | "Drafts" | "Resolved";
-
-const CATEGORIES = [
-  { id: "All", label: "All" },
-  { id: "shipping", label: "Shipping" },
-  { id: "returns", label: "Returns" },
-  { id: "product", label: "Products" },
-  { id: "negotiation_active", label: "Negotiating" },
-  { id: "human_required", label: "Human Req" },
-  { id: "financial", label: "Financial" },
-  { id: "spam", label: "Spam" },
-  { id: "unknown", label: "Unknown" },
-];
+type TTab = "All" | "Customers" | "Returns" | "Shipping" | "Products" | "Drafts" | "Human Required" | "Spam";
+const TABS: TTab[] = ["All", "Customers", "Returns", "Shipping", "Products", "Drafts", "Human Required", "Spam"];
 
 function formatRelativeTime(dateString: string) {
   if (!dateString) return "";
@@ -72,29 +62,18 @@ export function InboxSidebar() {
   const activeId = params?.id;
   const [conversations, setConversations] = useState<ApiConversation[]>([]);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<TFilter>("All");
-  const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [activeTab, setActiveTab] = useState<TTab>("All");
+  const [showResolved, setShowResolved] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const loadConversations = useCallback(async () => {
     try {
-      const url = new URL("/api/inbox/conversations", window.location.origin);
-      if (categoryFilter !== "All") url.searchParams.set("category", categoryFilter);
-      
-      let statusParam = "";
-      if (filter === "Needs Reply") statusParam = "needs_reply";
-      else if (filter === "AI Managed") statusParam = "ai_managed";
-      else if (filter === "Drafts") statusParam = "drafts";
-      else if (filter === "Resolved") statusParam = "resolved";
-      
-      if (statusParam) url.searchParams.set("status", statusParam);
-
-      const response = await fetch(url.toString(), { cache: "no-store" });
+      const response = await fetch("/api/inbox/conversations", { cache: "no-store" });
       const payload = await response.json();
       if (payload.success) setConversations(payload.data?.conversations ?? []);
     } catch {}
-  }, [categoryFilter, filter]);
+  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -140,16 +119,24 @@ export function InboxSidebar() {
 
   const filtered = conversations.filter((c) => {
     const isResolved = c.status === "resolved" || c.status === "closed";
-    const isOpen = !isResolved;
+    if (isResolved && !showResolved) return false;
+    
+    const cat = c.category || null;
 
-    if (filter === "Needs Reply") {
-      if (isResolved || c.lastMessageSenderType !== "customer") return false;
-    } else if (filter === "AI Managed") {
-      if (isResolved || (c.lastMessageSenderType !== "ai" && c.status !== "negotiating")) return false;
-    } else if (filter === "Drafts") {
-      if (isResolved || c.lastMessageSenderType !== "ai_draft") return false;
-    } else if (filter === "Resolved") {
-      if (isOpen) return false;
+    if (activeTab === "Customers") {
+      if (![null, "shipping", "returns", "product"].includes(cat)) return false;
+    } else if (activeTab === "Returns") {
+      if (!["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"].includes(cat)) return false;
+    } else if (activeTab === "Shipping") {
+      if (cat !== "shipping") return false;
+    } else if (activeTab === "Products") {
+      if (cat !== "product") return false;
+    } else if (activeTab === "Drafts") {
+      if (c.lastMessageSenderType !== "ai_draft") return false;
+    } else if (activeTab === "Human Required") {
+      if (cat !== "human_required") return false;
+    } else if (activeTab === "Spam") {
+      if (!["spam", "financial", "unknown"].includes(cat)) return false;
     }
     
     if (search) {
@@ -166,8 +153,28 @@ export function InboxSidebar() {
     return true;
   });
 
-  const needsReplyCount = conversations.filter(c => (c.status === "open" || c.status === "pending_human") && c.lastMessageSenderType === "customer").length;
-  const draftCount = conversations.filter(c => c.lastMessageSenderType === "ai_draft").length;
+  const getUnreadCount = (tab: TTab) => {
+    return conversations.filter(c => {
+      const isR = c.status === "resolved" || c.status === "closed";
+      if (isR) return false;
+      
+      const unread = c.lastMessageSenderType === "customer";
+      if (!unread && tab !== "Drafts") return false;
+      if (tab === "Drafts") return c.lastMessageSenderType === "ai_draft";
+      
+      const cat = c.category || null;
+      if (tab === "All") return true;
+      if (tab === "Customers") return [null, "shipping", "returns", "product"].includes(cat);
+      if (tab === "Returns") return ["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"].includes(cat);
+      if (tab === "Shipping") return cat === "shipping";
+      if (tab === "Products") return cat === "product";
+      if (tab === "Human Required") return cat === "human_required";
+      if (tab === "Spam") return ["spam", "financial", "unknown"].includes(cat);
+      return false;
+    }).length;
+  };
+
+  const totalActionable = getUnreadCount("All");
 
   return (
     <div className="flex w-full flex-col h-full">
@@ -176,9 +183,9 @@ export function InboxSidebar() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-[#111827]">Inbox</h2>
-            {needsReplyCount > 0 && (
+            {totalActionable > 0 && (
               <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {needsReplyCount}
+                {totalActionable}
               </span>
             )}
           </div>
@@ -223,44 +230,43 @@ export function InboxSidebar() {
           />
         </div>
         
-        {/* Filter Tabs - ROW 1: STATUS */}
+        {/* Toggle Resolved */}
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <input
+            type="checkbox"
+            id="showResolved"
+            checked={showResolved}
+            onChange={(e) => setShowResolved(e.target.checked)}
+            className="rounded border-zinc-300 text-[#111827] focus:ring-[#111827]"
+          />
+          <label htmlFor="showResolved" className="text-xs font-medium text-zinc-600 cursor-pointer select-none">
+            Show resolved conversations
+          </label>
+        </div>
+        
+        {/* Unified Tab Row */}
         <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-          {(["All", "Needs Reply", "Drafts", "AI Managed", "Resolved"] as TFilter[]).map((f) => {
-            const count = f === "Needs Reply" ? needsReplyCount : f === "Drafts" ? draftCount : null;
+          {TABS.map((tab) => {
+            const count = getUnreadCount(tab);
             return (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={`whitespace-nowrap px-3 py-1 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-                  filter === f 
+                  activeTab === tab 
                     ? "bg-[#111827] text-white" 
                     : "bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200"
                 }`}
               >
-                {f}
-                {count !== null && count > 0 && (
-                  <span className={`w-4 h-4 flex items-center justify-center rounded-full text-[9px] ${filter === f ? "bg-white text-zinc-900" : "bg-zinc-200 text-zinc-600"}`}>
+                {tab}
+                {count > 0 && (
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-full text-[9px] ${activeTab === tab ? "bg-white text-zinc-900" : "bg-zinc-200 text-zinc-600"}`}>
                     {count}
                   </span>
                 )}
               </button>
             );
           })}
-        </div>
-
-        {/* Filter Tabs - ROW 2: CATEGORY PILLS */}
-        <div className="flex gap-1 overflow-x-auto pb-1 mt-2 scrollbar-hide -mx-1 px-1">
-          {CATEGORIES.map((cat) => (
-            <Button
-              key={cat.id}
-              variant={categoryFilter === cat.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCategoryFilter(cat.id)}
-              className="rounded-full !py-0.5 !px-3 font-semibold tracking-tight"
-            >
-              {cat.label}
-            </Button>
-          ))}
         </div>
       </div>
 
