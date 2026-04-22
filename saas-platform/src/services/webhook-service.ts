@@ -63,6 +63,8 @@ export class WebhookService {
   }
 
   async handleInboundEmail(input: IInboundEmailInput) {
+    console.log("[DEBUG] Processing email from: " + input.from);
+
     // 0. Clean the body
     const noQuotes = stripQuotedText(input.textBody || "");
     const cleanBody = stripHtml(noQuotes);
@@ -117,6 +119,7 @@ export class WebhookService {
 
     const existingOrders = await this.orderService.findByMerchant(input.merchantId);
     const isKnownCustomer = existingOrders.some((o) => o.email?.toLowerCase() === cleanFrom.toLowerCase());
+    console.log("[DEBUG] Is known customer: " + isKnownCustomer);
     
     const historyCheck = await this.messageService.findByConversation(conversation.id);
     const isActiveConversation = historyCheck.length > 1;
@@ -133,7 +136,9 @@ export class WebhookService {
       return { deduplicated: false as const, action: "blocked_unknown" };
     }
 
+    console.log("[DEBUG] Passed email filter: true");
     if (input.metadata?.blockedByCategory) {
+      console.log("[DEBUG] Passed email filter: false (blocked as " + input.metadata.blockedByCategory + ")");
       console.log(`[WEBHOOK] Email pre-blocked by automation filter as: ${input.metadata.blockedByCategory}`);
       await this.conversationService.update(conversation.id, {
         category: input.metadata.blockedByCategory,
@@ -143,6 +148,7 @@ export class WebhookService {
     }
 
     const classification = await this.aiService.classifyIntent(cleanBody);
+    console.log("[DEBUG] Intent: " + classification.intent);
     console.log("[WEBHOOK] Classification Result:", JSON.stringify(classification, null, 2));
     const settings = merchant.settings;
 
@@ -301,6 +307,7 @@ export class WebhookService {
       activeNegotiation: activeNeg,
     });
 
+    console.log("[DEBUG] Action: " + action.action);
     console.log("[WEBHOOK] Action:", action.action);
     console.log("[WEBHOOK] Response body:", action.messageBody?.substring(0, 200));
     console.log("[WEBHOOK] Negotiation decision:", action.negotiationDecision);
@@ -378,6 +385,7 @@ export class WebhookService {
     }));
 
     let senderLabel = (shouldSkipAutoReply || isShadowMode) ? "ai_draft" : "ai";
+    console.log("[DEBUG] Send or draft: " + senderLabel);
 
     try {
       await this.messageService.create({
