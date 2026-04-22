@@ -224,14 +224,18 @@ export class AiService {
       },
     } as const;
 
+    const languageCode = ["nl", "en", "pt"].includes(intentResult.language_detected) 
+      ? intentResult.language_detected 
+      : preferredLanguage;
+
     const localText =
-      preferredLanguage === "en"
+      languageCode === "en"
         ? messagesByLanguage.en
-        : preferredLanguage === "pt"
+        : languageCode === "pt"
           ? messagesByLanguage.pt
           : messagesByLanguage.nl;
 
-    console.log("[AI] Building action for intent:", intentResult.intent);
+    console.log("[AI] Building action for intent:", intentResult.intent, "| Language:", languageCode);
 
     let resultAction: ActionResult | null = null;
 
@@ -430,6 +434,15 @@ STRIKT_SYSTEEM_OVERRIDE:
         - Ga pas over naar 'reject' (retour accepteren) als ALLES is afgewezen en er geen stappen meer zijn.
         ${stepsContext}
         
+        Stijl: ${toneDescription}.
+        Context: ${orderContext}
+        
+        ACCEPTATIE HERKENNING — Als de klant EEN van deze dingen zegt, is het een ACCEPTATIE en moet negotiationDecision 'accept' zijn:
+        - 'ja', 'ok', 'oké', 'akkoord', 'deal', 'prima', 'doe maar', 'is goed', 'goed', 'dat is goed', 'ik ga akkoord', 'fine', 'yes', 'I accept', 'I'll take it', 'sounds good', 'deal', 'ok let's do that', 'sure'
+        - Elke reactie die INSTEMT met het eerder aangeboden percentage
+        - Als de klant het geld/korting/tegoed wil ONTVANGEN
+        BELANGRIJK: Als je twijfelt of de klant accepteert, kies dan ALTIJD voor 'accept' in plaats van doorgaan. Een gemiste acceptatie is ERGER dan een vals positief.
+        
         BESLISSING ("negotiationDecision"):
         - "accept": Klant gaat expliciet akkoord met het huidge of eerder gedane aanbod.
         - "next_step": Klant weigert het huidige aanbod, we stellen nu de volgende stap (korting) voor. Gebruik dit ALTIJD als je een nieuw percentage aanbiedt uit de lijst.
@@ -476,9 +489,11 @@ STRIKT_SYSTEEM_OVERRIDE:
         let finalMessage = parsed.messageBody;
         if (!finalMessage || finalMessage.trim().length < 5) {
           if (parsed.negotiationDecision === 'reject') {
-            finalMessage = preferredLanguage === 'en' 
+            finalMessage = languageCode === 'en' 
               ? "I understand. I will now hand you over to a human colleague to process your return labels."
-              : "Ik begrijp het. Ik ga u nu overdragen aan een menselijke collega om uw retourlabels te verwerken.";
+              : languageCode === 'pt'
+                ? "Compreendo. Vou passar o seu caso a um colega humano para processar a sua devolução."
+                : "Ik begrijp het. Ik ga u nu overdragen aan een menselijke collega om uw retourlabels te verwerken.";
           } else {
             finalMessage = localText.negotiation;
           }
@@ -488,7 +503,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         // override with a clean handoff message to prevent repeated offers.
         if (parsed.negotiationDecision === 'reject' && finalMessage.includes('%')) {
           console.warn('[AI] REJECT SAFETY: AI returned reject but messageBody contains %. Overriding with clean handoff.');
-          const lang = (preferredLanguage || 'nl').toLowerCase();
+          const lang = (languageCode || 'nl').toLowerCase();
           if (lang === 'en') {
             finalMessage = "I completely understand your decision. I'm connecting you with a colleague who will help you with the return process. You'll hear from us shortly.";
           } else if (lang === 'pt') {
@@ -512,13 +527,17 @@ STRIKT_SYSTEEM_OVERRIDE:
             ? 'store credit' : 'terugbetaling';
           resultAction = {
             action: "offer_partial_refund",
-            messageBody: `We begrijpen dat het eerdere aanbod niet voldoende was. We bieden u nu ${pct}% ${type} aan. Zou dit voor u werken?`,
+            messageBody: languageCode === "en" 
+              ? `We understand the previous offer wasn't enough. We can now offer you ${pct}% ${type}. Would this work for you?`
+              : languageCode === "pt"
+                ? `Compreendemos que a oferta anterior não foi suficiente. Podemos agora oferecer ${pct}% de ${type}. Isto seria aceitável para si?`
+                : `We begrijpen dat het eerdere aanbod niet voldoende was. We bieden u nu ${pct}% ${type} aan. Zou dit voor u werken?`,
             negotiationDecision: "next_step",
           };
         } else if (isLastStep) {
-          const msg = preferredLanguage === 'en'
+          const msg = languageCode === 'en'
             ? "I understand. I will now connect you with a colleague to process your return."
-            : preferredLanguage === 'pt'
+            : languageCode === 'pt'
               ? "Compreendo. Vou encaminhá-lo para um colega para processar a devolução."
               : "Ik begrijp uw beslissing. Ik schakel nu een collega in die u verder helpt met de retourprocedure.";
           resultAction = {

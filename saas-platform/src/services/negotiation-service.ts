@@ -227,29 +227,7 @@ export class NegotiationService {
       offers: [],
     });
 
-    const order = await this.ordersDal.findById(orderId);
-    const orderAmount = Number(order?.totalPrice ?? 0) || 0;
-    const firstOffer = buildOfferForStep(1, orderAmount, order?.currency ?? "EUR", merchantSettings);
-    const withOffer = await this.negotiationsDal.addOffer(created.id, firstOffer);
-    const updated = await this.negotiationsDal.updateStatus(withOffer.id, "offer_sent");
-
-    await this.refundLogsDal.create({
-      merchantId,
-      negotiationId: updated.id,
-      orderId: orderId,
-      customerId,
-      action: "partial_refund_offered",
-      amount: firstOffer.amount,
-      currency: firstOffer.currency,
-      customerConsentRecorded: false,
-      auditDetails: {
-        step: firstOffer.step,
-        type: firstOffer.type,
-        percentage: firstOffer.percentage ?? null,
-      },
-    });
-
-    return updated;
+    return created;
   }
 
   async processCustomerResponse(
@@ -288,7 +266,10 @@ export class NegotiationService {
       });
     }
 
-    let updated = await this.negotiationsDal.updateStatus(working.id, transition.nextStatus);
+    let updated = await this.negotiationsDal.update(working.id, {
+      status: transition.nextStatus,
+      currentStep: transition.nextStep
+    });
 
     if (transition.nextStatus === "offer_accepted" || transition.nextStatus === "completed") {
       const acceptedOffer = [...updated.offers].reverse().find((offer) => offer.response === "pending");

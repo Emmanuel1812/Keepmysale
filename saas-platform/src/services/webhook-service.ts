@@ -14,6 +14,25 @@ import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { formatEmailResponse } from "@/lib/utils/email-formatter";
 import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
 
+function stripQuotedText(text: string): string {
+  const patterns = [
+    /On .+ wrote:[\s\S]*/m,
+    /Op .+ schreef.*:[\s\S]*/m,
+    /Em .+ escreveu:[\s\S]*/m,
+    /^>.*$/gm,
+    /---------- Forwarded message[\s\S]*/m,
+    /^-{2,}$/gm,
+    /^Sent from my.*/mi,
+    /^Verzonden vanaf mijn.*/mi,
+  ];
+  
+  let cleaned = text;
+  for (const pattern of patterns) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+  return cleaned.trim();
+}
+
 export interface IInboundEmailInput {
   messageId: string;
   merchantId: string;
@@ -45,7 +64,8 @@ export class WebhookService {
 
   async handleInboundEmail(input: IInboundEmailInput) {
     // 0. Clean the body
-    const cleanBody = stripHtml(input.textBody || "");
+    const noQuotes = stripQuotedText(input.textBody || "");
+    const cleanBody = stripHtml(noQuotes);
     
     const existingByExternalId = await this.messageService.findByExternalMessageId(
       input.merchantId,
