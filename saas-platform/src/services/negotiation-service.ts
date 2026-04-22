@@ -113,7 +113,7 @@ export function transitionNegotiationState(
 
   if (input === "accept_offer") {
     return {
-      nextStatus: "offer_accepted",
+      nextStatus: "completed",
       nextStep: current.currentStep,
       shouldCreateRefundLog: true,
       refundLogAction: "partial_refund_accepted",
@@ -274,10 +274,9 @@ export class NegotiationService {
     if (transition.nextStatus === "offer_accepted" || transition.nextStatus === "completed") {
       const acceptedOffer = [...updated.offers].reverse().find((offer) => offer.response === "pending");
       const finalRefundAmount = acceptedOffer?.amount ?? null;
-      const estimatedReturnCost = updated.estimatedReturnCost ?? 0;
-      const productCost = updated.productCost ?? 0;
+      const baseAmount = Number(order?.totalPrice ?? 0);
       const savings =
-        finalRefundAmount === null ? null : Number((productCost + estimatedReturnCost - finalRefundAmount).toFixed(2));
+        finalRefundAmount === null ? null : Number((baseAmount - finalRefundAmount).toFixed(2));
 
       updated = await this.negotiationsDal.update(updated.id, {
         finalRefundAmount,
@@ -332,6 +331,7 @@ export class NegotiationService {
     if (transition.nextStatus === "completed" || transition.nextStatus === "return_initiated" || transition.nextStatus === "offer_accepted") {
       await this.conversationsDal.update(updated.conversationId, {
         status: "resolved",
+        category: transition.nextStatus === "completed" || transition.nextStatus === "offer_accepted" ? "negotiation_accepted" : "returns",
         resolvedAt: new Date().toISOString(),
       });
     }

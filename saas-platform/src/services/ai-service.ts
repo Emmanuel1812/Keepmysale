@@ -385,8 +385,31 @@ export class AiService {
       const isLastStep = currentStepIndex >= steps.length - 1;
       const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
 
-      // Dynamic negotiation via Gemini
-      try {
+      const acceptPatterns = [
+        /\bja\b/i, /\bok[eé]?\b/i, /\bakkoord\b/i, /\bprima\b/i,
+        /\bdoe maar\b/i, /\bis goed\b/i, /\baccepteer\b/i, 
+        /\bdeal\b/i, /\byes\b/i, /\baccept\b/i, /\bsure\b/i,
+        /\bfine\b/i, /\bsounds good\b/i, /\bI'll take it\b/i,
+        /\bgraag\b/i, /\bwil ik\b/i, /\bdoe het\b/i
+      ];
+
+      const isObviousAcceptance = acceptPatterns.some(p => p.test(input.incomingText));
+      if (isObviousAcceptance && currentActiveStep) {
+        const pct = currentActiveStep.percentage;
+        resultAction = {
+          action: "offer_partial_refund",
+          messageBody: languageCode === 'en'
+            ? `Great news! We've confirmed your ${pct}% partial refund. The refund will be processed shortly. Thank you for working with us on this.`
+            : languageCode === 'pt'
+              ? `Ótima notícia! Confirmamos o seu reembolso parcial de ${pct}%. O reembolso será processado em breve. Obrigado pela sua compreensão.`
+              : `Goed nieuws! We hebben uw gedeeltelijke terugbetaling van ${pct}% bevestigd. De terugbetaling wordt zo snel mogelijk verwerkt. Bedankt voor uw medewerking.`,
+          negotiationDecision: "accept",
+        };
+      }
+
+      if (!resultAction) {
+        // Dynamic negotiation via Gemini
+        try {
         const model = this.geminiClient.getGenerativeModel({
           model: GEMINI_MODELS.PRIMARY,
           generationConfig: { 
@@ -521,7 +544,19 @@ STRIKT_SYSTEEM_OVERRIDE:
       } catch (error) {
         console.error("[AI] Dynamic negotiation error:", error);
         
-        if (nextStep && !isLastStep) {
+        const isAcceptance = acceptPatterns.some(p => p.test(input.incomingText));
+        if (isAcceptance && currentActiveStep) {
+          const pct = currentActiveStep.percentage;
+          resultAction = {
+            action: "offer_partial_refund",
+            messageBody: languageCode === 'en'
+              ? `Great news! We've confirmed your ${pct}% partial refund. The refund will be processed shortly. Thank you for working with us on this.`
+              : languageCode === 'pt'
+                ? `Ótima notícia! Confirmamos o seu reembolso parcial de ${pct}%. O reembolso será processado em breve. Obrigado pela sua compreensão.`
+                : `Goed nieuws! We hebben uw gedeeltelijke terugbetaling van ${pct}% bevestigd. De terugbetaling wordt zo snel mogelijk verwerkt. Bedankt voor uw medewerking.`,
+            negotiationDecision: "accept",
+          };
+        } else if (nextStep && !isLastStep) {
           const pct = nextStep.percentage;
           const type = nextStep.type === 'store_credit' 
             ? 'store credit' : 'terugbetaling';
@@ -552,6 +587,7 @@ STRIKT_SYSTEEM_OVERRIDE:
             negotiationDecision: "continue",
           };
         }
+      }
       }
     }
 
