@@ -124,9 +124,9 @@ export function InboxSidebar() {
     const cat = c.category || null;
 
     if (activeTab === "Customers") {
-      if (![null, "shipping", "returns", "product"].includes(cat)) return false;
+      if (!([null, "shipping", "returns", "product"] as (string | null)[]).includes(cat)) return false;
     } else if (activeTab === "Returns") {
-      if (!["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"].includes(cat)) return false;
+      if (!(["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"] as (string | null)[]).includes(cat)) return false;
     } else if (activeTab === "Shipping") {
       if (cat !== "shipping") return false;
     } else if (activeTab === "Products") {
@@ -136,7 +136,7 @@ export function InboxSidebar() {
     } else if (activeTab === "Human Required") {
       if (cat !== "human_required") return false;
     } else if (activeTab === "Spam") {
-      if (!["spam", "financial", "unknown"].includes(cat)) return false;
+      if (!(["spam", "financial", "unknown"] as (string | null)[]).includes(cat)) return false;
     }
     
     if (search) {
@@ -164,12 +164,12 @@ export function InboxSidebar() {
       
       const cat = c.category || null;
       if (tab === "All") return true;
-      if (tab === "Customers") return [null, "shipping", "returns", "product"].includes(cat);
-      if (tab === "Returns") return ["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"].includes(cat);
+      if (tab === "Customers") return ([null, "shipping", "returns", "product"] as (string | null)[]).includes(cat);
+      if (tab === "Returns") return (["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"] as (string | null)[]).includes(cat);
       if (tab === "Shipping") return cat === "shipping";
       if (tab === "Products") return cat === "product";
       if (tab === "Human Required") return cat === "human_required";
-      if (tab === "Spam") return ["spam", "financial", "unknown"].includes(cat);
+      if (tab === "Spam") return (["spam", "financial", "unknown"] as (string | null)[]).includes(cat);
       return false;
     }).length;
   };
