@@ -139,6 +139,14 @@ export class WebhookService {
     const isNegotiation = classification.intent === "return" && settings.auto_negotiate !== false;
     let shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
     
+    // Informational intents should ALWAYS send (never draft)
+    if (classification.intent === "wismo" || 
+        classification.intent === "faq" || 
+        classification.intent === "resend_confirmation") {
+      console.log("[WEBHOOK] Informational intent '" + classification.intent + "' — forcing send.");
+      shouldSkipAutoReply = false;
+    }
+
     // ── Special Case: Automated Negotiation Bypass ───────────────
     if (isNegotiation) {
       console.log("[WEBHOOK] Negotiation intent detected. Bypassing skip guards.");
@@ -275,6 +283,10 @@ export class WebhookService {
     }
 
     // ── Build formatted email using full settings FIRST to save to DB ─────────────
+    if (action.messageBody) {
+      action.messageBody = action.messageBody.replace(/\n{3,}/g, '\n\n');
+    }
+
     let finalCustomerName = customer.name;
     if (!finalCustomerName) {
       if (input.from.includes("<")) {

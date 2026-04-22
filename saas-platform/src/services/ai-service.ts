@@ -17,8 +17,15 @@ const resendPatterns = [
   /bevestiging.*opnieuw sturen/i,
 ];
 
-const wismoPatterns = [/where.*order/i, /tracking/i, /status.*order/i, /onde.*encomenda/i];
-const returnPatterns = [/return/i, /refund/i, /damaged/i, /troca/i, /devolver/i];
+const wismoPatterns = [
+  /where.*order/i, /tracking/i, /status.*order/i, /onde.*encomenda/i,
+  /waar.*bestelling/i, /waar.*pakket/i, /status.*bestelling/i,
+  /wanneer.*geleverd/i, /wanneer.*bezorgd/i
+];
+const returnPatterns = [
+  /return/i, /refund/i, /damaged/i, /troca/i, /devolver/i,
+  /retour/i, /terugsturen/i, /geld terug/i, /terugbetaling/i
+];
 
 export class AiService {
   private readonly orderService: OrderService;
@@ -296,6 +303,7 @@ export class AiService {
         2. VOLLEDIGHEID: Geef een compleet antwoord. Eindig nooit halverwege een zin.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
+        5. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
         
         CONTEXT:
         ${orderContext}
@@ -395,6 +403,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         1. DOEL: Voorkom een retour door een compensatie aan te bieden uit de lijst hieronder. 
         2. TAAL: Reageer ALTIJD in het ${preferredLanguage}.
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de inhoud van het bericht.
+        4. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
         
         CRITICAL NEGOTIATION RULE: You must ONLY offer the exact compensation defined in the NEXT step. 
         DO NOT skip steps. DO NOT offer the maximum/hard limit unless it is explicitly the NEXT step.
