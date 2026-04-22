@@ -16,6 +16,7 @@ function mapMessageRow(row: MessageRow): IMessage {
     attachments: ((row.attachments as Array<Record<string, unknown>> | null) ?? []) as Array<
       Record<string, unknown>
     >,
+    aiConfidence: (row.ai_confidence as number | null) ?? null,
     metadata: ((row.metadata as Record<string, unknown> | null) ?? {}) as Record<string, unknown>,
     createdAt: String(row.created_at),
     isScheduled: Boolean(row.is_scheduled ?? false),

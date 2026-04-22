@@ -74,6 +74,13 @@ const defaultSettings: IMerchantSettings = {
   business_hours: { start: "09:00", end: "17:00" },
   timezone: "Europe/Amsterdam",
   escalation_email: null,
+
+  // Response Timing
+  response_delay_hours: 0,
+  business_hours_start: "09:00",
+  business_hours_end: "18:00",
+  business_hours_timezone: "Europe/Amsterdam",
+  business_hours_weekends: false,
 };
 
 describe("E2E inbound email pipeline", () => {
