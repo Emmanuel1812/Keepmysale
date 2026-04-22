@@ -24,6 +24,7 @@ export interface IConversation {
   intent: TConversationIntent | null;
   category: string | null;
   assignedTo: string | null;
+  isKnownCustomer: boolean;
   aiResolved: boolean;
   shopifyOrderId: string | null;
   lastMessageAt: string;
@@ -44,6 +45,7 @@ export interface IConversationCreate {
   intent?: TConversationIntent | null;
   category?: string | null;
   assignedTo?: string | null;
+  isKnownCustomer?: boolean;
   aiResolved?: boolean;
   shopifyOrderId?: string | null;
   metadata?: Record<string, unknown>;
@@ -54,6 +56,7 @@ export interface IConversationUpdate {
   intent?: TConversationIntent | null;
   category?: string | null;
   assignedTo?: string | null;
+  isKnownCustomer?: boolean;
   aiResolved?: boolean;
   resolvedAt?: string | null;
   metadata?: Record<string, unknown>;

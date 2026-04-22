@@ -106,6 +106,7 @@ export class WebhookService {
       
       await this.conversationService.update(conversation.id, {
         category: "unknown",
+        isKnownCustomer: false,
         metadata: { ...((conversation.metadata as Record<string, unknown>) || {}) }
       });
 
@@ -115,7 +116,8 @@ export class WebhookService {
     if (input.metadata?.blockedByCategory) {
       console.log(`[WEBHOOK] Email pre-blocked by automation filter as: ${input.metadata.blockedByCategory}`);
       await this.conversationService.update(conversation.id, {
-        category: input.metadata.blockedByCategory
+        category: input.metadata.blockedByCategory,
+        isKnownCustomer
       });
       return { deduplicated: false as const, action: "blocked_prefilter" };
     }
@@ -401,25 +403,26 @@ export class WebhookService {
     let assignedCategory: string | undefined = undefined;
     
     if (activeNeg && action.negotiationDecision) {
-      if (action.negotiationDecision === "accept") assignedCategory = "negotiation_accepted";
-      else if (action.negotiationDecision === "next_step" || action.negotiationDecision === "continue") assignedCategory = "negotiation_active";
-      else if (action.negotiationDecision === "reject") assignedCategory = "negotiation_rejected";
-    }
-
-    if (!assignedCategory) {
-      if (shouldSkipAutoReply && !isShadowMode && belowThreshold) {
+      if (action.negotiationDecision === "accept" || action.negotiationDecision === "next_step" || action.negotiationDecision === "continue") {
+        assignedCategory = "returns";
+      } else if (action.negotiationDecision === "reject") {
         assignedCategory = "human_required";
-      } else if (classification.requires_human) {
-        assignedCategory = "human_required";
-      } else {
-        if (classification.intent === "wismo" || classification.intent === "resend_confirmation") assignedCategory = "shipping";
-        else if (classification.intent === "return" || classification.intent === "exchange") assignedCategory = "returns";
-        else if (classification.intent === "faq") assignedCategory = "product";
-        else assignedCategory = "human_required"; // Fallback for complaint/other
       }
     }
 
-    await this.conversationService.update(conversation.id, { category: assignedCategory });
+    if (!assignedCategory) {
+      if (classification.intent === "wismo" || classification.intent === "resend_confirmation") assignedCategory = "shipping";
+      else if (classification.intent === "return" || classification.intent === "exchange") assignedCategory = "returns";
+      else if (classification.intent === "faq") assignedCategory = "product";
+      else if (classification.intent === "complaint") assignedCategory = "human_required";
+      else if (classification.requires_human) assignedCategory = "human_required";
+      else assignedCategory = "human_required";
+    }
+
+    await this.conversationService.update(conversation.id, { 
+      category: assignedCategory,
+      isKnownCustomer
+    });
 
     // If auto-reply is blocked, shadow mode is on, or human review is needed → don't send
     if (shouldSkipAutoReply || isShadowMode) {

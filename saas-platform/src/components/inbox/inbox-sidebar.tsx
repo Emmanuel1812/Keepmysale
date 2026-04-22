@@ -16,6 +16,7 @@ interface ApiConversation {
   subject: string | null;
   intent: string | null;
   category?: string | null;
+  isKnownCustomer?: boolean;
   aiResolved: boolean;
   lastMessageAt: string;
   lastMessageSenderType: string | null;
@@ -124,7 +125,8 @@ export function InboxSidebar() {
     const cat = c.category || null;
 
     if (activeTab === "Customers") {
-      if (!([null, "shipping", "returns", "product"] as (string | null)[]).includes(cat)) return false;
+      if (!c.isKnownCustomer) return false;
+      if (["spam", "financial"].includes(cat as any)) return false;
     } else if (activeTab === "Returns") {
       if (!(["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"] as (string | null)[]).includes(cat)) return false;
     } else if (activeTab === "Shipping") {
@@ -164,7 +166,9 @@ export function InboxSidebar() {
       
       const cat = c.category || null;
       if (tab === "All") return true;
-      if (tab === "Customers") return ([null, "shipping", "returns", "product"] as (string | null)[]).includes(cat);
+      if (tab === "Customers") {
+        return c.isKnownCustomer === true && !["spam", "financial"].includes(cat as any);
+      }
       if (tab === "Returns") return (["returns", "negotiation_active", "negotiation_accepted", "negotiation_rejected"] as (string | null)[]).includes(cat);
       if (tab === "Shipping") return cat === "shipping";
       if (tab === "Products") return cat === "product";

@@ -32,6 +32,8 @@ export async function GET(request: Request) {
     status: row.status,
     subject: row.subject ?? null,
     intent: row.intent ?? null,
+    category: row.category ?? null,
+    isKnownCustomer: Boolean(row.is_known_customer),
     assignedTo: row.assigned_to ?? null,
     aiResolved: Boolean(row.ai_resolved),
     shopifyOrderId: row.shopify_order_id ?? null,
