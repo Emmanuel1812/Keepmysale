@@ -39,6 +39,7 @@ export interface INegotiation {
   refundProcessedAt: string | null;
   returnStatus: string;
   completedAt: string | null;
+  returnReason: string | null;
   customerFeedback: string | null;
   auditPdfUrl: string | null;
   isManualRefundRequired: boolean;
@@ -62,6 +63,11 @@ export interface INegotiationCreate {
   finalRefundAmount?: number | null;
   finalRefundType?: "partial_refund" | "store_credit" | "full_refund" | "exchange" | null;
   shopifyRefundId?: string | null;
+  savings?: number | null;
+  completedAt?: string | null;
+  refundProcessed?: boolean;
+  refundProcessedAt?: string | null;
+  returnStatus?: string;
   returnReason?: string | null;
   customerFeedback?: string | null;
   isManualRefundRequired?: boolean;
@@ -75,4 +81,7 @@ export interface INegotiationUpdate extends Partial<INegotiationCreate> {
   auditPdfUrl?: string | null;
   savings?: number | null;
   generatedDiscountCode?: string | null;
+  refundProcessed?: boolean;
+  refundProcessedAt?: string | null;
+  returnStatus?: string;
 }
