@@ -542,6 +542,78 @@ export default function SettingsPage() {
                  />
               </div>
 
+              <div className="pt-8 border-t border-zinc-100">
+                <SectionHeader title="Response Timing" description="Define when the AI is allowed to send emails out to customers." />
+                <div className="grid md:grid-cols-2 gap-12 mt-4">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                       <div className="flex justify-between items-center">
+                          <label className="text-sm font-medium text-zinc-700">Respons Vertraging</label>
+                          <span className="text-sm font-bold text-teal-600">
+                            {settings.response_delay_hours === 0 ? "Direct (0 uur)" : `${settings.response_delay_hours} uur`}
+                          </span>
+                       </div>
+                       <input 
+                         type="range" min="0" max="24" step="1"
+                         className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                         value={settings.response_delay_hours ?? 0}
+                         onChange={(e) => updateSetting("response_delay_hours", Number(e.target.value))}
+                       />
+                       <p className="text-[10px] text-zinc-400">Wacht minimaal deze tijd voordat de AI reageert.</p>
+                       <div className="flex justify-between text-[10px] text-zinc-400 px-1">
+                          <span>0</span>
+                          <span>6</span>
+                          <span>12</span>
+                          <span>24</span>
+                       </div>
+                    </div>
+
+                    <Toggle 
+                      label="Ook in weekenden reageren"
+                      description="Indien uitgevinkt, wachten berichten tot maandag."
+                      checked={settings.business_hours_weekends}
+                      onChange={(v) => updateSetting("business_hours_weekends", v)}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-zinc-700">Stuur alleen emails tussen:</label>
+                      <div className="flex gap-4">
+                        <Input 
+                          type="time" 
+                          value={settings.business_hours_start ?? "09:00"} 
+                          onChange={(e) => updateSetting("business_hours_start", e.target.value)}
+                          className="bg-white"
+                        />
+                        <span className="flex items-center text-zinc-500">tot</span>
+                        <Input 
+                          type="time" 
+                          value={settings.business_hours_end ?? "18:00"} 
+                          onChange={(e) => updateSetting("business_hours_end", e.target.value)}
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-zinc-700">Tijdzone</label>
+                      <select 
+                        value={settings.business_hours_timezone ?? "Europe/Amsterdam"}
+                        onChange={(e) => updateSetting("business_hours_timezone", e.target.value)}
+                        className="w-full h-10 px-3 text-sm bg-white border border-zinc-200 rounded-md focus:ring-2 focus:ring-teal-600 outline-none"
+                      >
+                        <option value="Europe/Amsterdam">Berlijn/Amsterdam/Parijs (CET)</option>
+                        <option value="Europe/London">Londen (GMT/BST)</option>
+                        <option value="America/New_York">New York (EST)</option>
+                        <option value="America/Los_Angeles">Los Angeles (PST)</option>
+                        <option value="UTC">UTC</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-8 border-t border-zinc-100 grid md:grid-cols-2 gap-12">
                  <div className="space-y-4">
                    <SectionHeader title="Guardrails" />

@@ -15,6 +15,8 @@ export interface IMessage {
   aiConfidence: number | null;
   metadata: Record<string, unknown>;
   createdAt: string;
+  isScheduled: boolean;
+  scheduledSendAt: string | null;
 }
 
 export interface IMessageCreate {
@@ -28,10 +30,14 @@ export interface IMessageCreate {
   attachments?: Array<Record<string, unknown>>;
   aiConfidence?: number | null;
   metadata?: Record<string, unknown>;
+  isScheduled?: boolean;
+  scheduledSendAt?: string | null;
 }
 
 export interface IMessageUpdate {
   content?: string;
   contentHtml?: string | null;
   metadata?: Record<string, unknown>;
+  isScheduled?: boolean;
+  sender?: TMessageSender;
 }

@@ -16,9 +16,10 @@ function mapMessageRow(row: MessageRow): IMessage {
     attachments: ((row.attachments as Array<Record<string, unknown>> | null) ?? []) as Array<
       Record<string, unknown>
     >,
-    aiConfidence: (row.ai_confidence as number | null) ?? null,
     metadata: ((row.metadata as Record<string, unknown> | null) ?? {}) as Record<string, unknown>,
     createdAt: String(row.created_at),
+    isScheduled: Boolean(row.is_scheduled ?? false),
+    scheduledSendAt: (row.scheduled_send_at as string | null) ?? null,
   };
 }
 
@@ -79,6 +80,8 @@ export class MessagesDal {
         attachments: input.attachments ?? [],
         ai_confidence: input.aiConfidence ?? null,
         metadata: input.metadata ?? {},
+        is_scheduled: input.isScheduled ?? false,
+        scheduled_send_at: input.scheduledSendAt ?? null,
       })
       .select("*")
       .single();
@@ -93,6 +96,8 @@ export class MessagesDal {
         content: input.content,
         content_html: input.contentHtml,
         metadata: input.metadata,
+        is_scheduled: input.isScheduled,
+        sender: input.sender,
       })
       .eq("id", id)
       .select("*")

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { AutomationService, SyncResult } from "@/services/automation-service";
 import { MerchantsDal, mapMerchantRow } from "@/dal/merchants";
+import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { getEnv } from "@/lib/env";
 import { apiError } from "@/lib/api-helpers";
 
@@ -58,9 +59,62 @@ async function processGmailPolling(request: Request) {
       summary.push(result);
     }
 
+    // 2. Process Scheduled Messages
+    const { data: scheduledMessages, error: scheduleError } = await supabase
+      .from("messages")
+      .select("*, conversations(*), merchants(*)")
+      .eq("is_scheduled", true)
+      .lte("scheduled_send_at", new Date().toISOString())
+      .order("scheduled_send_at", { ascending: true });
+
+    if (scheduleError) {
+      console.error("[CRON_GMAIL] Error fetching scheduled messages", scheduleError);
+    }
+
+    let scheduledProcessed = 0;
+
+    for (const msg of (scheduledMessages || [])) {
+      try {
+        const merchant = mapMerchantRow(msg.merchants);
+        const conversation = msg.conversations;
+
+        if (merchant.googleEmail) {
+           console.log(`[CRON_GMAIL] Sending scheduled message ${msg.id} for ${merchant.shopDomain}`);
+           const accessToken = await getValidAccessToken(merchant);
+           
+           // A conversation holds the external order details natively, or we just rely on threading
+           // Wait, the webhook-service looks at conversation "externalId" or it uses "gmailThreadId" natively through `input.gmailThreadId`. 
+           // In `messages` table, we don't store threadid explicitly unless it's in `conversation.external_id`.
+           
+           await sendGmailReply(accessToken, {
+             to: conversation.customer_email,
+             subject: `Re: ${conversation.subject || "Uw bestelling"}`,
+             html: msg.content_html || msg.content?.replace(/\n/g, "<br />") || "",
+             text: msg.content || "",
+             threadId: conversation.external_id,
+           });
+        }
+        
+        // Mark as processed
+        await supabase
+          .from("messages")
+          .update({ 
+            is_scheduled: false, 
+            sender: "ai", 
+            metadata: { ...msg.metadata, scheduled_sent_at: new Date().toISOString() } 
+          })
+          .eq("id", msg.id);
+
+        scheduledProcessed++;
+      } catch (err) {
+        console.error(`[CRON_GMAIL] Failed to send scheduled message ${msg.id}:`, err);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       processedCount: totalProcessed,
+      scheduledProcessed,
       merchantsChecked: summary.length,
       details: summary
     });

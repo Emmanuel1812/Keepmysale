@@ -62,6 +62,18 @@ export interface IMerchantSettings {
   /** Hours after delivery for proactive check */
   proactive_check_delay_hours: number;
 
+  // ── Response Timing ────────────────────────────────────────────
+  /** Delay in hours before AI sends response (0 = instant) */
+  response_delay_hours: number;
+  /** Business hours start (e.g. "09:00") */
+  business_hours_start: string;
+  /** Business hours end (e.g. "18:00") */
+  business_hours_end: string;
+  /** Timezone for business hours */
+  business_hours_timezone: string;
+  /** Whether to respond during weekends */
+  business_hours_weekends: boolean;
+
   // ── Rules & Restrictions ───────────────────────────────────────
   /** Topics where AI should never respond (e.g. "legal", "court") */
   forbidden_topics: string[];
@@ -131,6 +143,13 @@ export const DEFAULT_MERCHANT_SETTINGS: IMerchantSettings = {
   escalate_after_steps: 3,
   proactive_check_enabled: false,
   proactive_check_delay_hours: 48,
+
+  // Response Timing
+  response_delay_hours: 0,
+  business_hours_start: "09:00",
+  business_hours_end: "18:00",
+  business_hours_timezone: "Europe/Amsterdam",
+  business_hours_weekends: false,
 
   // Rules & Restrictions
   forbidden_topics: [],
