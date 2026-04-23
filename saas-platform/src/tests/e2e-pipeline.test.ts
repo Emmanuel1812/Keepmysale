@@ -76,7 +76,8 @@ const defaultSettings: IMerchantSettings = {
   escalation_email: null,
 
   // Response Timing
-  response_delay_hours: 0,
+  response_delay_minutes: 0,
+  business_hours_enabled: true,
   business_hours_start: "09:00",
   business_hours_end: "18:00",
   business_hours_timezone: "Europe/Amsterdam",

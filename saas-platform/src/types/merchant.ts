@@ -63,8 +63,10 @@ export interface IMerchantSettings {
   proactive_check_delay_hours: number;
 
   // ── Response Timing ────────────────────────────────────────────
-  /** Delay in hours before AI sends response (0 = instant) */
-  response_delay_hours: number;
+  /** Delay in minutes before AI sends response (0 = instant) */
+  response_delay_minutes: number;
+  /** Whether to enforce business hour constraints */
+  business_hours_enabled: boolean;
   /** Business hours start (e.g. "09:00") */
   business_hours_start: string;
   /** Business hours end (e.g. "18:00") */
@@ -145,7 +147,8 @@ export const DEFAULT_MERCHANT_SETTINGS: IMerchantSettings = {
   proactive_check_delay_hours: 48,
 
   // Response Timing
-  response_delay_hours: 0,
+  response_delay_minutes: 0,
+  business_hours_enabled: true,
   business_hours_start: "09:00",
   business_hours_end: "18:00",
   business_hours_timezone: "Europe/Amsterdam",

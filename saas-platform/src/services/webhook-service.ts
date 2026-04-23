@@ -392,62 +392,66 @@ export class WebhookService {
 
     if (!shouldSkipAutoReply && !isShadowMode) {
       // 1. Base delay
-      const delayMs = (settings.response_delay_hours || 0) * 3600000;
+      const delayMs = (settings.response_delay_minutes || 0) * 60000;
       let earliest = new Date(Date.now() + delayMs);
       
       const tz = settings.business_hours_timezone || "Europe/Amsterdam";
       const startStr = settings.business_hours_start || "09:00";
       const endStr = settings.business_hours_end || "18:00";
       const replyWeekends = settings.business_hours_weekends === true;
+      const hoursEnabled = settings.business_hours_enabled ?? true;
 
-      const [sH, sM] = startStr.split(":").map(Number);
-      const [eH, eM] = endStr.split(":").map(Number);
-      const startMinutes = sH * 60 + sM;
-      const endMinutes = eH * 60 + eM;
+      // Only restrict logic if enabled
+      if (hoursEnabled) {
+        const [sH, sM] = startStr.split(":").map(Number);
+        const [eH, eM] = endStr.split(":").map(Number);
+        const startMinutes = sH * 60 + sM;
+        const endMinutes = eH * 60 + eM;
 
-      // Ensure we iterate to find the valid slot
-      while (true) {
-        // Resolve time components locally relative to the merchant timezone
-        const localeString = earliest.toLocaleString("en-US", { timeZone: tz, hour12: false });
-        // Example "4/24/2026, 08:30:00"
-        const localDate = new Date(localeString);
-        
-        const currentHours = localDate.getHours();
-        const currentMins = localDate.getMinutes();
-        const currentTotalMins = currentHours * 60 + currentMins;
-        
-        // In Javascript, 0 is Sunday, 6 is Saturday (relative roughly, toLocaleString extracts local numbers if we format explicitly, 
-        // to securely get weekday in target timezone:)
-        const wdFormat = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(earliest);
-        const isWeekend = wdFormat === "Sat" || wdFormat === "Sun";
+        // Ensure we iterate to find the valid slot
+        while (true) {
+          // Resolve time components locally relative to the merchant timezone
+          const localeString = earliest.toLocaleString("en-US", { timeZone: tz, hour12: false });
+          // Example "4/24/2026, 08:30:00"
+          const localDate = new Date(localeString);
+          
+          const currentHours = localDate.getHours();
+          const currentMins = localDate.getMinutes();
+          const currentTotalMins = currentHours * 60 + currentMins;
+          
+          // In Javascript, 0 is Sunday, 6 is Saturday (relative roughly, toLocaleString extracts local numbers if we format explicitly, 
+          // to securely get weekday in target timezone:)
+          const wdFormat = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(earliest);
+          const isWeekend = wdFormat === "Sat" || wdFormat === "Sun";
 
-        // Logic check
-        if (isWeekend && !replyWeekends) {
-           // Skip to next day 00:00
-           earliest = new Date(earliest.getTime() + 24*3600*1000);
-           earliest.setHours(0, 0, 0, 0); // Note: setHours runs in Server Time, but resetting offsets it enough generally for the while loop
-           // To precisely roll forward 24hrs securely ignoring server time complexities:
-           // Since we just need to bump to next day, adding 24h works.
-           continue;
+          // Logic check
+          if (isWeekend && !replyWeekends) {
+             // Skip to next day 00:00
+             earliest = new Date(earliest.getTime() + 24*3600*1000);
+             earliest.setHours(0, 0, 0, 0); // Note: setHours runs in Server Time, but resetting offsets it enough generally for the while loop
+             // To precisely roll forward 24hrs securely ignoring server time complexities:
+             // Since we just need to bump to next day, adding 24h works.
+             continue;
+          }
+
+          if (currentTotalMins < startMinutes) {
+             // Too early, wait until start time today.
+             // How many minutes to add?
+             const diff = startMinutes - currentTotalMins;
+             earliest = new Date(earliest.getTime() + diff * 60000);
+             continue;
+          }
+
+          if (currentTotalMins > endMinutes) {
+             // Too late, wait until tomorrow boundary
+             const forwardDiff = (24 * 60 - currentTotalMins) + startMinutes;
+             earliest = new Date(earliest.getTime() + forwardDiff * 60000);
+             continue;
+          }
+
+          // Inside bounds!
+          break;
         }
-
-        if (currentTotalMins < startMinutes) {
-           // Too early, wait until start time today.
-           // How many minutes to add?
-           const diff = startMinutes - currentTotalMins;
-           earliest = new Date(earliest.getTime() + diff * 60000);
-           continue;
-        }
-
-        if (currentTotalMins > endMinutes) {
-           // Too late, wait until tomorrow boundary
-           const forwardDiff = (24 * 60 - currentTotalMins) + startMinutes;
-           earliest = new Date(earliest.getTime() + forwardDiff * 60000);
-           continue;
-        }
-
-        // Inside bounds!
-        break;
       }
 
       // At this point, `earliest` holds the correct absolute Time.

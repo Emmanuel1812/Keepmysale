@@ -545,70 +545,144 @@ export default function SettingsPage() {
               <div className="pt-8 border-t border-zinc-100">
                 <SectionHeader title="Response Timing" description="Define when the AI is allowed to send emails out to customers." />
                 <div className="grid md:grid-cols-2 gap-12 mt-4">
+                  
+                  {/* Left Column: Response Delay */}
                   <div className="space-y-6">
-                    <div className="space-y-2">
-                       <div className="flex justify-between items-center">
-                          <label className="text-sm font-medium text-zinc-700">Respons Vertraging</label>
-                          <span className="text-sm font-bold text-teal-600">
-                            {settings.response_delay_hours === 0 ? "Direct (0 uur)" : `${settings.response_delay_hours} uur`}
-                          </span>
+                    <div className="space-y-4">
+                       <label className="text-sm font-medium text-zinc-700 block">Respons Vertraging</label>
+                       
+                       {/* Preset Pills */}
+                       <div className="flex flex-wrap gap-2">
+                         {[
+                           { val: 0, label: "Instant" },
+                           { val: 15, label: "15 min" },
+                           { val: 30, label: "30 min" },
+                           { val: 60, label: "1 uur" },
+                           { val: 120, label: "2 uur" },
+                           { val: 240, label: "4 uur" },
+                           { val: 1440, label: "24 uur" }
+                         ].map(preset => (
+                           <button
+                             key={preset.val}
+                             onClick={() => updateSetting("response_delay_minutes", preset.val)}
+                             className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors border ${
+                               (settings.response_delay_minutes ?? 0) === preset.val
+                                 ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                             }`}
+                           >
+                             {preset.label}
+                           </button>
+                         ))}
                        </div>
-                       <input 
-                         type="range" min="0" max="24" step="1"
-                         className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
-                         value={settings.response_delay_hours ?? 0}
-                         onChange={(e) => updateSetting("response_delay_hours", Number(e.target.value))}
-                       />
-                       <p className="text-[10px] text-zinc-400">Wacht minimaal deze tijd voordat de AI reageert.</p>
-                       <div className="flex justify-between text-[10px] text-zinc-400 px-1">
-                          <span>0</span>
-                          <span>6</span>
-                          <span>12</span>
-                          <span>24</span>
-                       </div>
-                    </div>
 
-                    <Toggle 
-                      label="Ook in weekenden reageren"
-                      description="Indien uitgevinkt, wachten berichten tot maandag."
-                      checked={settings.business_hours_weekends}
-                      onChange={(v) => updateSetting("business_hours_weekends", v)}
-                    />
+                       {/* Custom Time */}
+                       <div className="pt-2">
+                         <p className="text-xs text-zinc-500 mb-2">Of kies een aangepaste tijd:</p>
+                         <div className="flex items-center gap-2 max-w-[240px]">
+                           <input 
+                             type="number"
+                             min="0"
+                             className="w-20 h-9 px-3 text-sm bg-white border border-zinc-200 rounded-md focus:ring-2 focus:ring-teal-600 outline-none"
+                             value={(() => {
+                               const val = settings.response_delay_minutes ?? 0;
+                               return (val > 0 && val % 60 === 0 && val >= 60 && ![15, 30].includes(val)) ? val / 60 : val;
+                             })()}
+                             onChange={(e) => {
+                               const num = parseInt(e.target.value) || 0;
+                               const isHours = (settings.response_delay_minutes ?? 0) >= 60 && (settings.response_delay_minutes ?? 0) % 60 === 0;
+                               updateSetting("response_delay_minutes", isHours ? num * 60 : num);
+                             }}
+                           />
+                           <select 
+                             className="flex-1 h-9 px-2 text-sm bg-white border border-zinc-200 rounded-md focus:ring-2 focus:ring-teal-600 outline-none"
+                             value={((settings.response_delay_minutes ?? 0) > 0 && (settings.response_delay_minutes ?? 0) % 60 === 0 && (settings.response_delay_minutes ?? 0) >= 60) ? "uren" : "minuten"}
+                             onChange={(e) => {
+                               const num = settings.response_delay_minutes ?? 0;
+                               const currentVal = ((num > 0 && num % 60 === 0 && num >= 60) ? num / 60 : num) || 0;
+                               if (e.target.value === "uren") {
+                                 updateSetting("response_delay_minutes", currentVal * 60);
+                               } else {
+                                 updateSetting("response_delay_minutes", currentVal); // treat as minutes explicitly
+                               }
+                             }}
+                           >
+                             <option value="minuten">minuten</option>
+                             <option value="uren">uren</option>
+                           </select>
+                         </div>
+                       </div>
+                       
+                       {/* Human Readable Status */}
+                       <p className="text-[11px] font-medium text-teal-700 bg-teal-50 px-3 py-2 rounded border border-teal-100 flex items-center gap-2 w-fit mt-1">
+                          ↳ Huidige vertraging: {
+                            (settings.response_delay_minutes ?? 0) === 0 ? "Direct" :
+                            (settings.response_delay_minutes ?? 0) === 1440 ? "24 uur" :
+                            (settings.response_delay_minutes ?? 0) % 60 === 0 ? `${(settings.response_delay_minutes ?? 0) / 60} uur` :
+                            (settings.response_delay_minutes ?? 0) > 60 ? `${Math.floor((settings.response_delay_minutes ?? 0) / 60)} uur ${(settings.response_delay_minutes ?? 0) % 60} minuten` :
+                            `${settings.response_delay_minutes ?? 0} minuten`
+                          }
+                       </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Stuur alleen emails tussen:</label>
-                      <div className="flex gap-4">
-                        <Input 
-                          type="time" 
-                          value={settings.business_hours_start ?? "09:00"} 
-                          onChange={(e) => updateSetting("business_hours_start", e.target.value)}
-                          className="bg-white"
-                        />
-                        <span className="flex items-center text-zinc-500">tot</span>
-                        <Input 
-                          type="time" 
-                          value={settings.business_hours_end ?? "18:00"} 
-                          onChange={(e) => updateSetting("business_hours_end", e.target.value)}
-                          className="bg-white"
+                  {/* Right Column: Business Hours */}
+                  <div className="space-y-6">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <div className="relative flex items-center">
+                        <input
+                           type="checkbox"
+                           className="w-4 h-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-600 accent-teal-600"
+                           checked={!(settings.business_hours_enabled ?? true)}
+                           onChange={(e) => updateSetting("business_hours_enabled", !e.target.checked)}
                         />
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Tijdzone</label>
-                      <select 
-                        value={settings.business_hours_timezone ?? "Europe/Amsterdam"}
-                        onChange={(e) => updateSetting("business_hours_timezone", e.target.value)}
-                        className="w-full h-10 px-3 text-sm bg-white border border-zinc-200 rounded-md focus:ring-2 focus:ring-teal-600 outline-none"
-                      >
-                        <option value="Europe/Amsterdam">Berlijn/Amsterdam/Parijs (CET)</option>
-                        <option value="Europe/London">Londen (GMT/BST)</option>
-                        <option value="America/New_York">New York (EST)</option>
-                        <option value="America/Los_Angeles">Los Angeles (PST)</option>
-                        <option value="UTC">UTC</option>
-                      </select>
+                      <span className="text-sm font-medium text-zinc-800">Reageer 24 uur per dag (geen beperking op tijdstip)</span>
+                    </label>
+
+                    <div className={`space-y-4 transition-opacity ${!(settings.business_hours_enabled ?? true) ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-zinc-700">Stuur alleen emails tussen:</label>
+                        <div className="flex gap-4">
+                          <Input 
+                            type="time" 
+                            value={settings.business_hours_start ?? "09:00"} 
+                            onChange={(e) => updateSetting("business_hours_start", e.target.value)}
+                            className="bg-white"
+                          />
+                          <span className="flex items-center text-zinc-500">tot</span>
+                          <Input 
+                            type="time" 
+                            value={settings.business_hours_end ?? "18:00"} 
+                            onChange={(e) => updateSetting("business_hours_end", e.target.value)}
+                            className="bg-white"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-zinc-700">Tijdzone</label>
+                        <select 
+                          value={settings.business_hours_timezone ?? "Europe/Amsterdam"}
+                          onChange={(e) => updateSetting("business_hours_timezone", e.target.value)}
+                          className="w-full h-10 px-3 text-sm bg-white border border-zinc-200 rounded-md focus:ring-2 focus:ring-teal-600 outline-none"
+                        >
+                          <option value="Europe/Amsterdam">Berlijn/Amsterdam/Parijs (CET)</option>
+                          <option value="Europe/London">Londen (GMT/BST)</option>
+                          <option value="America/New_York">New York (EST)</option>
+                          <option value="America/Los_Angeles">Los Angeles (PST)</option>
+                          <option value="UTC">UTC</option>
+                        </select>
+                      </div>
+
+                      <div className="pt-2">
+                        <Toggle 
+                          label="Ook in weekenden reageren"
+                          description="Indien uitgevinkt, wachten berichten tot maandag."
+                          checked={settings.business_hours_weekends}
+                          onChange={(v) => updateSetting("business_hours_weekends", v)}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

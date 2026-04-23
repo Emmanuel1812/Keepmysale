@@ -107,6 +107,53 @@ export default function ConversationThreadPage() {
     }
   };
 
+  const handleSendDraft = async (messageId: string) => {
+    try {
+      const res = await fetch(`/api/inbox/messages/${messageId}/send`, { method: "POST" });
+      const payload = await res.json();
+      if (payload.success) {
+        await loadData();
+      } else {
+        alert("Failed to send draft: " + payload.error);
+      }
+    } catch (err) {
+      alert("Error sending draft message.");
+    }
+  };
+
+  const handleDiscardDraft = async (messageId: string) => {
+    if (!confirm("Are you sure you want to discard this draft?")) return;
+    try {
+      const res = await fetch(`/api/inbox/messages/${messageId}`, { method: "DELETE" });
+      const payload = await res.json();
+      if (payload.success) {
+        await loadData();
+      } else {
+        alert("Failed to delete draft.");
+      }
+    } catch (err) {
+       alert("Error discarding draft.");
+    }
+  };
+
+  const handleEditDraft = async (messageId: string, newContent: string) => {
+    try {
+       const res = await fetch(`/api/inbox/messages/${messageId}/edit`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ content: newContent })
+       });
+       const payload = await res.json();
+       if (payload.success) {
+         await loadData();
+       } else {
+         alert("Failed to save draft edits.");
+       }
+    } catch (err) {
+       alert("Error saving draft.");
+    }
+  };
+
   if (!conversation) {
     return <div className="flex h-full items-center justify-center bg-white"><div className="animate-pulse flex items-center text-teal-600 font-semibold gap-2"><span>Loading thread...</span></div></div>;
   }
@@ -191,7 +238,12 @@ export default function ConversationThreadPage() {
       </div>
 
       {/* Messages */}
-      <MessageThread messages={threadMessages} />
+      <MessageThread 
+         messages={threadMessages} 
+         onSendDraft={handleSendDraft} 
+         onDiscardDraft={handleDiscardDraft} 
+         onEditDraft={handleEditDraft} 
+      />
       
       {/* Reply Composer */}
       <div className="sticky bottom-0 bg-white pt-2 border-t border-transparent z-10 w-full">
