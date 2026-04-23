@@ -28,9 +28,11 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Not found or unauthorized" }, { status: 404 });
     }
 
-    // Verify it's an AI draft (security: prevent deleting customer or sent messages)
-    if (message.sender !== "ai_draft") {
-      return NextResponse.json({ success: false, error: "Only draft messages can be deleted" }, { status: 400 });
+    // Verify it's a draft or scheduled message (prevent deleting customer or sent messages)
+    const isDraft = message.sender === "ai_draft";
+    const isScheduled = message.isScheduled === true || message.sender === ("ai_scheduled" as any) || (message.metadata as any)?.original_sender === "ai_scheduled";
+    if (!isDraft && !isScheduled) {
+      return NextResponse.json({ success: false, error: "Only draft or scheduled messages can be deleted" }, { status: 400 });
     }
 
     // Delete the message

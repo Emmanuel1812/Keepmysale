@@ -62,7 +62,7 @@ async function processGmailPolling(request: Request) {
     // 2. Process Scheduled Messages
     const { data: scheduledMessages, error: scheduleError } = await supabase
       .from("messages")
-      .select("*, conversations(*), merchants(*)")
+      .select("*, conversations(*, customer:customers(email))")
       .eq("is_scheduled", true)
       .lte("scheduled_send_at", new Date().toISOString())
       .order("scheduled_send_at", { ascending: true });
@@ -75,19 +75,34 @@ async function processGmailPolling(request: Request) {
 
     for (const msg of (scheduledMessages || [])) {
       try {
-        const merchant = mapMerchantRow(msg.merchants);
         const conversation = msg.conversations;
+        const customerEmail = conversation?.customer?.email;
+
+        if (!customerEmail) {
+          console.warn(`[CRON_GMAIL] Skipping scheduled msg ${msg.id}: no customer email found`);
+          continue;
+        }
+
+        // Fetch the merchant separately for access token
+        const { data: merchantRow } = await supabase
+          .from("merchants")
+          .select("*")
+          .eq("id", msg.merchant_id)
+          .single();
+
+        if (!merchantRow) {
+          console.warn(`[CRON_GMAIL] Skipping scheduled msg ${msg.id}: merchant not found`);
+          continue;
+        }
+
+        const merchant = mapMerchantRow(merchantRow);
 
         if (merchant.googleEmail) {
            console.log(`[CRON_GMAIL] Sending scheduled message ${msg.id} for ${merchant.shopDomain}`);
            const accessToken = await getValidAccessToken(merchant);
            
-           // A conversation holds the external order details natively, or we just rely on threading
-           // Wait, the webhook-service looks at conversation "externalId" or it uses "gmailThreadId" natively through `input.gmailThreadId`. 
-           // In `messages` table, we don't store threadid explicitly unless it's in `conversation.external_id`.
-           
            await sendGmailReply(accessToken, {
-             to: conversation.customer_email,
+             to: customerEmail,
              subject: `Re: ${conversation.subject || "Uw bestelling"}`,
              html: msg.content_html || msg.content?.replace(/\n/g, "<br />") || "",
              text: msg.content || "",
@@ -95,11 +110,12 @@ async function processGmailPolling(request: Request) {
            });
         }
         
-        // Mark as processed
+        // Mark as processed: clear schedule flags and set sender to "ai"
         await supabase
           .from("messages")
           .update({ 
-            is_scheduled: false, 
+            is_scheduled: false,
+            scheduled_send_at: null,
             sender: "ai", 
             metadata: { ...msg.metadata, scheduled_sent_at: new Date().toISOString() } 
           })

@@ -30,9 +30,11 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Not found or unauthorized" }, { status: 404 });
     }
 
-    // Verify it's an AI draft
-    if (message.sender !== "ai_draft") {
-      return NextResponse.json({ success: false, error: "Only draft messages can be edited" }, { status: 400 });
+    // Verify it's a draft or scheduled message
+    const isDraft = message.sender === "ai_draft";
+    const isScheduled = message.isScheduled === true || message.sender === ("ai_scheduled" as any) || (message.metadata as any)?.original_sender === "ai_scheduled";
+    if (!isDraft && !isScheduled) {
+      return NextResponse.json({ success: false, error: "Only draft or scheduled messages can be edited" }, { status: 400 });
     }
 
     if (!newContent || newContent.trim() === "") {

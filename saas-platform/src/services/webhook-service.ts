@@ -502,6 +502,8 @@ export class WebhookService {
             original_sender: senderLabel,
             intent: classification.intent,
           },
+          isScheduled,
+          scheduledSendAt: scheduleSendAt,
         });
       } else {
         throw err;

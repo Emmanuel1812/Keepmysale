@@ -8,9 +8,12 @@ import { ReplyComposer } from "@/components/inbox/reply-composer";
 
 interface ApiMessage {
   id: string;
-  sender: "customer" | "ai" | "human_agent" | "system";
+  sender: "customer" | "ai" | "human_agent" | "system" | "ai_draft" | "ai_scheduled";
   content: string;
   createdAt?: string;
+  isScheduled?: boolean;
+  scheduledSendAt?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 interface ApiConversation {
@@ -80,6 +83,8 @@ export default function ConversationThreadPage() {
         sender: message.sender,
         body: message.content,
         createdAt: message.createdAt,
+        isScheduled: message.isScheduled ?? (message.metadata as any)?.original_sender === "ai_scheduled",
+        scheduledSendAt: message.scheduledSendAt ?? null,
       })),
     [messages],
   );
@@ -118,6 +123,20 @@ export default function ConversationThreadPage() {
       }
     } catch (err) {
       alert("Error sending draft message.");
+    }
+  };
+
+  const handleSendNowAction = async (messageId: string) => {
+    try {
+      const res = await fetch(`/api/inbox/messages/${messageId}/send-now`, { method: "POST" });
+      const payload = await res.json();
+      if (payload.success) {
+        await loadData();
+      } else {
+        alert("Failed to send scheduled message now: " + payload.error);
+      }
+    } catch (err) {
+      alert("Error forcefully dispatching scheduled message.");
     }
   };
 
@@ -243,6 +262,7 @@ export default function ConversationThreadPage() {
          onSendDraft={handleSendDraft} 
          onDiscardDraft={handleDiscardDraft} 
          onEditDraft={handleEditDraft} 
+         onSendNow={handleSendNowAction}
       />
       
       {/* Reply Composer */}

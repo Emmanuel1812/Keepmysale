@@ -1,6 +1,6 @@
 import type { TConversationChannel } from "@/types/conversation";
 
-export type TMessageSender = "customer" | "ai" | "human_agent" | "system" | "ai_draft";
+export type TMessageSender = "customer" | "ai" | "human_agent" | "system" | "ai_draft" | "ai_scheduled";
 
 export interface IMessage {
   id: string;
