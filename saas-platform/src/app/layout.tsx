@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppBridgeFetch } from "@/components/shopify/app-bridge-fetch";
+import { APP_BRIDGE_LOADER } from "@/lib/shopify/app-bridge-loader";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,11 +25,10 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
     >
       <head>
-        {/* Shopify App Bridge: must be the first script, loaded synchronously from Shopify's CDN.
-            Outside the Shopify admin iframe it does nothing. The api key is the public client id. */}
+        {/* Shopify App Bridge, loaded only when framed inside the Shopify admin (see app-bridge-loader.ts).
+            The api key is the public client id. */}
         <meta name="shopify-api-key" content={process.env.SHOPIFY_API_KEY ?? ""} />
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
+        <script dangerouslySetInnerHTML={{ __html: APP_BRIDGE_LOADER }} />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-[#f8fafb] text-[#111827]">
         <AppBridgeFetch />
