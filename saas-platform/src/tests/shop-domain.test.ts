@@ -33,3 +33,35 @@ describe("the shop address a merchant types", () => {
     expect(isValidShopDomain("https://a.myshopify.com")).toBe(false);
   });
 });
+
+import crypto from "node:crypto";
+import { isFreshSignedLaunch } from "@/lib/shopify/auth";
+
+describe("a launch link from Shopify admin", () => {
+  const secret = process.env.SHOPIFY_API_SECRET as string;
+  const NOW = 1_800_000_000;
+
+  function signedQuery(extra: Record<string, string>, signWith = secret) {
+    const base = new URLSearchParams({ shop: "efo-testing-store.myshopify.com", host: "aG9zdA", embedded: "1", ...extra });
+    const sorted = [...base.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("&");
+    base.set("hmac", crypto.createHmac("sha256", signWith).update(sorted).digest("hex"));
+    return base;
+  }
+
+  it("is accepted when correctly signed and recent", () => {
+    expect(isFreshSignedLaunch(signedQuery({ timestamp: String(NOW - 30) }), 3600, NOW)).toBe(true);
+  });
+
+  it("is refused when signed with another secret, tampered, stale, or unsigned", () => {
+    expect(isFreshSignedLaunch(signedQuery({ timestamp: String(NOW - 30) }, "attacker"), 3600, NOW)).toBe(false);
+
+    const tampered = signedQuery({ timestamp: String(NOW - 30) });
+    tampered.set("shop", "victim.myshopify.com");
+    expect(isFreshSignedLaunch(tampered, 3600, NOW)).toBe(false);
+
+    expect(isFreshSignedLaunch(signedQuery({ timestamp: String(NOW - 7200) }), 3600, NOW)).toBe(false);
+
+    const unsigned = new URLSearchParams({ shop: "efo-testing-store.myshopify.com", host: "aG9zdA", timestamp: String(NOW) });
+    expect(isFreshSignedLaunch(unsigned, 3600, NOW)).toBe(false);
+  });
+});

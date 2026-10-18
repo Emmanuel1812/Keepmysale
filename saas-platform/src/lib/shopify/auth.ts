@@ -36,11 +36,25 @@ export function verifyShopifyHmac(query: URLSearchParams, hmac: string) {
     .join("&");
 
   const digest = crypto.createHmac("sha256", env.SHOPIFY_API_SECRET).update(sorted).digest("hex");
-  return digest === hmac;
+  const a = Buffer.from(digest);
+  const b = Buffer.from(hmac);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export function normalizeShopDomain(shopDomain: string): string {
   const sanitized = shopDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   const withoutAdmin = sanitized.replace(/\/admin$/i, "");
   return withoutAdmin.split("/")[0];
+}
+
+/**
+ * A launch from Shopify admin carries a signed query string (hmac, shop, host, timestamp...).
+ * True only when the signature is valid AND it was issued recently, so an old link cannot be replayed.
+ */
+export function isFreshSignedLaunch(query: URLSearchParams, maxAgeSeconds = 3600, now = Math.floor(Date.now() / 1000)): boolean {
+  const hmac = query.get("hmac");
+  const timestamp = Number(query.get("timestamp"));
+  if (!hmac || !Number.isFinite(timestamp)) return false;
+  if (Math.abs(now - timestamp) > maxAgeSeconds) return false;
+  return verifyShopifyHmac(query, hmac);
 }

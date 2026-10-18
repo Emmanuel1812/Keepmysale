@@ -4,11 +4,10 @@ import { AnalyticsService } from "@/services/analytics-service";
 import { getMerchantFromSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
-  const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;
   let merchantId = "";
   let shopName: string | null = null;
   try {
-    const merchant = await getMerchantFromSession(shopDomainHeader);
+    const merchant = await getMerchantFromSession();
     merchantId = merchant.id;
     shopName = merchant.shopName;
   } catch {

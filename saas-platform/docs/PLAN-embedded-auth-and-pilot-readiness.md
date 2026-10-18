@@ -39,6 +39,23 @@ A public branch (`main`, tip e25a37d, April 2026) contained live credentials.
 
 ## Step 1 - Shopify session tokens (replaces cookie auth inside the iframe)
 
+**STATUS 18 Oct 2026: BUILT on branch `feat/embedded-session-tokens`, NOT deployed, NOT yet tested
+inside Shopify admin** (that needs a deploy to the domain the app URL points at). 39 unit tests, tsc and
+`next build` are green. What was done:
+- `src/lib/shopify/session-token.ts`: HS256 JWT verified with `SHOPIFY_API_SECRET`, constant-time,
+  algorithm pinned, checks exp/nbf/aud/dest/iss. Tests include forged signature, edited payload,
+  `alg:none`, expired, wrong app, wrong shop, garbage.
+- `src/lib/auth.ts`: bearer token first, Supabase cookie second (standalone keepmysale.com), nothing else.
+  **The `X-Shop-Domain` fallback is gone**, with a regression test that it stays gone.
+- Layout loads App Bridge (`shopify-api-key` meta + CDN script); `AppBridgeFetch` adds the token to
+  same-origin `/api/` calls and waits for `window.shopify` if Next's async scripts win the race.
+- `next.config.ts`: `Content-Security-Policy: frame-ancestors` for `*.myshopify.com` and admin.shopify.com.
+- Root page: a freshly signed launch from admin for an already-connected shop goes straight to the
+  dashboard (no repeated OAuth, no webhook re-registration). HMAC compare is now constant-time.
+- Not done from this step: OAuth token exchange (item 6) and moving webhooks to the Dev Dashboard (item 7).
+
+Original steps:
+
 Standard Shopify pattern, no third-party cookies needed.
 
 1. `src/app/layout.tsx`: add `<meta name="shopify-api-key" content={SHOPIFY_API_KEY}>` and

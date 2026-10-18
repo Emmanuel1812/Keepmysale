@@ -27,10 +27,9 @@ export async function POST(request: Request) {
       encryptionKeyLength: process.env.ENCRYPTION_KEY?.length,
     });
 
-    const shopDomainHeader = request.headers.get("x-shop-domain") || undefined;
     let merchant;
     try {
-      merchant = await getMerchantFromSession(shopDomainHeader);
+      merchant = await getMerchantFromSession();
     } catch (err) {
       console.error("[API] sync-orders UNAUTHORIZED:", err);
       return apiError("UNAUTHORIZED", "Unauthorized - No merchant found for session", 401);
