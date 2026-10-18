@@ -2,6 +2,7 @@
 
 import { useIsEmbedded } from "@/hooks/use-is-embedded";
 import { Suspense, type ReactNode } from "react";
+import { AppNav } from "@/components/shopify/app-nav";
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ function DashboardShellInner({ children, sidebar, header }: DashboardShellProps)
   if (isEmbedded) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-[#f8fafb]">
+        <AppNav />
         <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
     );
