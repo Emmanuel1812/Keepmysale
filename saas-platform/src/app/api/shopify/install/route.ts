@@ -12,6 +12,13 @@ export async function GET(request: Request) {
 
   const supabase = createSupabaseServiceClient();
   const shopifyService = new ShopifyService(supabase);
-  const { installUrl } = shopifyService.createInstallLink(shop);
-  return NextResponse.redirect(installUrl);
+  try {
+    const { installUrl } = shopifyService.createInstallLink(shop);
+    return NextResponse.redirect(installUrl);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_SHOP_DOMAIN") {
+      return apiError("VALIDATION_ERROR", "Enter your shop address, like your-store.myshopify.com", 400);
+    }
+    throw error;
+  }
 }

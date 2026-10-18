@@ -92,9 +92,6 @@ function DashboardContent() {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    if (shop) {
-      headers["X-Shop-Domain"] = shop;
-    }
     return headers;
   };
 
