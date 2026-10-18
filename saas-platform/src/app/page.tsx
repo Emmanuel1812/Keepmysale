@@ -5,7 +5,7 @@ import { Homepage2Client } from "@/components/homepage2-client";
 export default async function Home({ searchParams }: { searchParams: Promise<{ shop?: string }> }) {
   const sp = await searchParams;
   if (sp.shop) {
-    redirect(`/api/shopify/install?shop=${sp.shop}`);
+    redirect(`/api/shopify/install?shop=${encodeURIComponent(String(sp.shop))}`);
   }
 
   const supabase = await createSupabaseServerClient();

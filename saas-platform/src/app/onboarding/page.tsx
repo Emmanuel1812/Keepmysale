@@ -14,7 +14,7 @@ export default async function OnboardingPage({
   
   // Handle Shopify install redirect
   if (sp.shop) {
-    redirect(`/api/shopify/install?shop=${sp.shop}`);
+    redirect(`/api/shopify/install?shop=${encodeURIComponent(String(sp.shop))}`);
   }
 
   // Determine current step

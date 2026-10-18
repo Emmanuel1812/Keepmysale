@@ -1,7 +1,21 @@
 import crypto from "node:crypto";
 import { getEnv } from "@/lib/env";
 
-export function buildShopifyInstallUrl(shop: string, state: string) {
+const SHOP_DOMAIN_PATTERN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+
+/** True only for a bare "<name>.myshopify.com" host - nothing else may reach an OAuth URL. */
+export function isValidShopDomain(shop: string): boolean {
+  return SHOP_DOMAIN_PATTERN.test(shop);
+}
+
+export function buildShopifyInstallUrl(shopInput: string, state: string) {
+  // The merchant types this by hand ("https://store.myshopify.com/", "store.myshopify.com/admin"...).
+  // Clean it first, then refuse anything that is not a real myshopify host: building the URL from raw
+  // input produced "https://https//store.myshopify.com//admin/..." and let any host be redirected to.
+  const shop = normalizeShopDomain(shopInput).toLowerCase();
+  if (!isValidShopDomain(shop)) {
+    throw new Error("INVALID_SHOP_DOMAIN");
+  }
   const env = getEnv();
   const redirectUri = `${env.SHOPIFY_APP_URL}/api/shopify/callback`;
   const query = new URLSearchParams({
