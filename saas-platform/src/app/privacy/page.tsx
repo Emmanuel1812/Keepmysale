@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LEGAL_CONTACT_EMAIL, LegalPage } from "@/components/legal/legal-page";
+import { LEGAL_CONTACT_EMAIL, LEGAL_KVK, LEGAL_OPERATOR, LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Privacy Policy · KeepMySale",
@@ -12,8 +12,9 @@ export default function PrivacyPage() {
       <section>
         <h2>Who we are</h2>
         <p>
-          KeepMySale is an AI customer-support assistant for Shopify stores. It is operated by Emmanuel Oudennaarden
-          in the Netherlands. You can reach us at <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.
+          KeepMySale is an AI customer-support assistant for Shopify stores. It is operated by {LEGAL_OPERATOR}, a
+          business in the Netherlands registered with the Chamber of Commerce (KvK) under number {LEGAL_KVK}. You can
+          reach us at <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.
         </p>
         <p>
           For the account of the store owner (the merchant) we are the data controller. For the data of the

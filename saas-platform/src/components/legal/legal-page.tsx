@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const LEGAL_CONTACT_EMAIL = "eo.commerces@gmail.com";
+export const LEGAL_OPERATOR = "EFO Commerces";
+export const LEGAL_KVK = "89053338";
 export const LEGAL_UPDATED = "19 October 2026";
 
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
@@ -22,6 +24,10 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <div className="mt-8 space-y-8 text-[15px] leading-7 text-zinc-700 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-[#111827] [&_li]:ml-5 [&_li]:list-disc [&_a]:text-teal-700 [&_a]:underline">
           {children}
         </div>
+        <p className="mt-12 border-t border-zinc-200 pt-6 text-sm text-zinc-500">
+          KeepMySale is operated by {LEGAL_OPERATOR}, the Netherlands &middot; KvK {LEGAL_KVK} &middot;{" "}
+          <a className="underline" href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>
+        </p>
       </main>
     </div>
   );

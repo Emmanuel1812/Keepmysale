@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LEGAL_CONTACT_EMAIL, LegalPage } from "@/components/legal/legal-page";
+import { LEGAL_CONTACT_EMAIL, LEGAL_KVK, LEGAL_OPERATOR, LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Terms of Service · KeepMySale",
@@ -14,8 +14,8 @@ export default function TermsPage() {
         <p>
           KeepMySale is an AI assistant for Shopify stores. It reads your customers&apos; support emails, drafts or
           sends replies, tracks orders, and can propose a partial refund or store credit when a customer wants to
-          return an item. These terms are between you (the merchant) and Emmanuel Oudennaarden, operating KeepMySale
-          from the Netherlands. By installing or using KeepMySale you accept them.
+          return an item. These terms are between you (the merchant) and {LEGAL_OPERATOR} (KvK {LEGAL_KVK}), operating
+          KeepMySale from the Netherlands. By installing or using KeepMySale you accept them.
         </p>
       </section>
 
