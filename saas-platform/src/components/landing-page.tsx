@@ -374,7 +374,7 @@ export function LandingPage() {
               <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             </div>
             <div className="feature-name">AI Customer Service</div>
-            <p className="feature-desc">Automatically handle WISMO, FAQ, and general inquiries in 50+ languages with your store's tone.</p>
+            <p className="feature-desc">Automatically handle WISMO, FAQ, and general inquiries in your customer's own language, with your store's tone.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon" style={{ backgroundColor: 'rgba(0, 153, 255, 0.1)', color: '#0099ff' }}>
@@ -556,7 +556,7 @@ export function LandingPage() {
         <div className="cta-panel">
           <div className="cta-panel-pre">5 minutes to set up · No obligation · Free trial</div>
           <h3 className="cta-panel-headline">Ready to stop losing money on returns?</h3>
-          <p className="cta-panel-desc">Join 50+ Shopify merchants who save thousands every month with AI-powered return prevention.</p>
+          <p className="cta-panel-desc">Connect your Shopify store and see how AI-powered return prevention works on your own orders.</p>
           <div className="cta-btn-wrap">
             <Link href="/signup" className="cta-signup-btn">
               Start Your Free Trial
@@ -617,9 +617,9 @@ export function LandingPage() {
            <div>
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Company</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-                <li><a href="#">About Us</a></li>
-                <li><a href="#">Contact</a></li>
+                <li><a href="mailto:eo.commerces@gmail.com">Contact</a></li>
                 <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms of Service</a></li>
               </ul>
            </div>
            <div>
