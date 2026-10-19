@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { currencySymbol } from "@/lib/money";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -21,18 +22,25 @@ const ZapIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height
 const EmptyBoxIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300"><polyline points="21 8 21 21 3 21 3 8"/><rect width="22" height="5" x="1" y="3" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>);
 
 // --- [HOOKS] ---
-function useCountUp(endValue: number, duration = 1200) {
+function useCountUp(endValue: number, duration = 700) {
   const [value, setValue] = useState(0);
+  const shown = useRef(0);
   useEffect(() => {
+    // Animate from what is on screen to the new value, and stop the previous run: otherwise two
+    // loops fight and the number jumps back to 0 each time fresh data arrives.
+    const from = shown.current;
     let startTimestamp: number | null = null;
+    let frame = 0;
     const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
+      if (startTimestamp === null) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setValue(endValue * easeProgress);
-      if (progress < 1) window.requestAnimationFrame(step);
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      shown.current = from + (endValue - from) * eased;
+      setValue(shown.current);
+      if (progress < 1) frame = window.requestAnimationFrame(step);
     };
-    window.requestAnimationFrame(step);
+    frame = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(frame);
   }, [endValue, duration]);
   return value;
 }
@@ -55,6 +63,7 @@ interface Summary {
   resolvedToday: number;
   avgResponseTime: number;
   pendingRefundsCount: number;
+  currency: string;
   activeNegotiations: number;
   aiHandled: number;
   shopName?: string;
@@ -82,6 +91,7 @@ function DashboardContent() {
     totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, fulfilledOrders: 0,
     openConversations: 0, resolvedToday: 0, activeNegotiations: 0, aiHandled: 0, avgResponseTime: 0,
     pendingRefundsCount: 0,
+    currency: "EUR",
   });
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -208,7 +218,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-extrabold tracking-tight text-teal-800">
-                  <AnimatedValue value={summary.moneySaved} prefix="€" decimals={2} />
+                  <AnimatedValue value={summary.moneySaved} prefix={currencySymbol(summary.currency)} decimals={2} />
                 </span>
                 <p className="mt-1 text-sm font-medium text-teal-700/80">Total Saved</p>
               </div>
@@ -269,14 +279,14 @@ function DashboardContent() {
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><BanknoteIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.totalRevenue} prefix="€" decimals={2} />
+                <AnimatedValue value={summary.totalRevenue} prefix={currencySymbol(summary.currency)} decimals={2} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Total Revenue</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><BarChartIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.avgOrderValue} prefix="€" decimals={2} />
+                <AnimatedValue value={summary.avgOrderValue} prefix={currencySymbol(summary.currency)} decimals={2} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Avg Order Value</p>
             </Card>

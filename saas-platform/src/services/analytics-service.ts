@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ConversationsDal } from "@/dal/conversations";
-import { AI_RESPONSE_SENDERS, isNonSupportCategory } from "@/lib/inbox-visibility";
+import { AI_RESPONSE_SENDERS, isSupportConversation } from "@/lib/inbox-visibility";
+import { dominantCurrency } from "@/lib/money";
 import { NegotiationsDal } from "@/dal/negotiations";
 import { OrdersDal } from "@/dal/orders";
 import { MessagesDal } from "@/dal/messages";
@@ -25,6 +26,8 @@ export interface IAnalyticsSummary {
   aiHandled: number;
   avgResponseTime: number; // in minutes
   pendingRefundsCount: number;
+  /** ISO code of the currency most orders are in; every money figure here is in it. */
+  currency: string;
 }
 
 export class AnalyticsService {
@@ -44,7 +47,7 @@ export class AnalyticsService {
     // Only real support conversations count: mail the filter set aside (spam / financial / unknown
     // sender) is stored but is not "open work", and the AI never answered it.
     const allConversations = await this.conversationsDal.findByMerchant(merchantId);
-    const conversations = allConversations.filter((item) => !isNonSupportCategory(item.category));
+    const conversations = allConversations.filter((item) => isSupportConversation(item));
     const supportIds = new Set(conversations.map((item) => item.id));
     const negotiations = await this.negotiationsDal.findByMerchant(merchantId);
     const messages = (await this.messagesDal.findByMerchant(merchantId)).filter((m) => supportIds.has(m.conversationId));
@@ -133,6 +136,7 @@ export class AnalyticsService {
       aiHandled,
       avgResponseTime,
       pendingRefundsCount,
+      currency: dominantCurrency(orders.map((o) => o.currency)),
     };
   }
 }

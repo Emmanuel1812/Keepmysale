@@ -1,5 +1,8 @@
 import { NavItem } from "@/components/layout/nav-item";
 import { getMerchantFromSession } from "@/lib/auth";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { ConversationsDal } from "@/dal/conversations";
+import { countUnanswered } from "@/lib/inbox-visibility";
 import Image from "next/image";
 import logo from "@/app/logo.png";
 
@@ -7,9 +10,13 @@ export async function Sidebar() {
   let shopName = "efo-testing-store";
   let plan = "Starter Plan";
 
+  let unanswered = 0;
+
   try {
     const merchant = await getMerchantFromSession();
     if (merchant?.shopName) shopName = merchant.shopName;
+    // The Inbox badge is the real number of conversations waiting for an answer (it used to be a fixed 3).
+    unanswered = countUnanswered(await new ConversationsDal(createSupabaseServiceClient()).findByMerchant(merchant.id));
   } catch {}
 
   return (
@@ -21,7 +28,7 @@ export async function Sidebar() {
       
       <nav className="flex flex-1 flex-col gap-1">
         <NavItem href="/dashboard" label="Overview" />
-        <NavItem href="/dashboard/inbox" label="Inbox" badge={3} />
+        <NavItem href="/dashboard/inbox" label="Inbox" badge={unanswered > 0 ? unanswered : undefined} />
         <NavItem href="/dashboard/orders" label="Orders" />
         <NavItem href="/dashboard/returns" label="Returns" />
         <NavItem href="/dashboard/settings" label="Settings" />

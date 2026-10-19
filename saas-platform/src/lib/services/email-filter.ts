@@ -44,7 +44,7 @@ export class EmailFilterService {
       "belastingdienst.nl", "fiscaal-online.nl", "kvk.nl", "uwv.nl", "duo.nl",
       // Newsletter/marketing/System
       "mailchimp.com", "sendgrid.net", "amazonses.com", "campaign-monitor.com", 
-      "hubspot.com", "klaviyo.com", "mailer.shopify.com", "shopify.com", "google.com", "googlemail.com", "amazon.com",
+      "hubspot.com", "klaviyo.com", "mailer.shopify.com", "shopify.com", "shopifyemail.com", "microsoft.com", "microsoftonline.com", "apple.com", "google.com", "googlemail.com", "amazon.com",
       // Other high-traffic spammy domains from previous version
       "uber.com", "tiktok.com", "facebook.com", "facebookmail.com", "instagram.com", 
       "twitter.com", "linkedin.com", "pinterest.com", "netlify.com", 

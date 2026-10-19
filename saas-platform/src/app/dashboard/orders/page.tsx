@@ -1,5 +1,6 @@
 "use client";
 
+import { dominantCurrency, formatMoney } from "@/lib/money";
 import { useEffect, useState } from "react";
 import { FulfillmentBadge, FinancialBadge } from "@/components/ui/status-badges";
 import { Button } from "@/components/ui/button";
@@ -175,7 +176,7 @@ export default function OrdersPage() {
                <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Total Revenue</CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-1">
-              <p className="text-2xl font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalRevenue)}</p>
+              <p className="text-2xl font-bold">{formatMoney(totalRevenue, dominantCurrency(orders.map((o) => o.currency)))}</p>
             </CardContent>
           </Card>
           <Card className="border-zinc-200/60 shadow-xs">

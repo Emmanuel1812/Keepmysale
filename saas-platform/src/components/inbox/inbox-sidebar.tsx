@@ -1,6 +1,6 @@
 "use client";
 
-import { isNonSupportCategory } from "@/lib/inbox-visibility";
+import { isSupportConversation } from "@/lib/inbox-visibility";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -139,10 +139,10 @@ export function InboxSidebar() {
     } else if (activeTab === "Human Required") {
       if (cat !== "human_required") return false;
     } else if (activeTab === "Filtered") {
-      if (!isNonSupportCategory(cat)) return false;
+      if (isSupportConversation(c)) return false;
     } else if (activeTab === "All") {
       // Newsletters, bounces, banks and senders who never ordered live under "Filtered".
-      if (isNonSupportCategory(cat)) return false;
+      if (!isSupportConversation(c)) return false;
     }
     
     if (search) {
@@ -169,7 +169,7 @@ export function InboxSidebar() {
       if (tab === "Drafts") return c.lastMessageSenderType === "ai_draft";
       
       const cat = c.category || null;
-      if (tab === "All") return !isNonSupportCategory(cat);
+      if (tab === "All") return isSupportConversation(c);
       if (tab === "Customers") {
         return c.isKnownCustomer === true && !["spam", "financial"].includes(cat as any);
       }
@@ -177,7 +177,7 @@ export function InboxSidebar() {
       if (tab === "Shipping") return cat === "shipping";
       if (tab === "Products") return cat === "product";
       if (tab === "Human Required") return cat === "human_required";
-      if (tab === "Filtered") return isNonSupportCategory(cat);
+      if (tab === "Filtered") return !isSupportConversation(c);
       return false;
     }).length;
   };
