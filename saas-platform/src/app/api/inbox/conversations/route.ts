@@ -1,6 +1,7 @@
 import { apiError, apiResponse } from "@/lib/api-helpers";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getMerchantFromSession } from "@/lib/auth";
+import { deriveThreadStates } from "@/lib/inbox-visibility";
 
 export async function GET(request: Request) {
   let merchantId = "";
@@ -23,6 +24,15 @@ export async function GET(request: Request) {
     return apiError("INTERNAL_ERROR", error.message, 500);
   }
 
+  // Who wrote last / has a person replied: derived from the messages (there is no such column).
+  const { data: messageRows } = await supabase
+    .from("messages")
+    .select("conversation_id, sender, created_at")
+    .eq("merchant_id", merchantId);
+  const threadStates = deriveThreadStates(
+    (messageRows ?? []).map((m: any) => ({ conversationId: String(m.conversation_id), sender: String(m.sender), createdAt: String(m.created_at) })),
+  );
+
   // Map back to standard response shape but include customer object
   const conversations = (rawData ?? []).map((row: any) => ({
     id: String(row.id),
@@ -38,7 +48,8 @@ export async function GET(request: Request) {
     aiResolved: Boolean(row.ai_resolved),
     shopifyOrderId: row.shopify_order_id ?? null,
     lastMessageAt: String(row.last_message_at),
-    lastMessageSenderType: row.last_message_sender_type ?? null,
+    lastMessageSenderType: threadStates.get(String(row.id))?.lastSender ?? row.last_message_sender_type ?? null,
+    hasHumanReply: threadStates.get(String(row.id))?.hasHumanReply ?? false,
     lastMessageContent: row.last_message_content ?? null,
     resolvedAt: row.resolved_at ?? null,
     metadata: row.metadata ?? {},

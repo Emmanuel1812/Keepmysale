@@ -16,7 +16,7 @@ import { AnalyticsService } from "@/services/analytics-service";
 import { isNonSupportCategory } from "@/lib/inbox-visibility";
 
 const t0 = "2026-10-01T10:00:00.000Z";
-const conv = (id: string, category: string | null, status = "open") => ({ id, category, status, resolvedAt: null });
+const conv = (id: string, category: string | null, status = "open") => ({ id, category, status, resolvedAt: null, isKnownCustomer: true });
 const msg = (conversationId: string, sender: string, at: string) => ({ conversationId, sender, createdAt: at });
 
 beforeEach(() => {

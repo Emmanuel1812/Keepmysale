@@ -24,25 +24,59 @@ const ACTIVE_CASE_CATEGORIES: readonly string[] = [
   "negotiation_rejected",
 ];
 
+export interface ThreadMessage {
+  conversationId: string;
+  sender: string;
+  createdAt: string;
+}
+
+export interface ThreadState {
+  /** sender of the newest message, e.g. "customer" | "ai" | "ai_draft" | "human_agent" */
+  lastSender: string | null;
+  hasHumanReply: boolean;
+}
+
+/**
+ * The conversations table has no "last sender" column (the app used to read a column that does not exist,
+ * so it was always empty: the unread count never counted and the Drafts tab never filled). The messages are
+ * the source of truth, so derive it from them.
+ */
+export function deriveThreadStates(messages: ReadonlyArray<ThreadMessage>): Map<string, ThreadState> {
+  const newestFirst = [...messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const states = new Map<string, ThreadState>();
+  for (const m of newestFirst) {
+    const state = states.get(m.conversationId) ?? { lastSender: m.sender, hasHumanReply: false };
+    if (m.sender === "human_agent") state.hasHumanReply = true;
+    states.set(m.conversationId, state);
+  }
+  return states;
+}
+
 export interface ConversationVisibilityInput {
   category?: string | null;
   isKnownCustomer?: boolean | null;
   lastMessageSenderType?: string | null;
+  hasHumanReply?: boolean | null;
 }
 
 /**
- * Is this conversation support work? False for mail the filter set aside, and for a sender who has
- * never ordered and whom nobody has answered yet (the product deliberately does not run the AI on
- * such mail). It stays reviewable under "Filtered"; as soon as someone replies, it counts.
+ * Is this conversation support work?
+ * - No for mail the filter set aside (spam / financial / unknown).
+ * - Yes for an active case (return, negotiation, needs a human), whoever wrote it.
+ * - Yes for a customer who has ordered.
+ * - For a sender who never ordered: only once a PERSON has replied. An automated AI reply does not make it
+ *   support: past versions answered Shopify notifications and marketing mail, and the product's own rule is
+ *   not to run the AI on strangers.
+ * It stays reviewable under "Filtered" either way; nothing is deleted.
  */
 export function isSupportConversation(c: ConversationVisibilityInput): boolean {
   if (isNonSupportCategory(c.category)) return false;
   if (c.category != null && ACTIVE_CASE_CATEGORIES.includes(c.category)) return true;
-  const strangerNobodyAnswered = c.isKnownCustomer === false && (c.lastMessageSenderType ?? "customer") === "customer";
-  return !strangerNobodyAnswered;
+  if (c.isKnownCustomer === false) return c.hasHumanReply === true;
+  return true;
 }
 
-/** Conversations whose last message is the customer's, i.e. waiting for an answer. */
+/** Support conversations whose newest message is the customer's: waiting for an answer. */
 export function countUnanswered(conversations: ReadonlyArray<ConversationVisibilityInput & { status?: string | null }>): number {
   return conversations.filter(
     (c) => c.status !== "resolved" && c.status !== "closed" && isSupportConversation(c) && c.lastMessageSenderType === "customer",

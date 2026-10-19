@@ -2,7 +2,8 @@ import { NavItem } from "@/components/layout/nav-item";
 import { getMerchantFromSession } from "@/lib/auth";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { ConversationsDal } from "@/dal/conversations";
-import { countUnanswered } from "@/lib/inbox-visibility";
+import { MessagesDal } from "@/dal/messages";
+import { countUnanswered, deriveThreadStates } from "@/lib/inbox-visibility";
 import Image from "next/image";
 import logo from "@/app/logo.png";
 
@@ -16,7 +17,16 @@ export async function Sidebar() {
     const merchant = await getMerchantFromSession();
     if (merchant?.shopName) shopName = merchant.shopName;
     // The Inbox badge is the real number of conversations waiting for an answer (it used to be a fixed 3).
-    unanswered = countUnanswered(await new ConversationsDal(createSupabaseServiceClient()).findByMerchant(merchant.id));
+    const db = createSupabaseServiceClient();
+    const conversations = await new ConversationsDal(db).findByMerchant(merchant.id);
+    const states = deriveThreadStates(await new MessagesDal(db).findByMerchant(merchant.id));
+    unanswered = countUnanswered(
+      conversations.map((c) => ({
+        ...c,
+        lastMessageSenderType: states.get(c.id)?.lastSender ?? null,
+        hasHumanReply: states.get(c.id)?.hasHumanReply ?? false,
+      })),
+    );
   } catch {}
 
   return (

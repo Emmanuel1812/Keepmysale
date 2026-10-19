@@ -17,6 +17,7 @@ interface ApiConversation {
   subject: string | null;
   intent: string | null;
   category?: string | null;
+  hasHumanReply?: boolean;
   isKnownCustomer?: boolean;
   aiResolved: boolean;
   lastMessageAt: string;

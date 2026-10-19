@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ConversationsDal } from "@/dal/conversations";
-import { AI_RESPONSE_SENDERS, isSupportConversation } from "@/lib/inbox-visibility";
+import { AI_RESPONSE_SENDERS, deriveThreadStates, isSupportConversation } from "@/lib/inbox-visibility";
 import { dominantCurrency } from "@/lib/money";
 import { NegotiationsDal } from "@/dal/negotiations";
 import { OrdersDal } from "@/dal/orders";
@@ -47,10 +47,14 @@ export class AnalyticsService {
     // Only real support conversations count: mail the filter set aside (spam / financial / unknown
     // sender) is stored but is not "open work", and the AI never answered it.
     const allConversations = await this.conversationsDal.findByMerchant(merchantId);
-    const conversations = allConversations.filter((item) => isSupportConversation(item));
+    const allMessages = await this.messagesDal.findByMerchant(merchantId);
+    const threadStates = deriveThreadStates(allMessages);
+    const conversations = allConversations.filter((item) =>
+      isSupportConversation({ ...item, hasHumanReply: threadStates.get(item.id)?.hasHumanReply ?? false }),
+    );
     const supportIds = new Set(conversations.map((item) => item.id));
     const negotiations = await this.negotiationsDal.findByMerchant(merchantId);
-    const messages = (await this.messagesDal.findByMerchant(merchantId)).filter((m) => supportIds.has(m.conversationId));
+    const messages = allMessages.filter((m) => supportIds.has(m.conversationId));
 
     const openConversations = conversations.filter((item) => item.status === "open").length;
     const now = new Date();
