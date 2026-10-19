@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ConversationsDal } from "@/dal/conversations";
+import { AI_RESPONSE_SENDERS, isNonSupportCategory } from "@/lib/inbox-visibility";
 import { NegotiationsDal } from "@/dal/negotiations";
 import { OrdersDal } from "@/dal/orders";
 import { MessagesDal } from "@/dal/messages";
@@ -40,9 +41,13 @@ export class AnalyticsService {
   }
 
   async getSummary(merchantId: string): Promise<IAnalyticsSummary> {
-    const conversations = await this.conversationsDal.findByMerchant(merchantId);
+    // Only real support conversations count: mail the filter set aside (spam / financial / unknown
+    // sender) is stored but is not "open work", and the AI never answered it.
+    const allConversations = await this.conversationsDal.findByMerchant(merchantId);
+    const conversations = allConversations.filter((item) => !isNonSupportCategory(item.category));
+    const supportIds = new Set(conversations.map((item) => item.id));
     const negotiations = await this.negotiationsDal.findByMerchant(merchantId);
-    const messages = await this.messagesDal.findByMerchant(merchantId);
+    const messages = (await this.messagesDal.findByMerchant(merchantId)).filter((m) => supportIds.has(m.conversationId));
 
     const openConversations = conversations.filter((item) => item.status === "open").length;
     const now = new Date();
@@ -89,8 +94,11 @@ export class AnalyticsService {
     for (const [, convMsgs] of messagesByConv.entries()) {
       const sorted = convMsgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       
+      // "AI handled" = the AI produced an answer and no human had to step in. A conversation the AI
+      // never replied to (e.g. a lone inbound message) is not handled.
       const hasHuman = sorted.some(m => m.sender === "human_agent");
-      if (!hasHuman && sorted.length > 0) {
+      const hasAiAnswer = sorted.some(m => AI_RESPONSE_SENDERS.includes(m.sender));
+      if (!hasHuman && hasAiAnswer) {
         aiHandled++;
       }
 

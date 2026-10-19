@@ -1,5 +1,6 @@
 "use client";
 
+import { isNonSupportCategory } from "@/lib/inbox-visibility";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -24,8 +25,8 @@ interface ApiConversation {
   customer?: { name?: string | null; email?: string | null };
 }
 
-type TTab = "All" | "Customers" | "Returns" | "Shipping" | "Products" | "Drafts" | "Human Required" | "Spam";
-const TABS: TTab[] = ["All", "Customers", "Returns", "Shipping", "Products", "Drafts", "Human Required", "Spam"];
+type TTab = "All" | "Customers" | "Returns" | "Shipping" | "Products" | "Drafts" | "Human Required" | "Filtered";
+const TABS: TTab[] = ["All", "Customers", "Returns", "Shipping", "Products", "Drafts", "Human Required", "Filtered"];
 
 function formatRelativeTime(dateString: string) {
   if (!dateString) return "";
@@ -137,8 +138,11 @@ export function InboxSidebar() {
       if (c.lastMessageSenderType !== "ai_draft") return false;
     } else if (activeTab === "Human Required") {
       if (cat !== "human_required") return false;
-    } else if (activeTab === "Spam") {
-      if (!(["spam", "financial", "unknown"] as (string | null)[]).includes(cat)) return false;
+    } else if (activeTab === "Filtered") {
+      if (!isNonSupportCategory(cat)) return false;
+    } else if (activeTab === "All") {
+      // Newsletters, bounces, banks and senders who never ordered live under "Filtered".
+      if (isNonSupportCategory(cat)) return false;
     }
     
     if (search) {
@@ -165,7 +169,7 @@ export function InboxSidebar() {
       if (tab === "Drafts") return c.lastMessageSenderType === "ai_draft";
       
       const cat = c.category || null;
-      if (tab === "All") return true;
+      if (tab === "All") return !isNonSupportCategory(cat);
       if (tab === "Customers") {
         return c.isKnownCustomer === true && !["spam", "financial"].includes(cat as any);
       }
@@ -173,7 +177,7 @@ export function InboxSidebar() {
       if (tab === "Shipping") return cat === "shipping";
       if (tab === "Products") return cat === "product";
       if (tab === "Human Required") return cat === "human_required";
-      if (tab === "Spam") return (["spam", "financial", "unknown"] as (string | null)[]).includes(cat);
+      if (tab === "Filtered") return isNonSupportCategory(cat);
       return false;
     }).length;
   };

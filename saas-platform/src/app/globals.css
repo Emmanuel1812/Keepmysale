@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
+/*
+ * KeepMySale is designed as a light interface: pages hard-code light surfaces and dark text
+ * (80 `bg-white` surfaces, `text-[#111827]`). Tailwind's default `dark:` variant follows the visitor's
+ * OS setting, which turned the Card component dark while the numbers inside it stayed dark-grey:
+ * unreadable for anyone whose computer is in dark mode. `dark:` now applies only inside a `.dark`
+ * element (nothing sets one yet), so every visitor gets the same, readable light interface.
+ * A proper dark theme is a separate piece of work: it needs the hard-coded colours turned into tokens.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #f8fafb;
   --foreground: #111827;
 }
@@ -9,13 +20,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #111827;
-    --foreground: #f8fafb;
-  }
 }
 
 body {
