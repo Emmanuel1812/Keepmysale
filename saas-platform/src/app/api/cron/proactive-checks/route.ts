@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { ProactiveCheckService } from "@/services/proactive-check-service";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  
-  // Basic security - in production use a CRON_SECRET
-  if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Same rule as check-gmail: no secret configured means nobody gets in
+  if (process.env.NODE_ENV === "production" && !isAuthorizedCronRequest(request, process.env.CRON_SECRET)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
