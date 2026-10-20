@@ -52,7 +52,9 @@ export class EmailFilterService {
     ];
 
     // Transactional, marketing, and support prefixes
-    const skipSenderRegex = /^(noreply-.*|noreply|no-reply|donotreply|mailer-daemon|postmaster|notifications?|alerts?|system|auto|bounce|updates?|billing|invoices?|newsletter|marketing|promo|info|support)/i;
+    // service@ / order@ / accounts@ are suppliers writing to the shop (seen: STRATO sent login details from
+    // service@strato.com and order@strato.de, which became "customer" conversations)
+    const skipSenderRegex = /^(noreply-.*|noreply|no-reply|donotreply|mailer-daemon|postmaster|notifications?|alerts?|system|auto|bounce|updates?|billing|invoices?|newsletter|marketing|promo|info|support|service|orders?@|accounts?@|security|verify|welcome)/i;
     
     // Check domains
     if (skipDomains.some(d => fromLower.endsWith(`@${d}`) || fromLower.endsWith(`.${d}`))) {
@@ -67,7 +69,7 @@ export class EmailFilterService {
     // Special check for info@*.nl (only if not matching a customer) - removed local info@ check because the regex above catches it directly now.
 
     // --- LAYER 2: SUBJECT BLOCKLIST ---
-    const bulkSubjectsRegex = /automatic reply|auto-reply|out of office|delivery status|undeliverable|mailer\.daemon|account.*(statement|update|security|verify)|nieuwsbrief|newsletter|aangifte|belasting|factuur van|your.*invoice|payment.*received|payment.*confirmation|abonnement|subscription|invoice|payment.*failed|betaling.*ontvangen|betaling.*mislukt|chargeback|your.*receipt|sent you money|heeft.*overgemaakt|betalingsgegevens|Update je betalingsgegevens|unsubscribe/i;
+    const bulkSubjectsRegex = /automatic reply|auto-reply|out of office|delivery status|undeliverable|mailer\.daemon|account.*(statement|update|security|verify)|nieuwsbrief|newsletter|aangifte|belasting|factuur van|your.*invoice|payment.*received|payment.*confirmation|abonnement|subscription|invoice|payment.*failed|betaling.*ontvangen|betaling.*mislukt|chargeback|your.*receipt|sent you money|heeft.*overgemaakt|betalingsgegevens|Update je betalingsgegevens|unsubscribe|toegangsgegevens|inloggegevens|wachtwoord (opnieuw|wijzigen|herstellen)|reset (your|je) password|verify your (email|account)|bevestig je (e-?mail|account)|welkom bij|welcome to/i;
     
     if (bulkSubjectsRegex.test(subject)) {
       return { shouldProcess: false, reason: `Subject pattern blocked: ${subject}`, layer: 2 };
