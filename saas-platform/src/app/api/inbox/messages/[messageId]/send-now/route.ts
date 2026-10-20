@@ -4,6 +4,7 @@ import { MessagesDal } from "@/dal/messages";
 import { getMerchantFromSession } from "@/lib/auth";
 import { MerchantsDal } from "@/dal/merchants";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
+import { customerThreadId } from "@/services/draft-send-service";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ export async function POST(
         subject: `Re: ${convData.subject || "Uw bericht"}`,
         html: message.contentHtml || message.content.replace(/\n/g, "<br />"),
         text: message.content,
-        threadId: convData.external_id || undefined,
+        threadId: (await customerThreadId(supabase, message.conversationId, message.createdAt)) ?? convData.external_id ?? undefined,
     });
 
     // Strip shadow modes / Draft dependencies natively out of metadata

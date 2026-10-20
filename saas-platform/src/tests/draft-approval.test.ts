@@ -35,8 +35,18 @@ const fakeDb = {
     if (table === "conversations") {
       return { select: () => ({ eq: () => ({ single: async () => ({ data: { subject: "Waar is mijn pakket", external_id: "thr1", customer: { email: "klant@x.test" } }, error: null }) }) }) };
     }
-    // messages: update({sender}).eq(id).eq(sender, expected)?.select()
+    // messages: update({sender}).eq(id).eq(sender, expected)?.select(), or the customer's latest message
     return {
+      select() {
+        const chain: any = {
+          eq: () => chain,
+          order: () => chain,
+          lte: () => chain,
+          limit: () => chain,
+          then: (resolve: (v: unknown) => void) => resolve({ data: [{ metadata: { threadId: "thr-customer-latest" } }] }),
+        };
+        return chain;
+      },
       update(patch: { sender: string }) {
         const filters: Record<string, string> = {};
         const chain = {
@@ -98,7 +108,8 @@ describe("sendDraft", () => {
     const result = await sendDraft(fakeDb, "m1", "merchant-A");
     expect(result.ok).toBe(true);
     expect(sendGmail).toHaveBeenCalledTimes(1);
-    expect(sendGmail.mock.calls[0][1]).toMatchObject({ to: "klant@x.test", threadId: "thr1", text: "Hoi!" });
+    // the thread of the customer's own latest mail, not the conversation's (a conversation spans threads)
+    expect(sendGmail.mock.calls[0][1]).toMatchObject({ to: "klant@x.test", threadId: "thr-customer-latest", text: "Hoi!" });
     expect(updateMessage.mock.calls[0][1].metadata).not.toHaveProperty("shadow_mode");
   });
 

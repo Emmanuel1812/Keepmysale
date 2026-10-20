@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { AutomationService, SyncResult } from "@/services/automation-service";
 import { DraftDigestService } from "@/services/draft-digest-service";
+import { customerThreadId } from "@/services/draft-send-service";
 import { MerchantsDal, mapMerchantRow } from "@/dal/merchants";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { getEnv } from "@/lib/env";
@@ -112,7 +113,7 @@ async function processGmailPolling(request: Request) {
              subject: `Re: ${conversation.subject || "Uw bestelling"}`,
              html: msg.content_html || msg.content?.replace(/\n/g, "<br />") || "",
              text: msg.content || "",
-             threadId: conversation.external_id,
+             threadId: (await customerThreadId(supabase, conversation.id, msg.created_at)) ?? conversation.external_id ?? undefined,
            });
         }
         

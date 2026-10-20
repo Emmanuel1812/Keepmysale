@@ -4,6 +4,27 @@ import { MerchantsDal } from "@/dal/merchants";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import type { IMessage } from "@/types";
 
+/**
+ * The Gmail thread a reply belongs in: that of the customer's last mail before it. conversations.external_id is
+ * never filled, and one conversation can hold several of the customer's threads, so the message decides.
+ */
+export async function customerThreadId(supabase: SupabaseClient, conversationId: string, before?: string): Promise<string | undefined> {
+  let query = supabase
+    .from("messages")
+    .select("metadata, created_at")
+    .eq("conversation_id", conversationId)
+    .eq("sender", "customer")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (before) query = query.lte("created_at", before);
+  const { data } = await query;
+  for (const row of (data ?? []) as Array<{ metadata: Record<string, unknown> | null }>) {
+    const threadId = row.metadata?.threadId;
+    if (typeof threadId === "string" && threadId) return threadId;
+  }
+  return undefined;
+}
+
 export type SendDraftResult =
   | { ok: true; message: IMessage; to: string }
   | { ok: false; code: "not_found" | "not_a_draft" | "gmail_not_connected" | "no_customer_email" | "conversation_missing"; status: number; error: string };
@@ -58,12 +79,13 @@ export async function sendDraft(supabase: SupabaseClient, messageId: string, mer
 
   try {
     const accessToken = await getValidAccessToken(merchant);
+    const threadId = (await customerThreadId(supabase, message.conversationId, message.createdAt)) ?? convData.external_id ?? undefined;
     await sendGmailReply(accessToken, {
       to: customerEmail,
       subject: `Re: ${convData.subject || "Uw bericht"}`,
       html: message.contentHtml || message.content.replace(/\n/g, "<br />"),
       text: message.content,
-      threadId: convData.external_id || undefined,
+      threadId,
     });
   } catch (error) {
     // Not sent: give the draft back so it can be sent again

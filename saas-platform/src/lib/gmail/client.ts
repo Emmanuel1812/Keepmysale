@@ -181,6 +181,38 @@ export async function getGmailMessage(accessToken: string, id: string): Promise<
   return parseGmailMessage(detail.data);
 }
 
+/**
+ * How to answer in this thread: In-Reply-To / References naming the last mail the customer sent in it (not us),
+ * and that mail's subject. Never fails the send: without them the reply still goes out, only less well threaded.
+ */
+export async function replyContext(
+  gmail: { users: { threads: { get: (args: any) => Promise<{ data: any }> } } },
+  threadId: string,
+  ownEmail: string,
+): Promise<{ headers: Record<string, string>; subject: string | null }> {
+  try {
+    const { data } = await gmail.users.threads.get({
+      userId: "me",
+      id: threadId,
+      format: "metadata",
+      metadataHeaders: ["Message-ID", "Message-Id", "References", "From", "Subject"],
+    });
+    const header = (m: any, name: string) =>
+      (m?.payload?.headers ?? []).find((h: any) => String(h?.name).toLowerCase() === name.toLowerCase())?.value as string | undefined;
+    const own = ownEmail.toLowerCase();
+    const theirs = (data?.messages ?? []).filter((m: any) => !own || !String(header(m, "From") ?? "").toLowerCase().includes(own));
+    const last = theirs[theirs.length - 1];
+    const subject = header(last, "Subject")?.trim() || null;
+    const messageId = header(last, "Message-ID");
+    if (!messageId) return { headers: {}, subject };
+    const references = [header(last, "References"), messageId].filter(Boolean).join(" ").replace(/[\r\n]+/g, " ").trim();
+    return { headers: { "In-Reply-To": messageId.trim(), References: references }, subject };
+  } catch (error) {
+    console.warn("[GMAIL] Could not read thread for reply headers:", error instanceof Error ? error.message : error);
+    return { headers: {}, subject: null };
+  }
+}
+
 export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, text: string, threadId?: string, asReply?: boolean, headers?: Record<string, string> }) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({ access_token: accessToken });
@@ -190,8 +222,15 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
   const profile = await gmail.users.getProfile({ userId: "me" });
   const merchantEmail = profile.data.emailAddress;
 
+  // threadId only threads the reply in OUR Gmail; the customer's mail program (Outlook, Apple Mail, and Gmail
+  // itself on the other side) threads on In-Reply-To / References, which name the mail being answered.
+  // The reply also takes that mail's subject: one conversation can span several threads.
+  const context = params.asReply !== false && params.threadId ? await replyContext(gmail, params.threadId, merchantEmail ?? "") : null;
+  const replyHeaders = context?.headers ?? {};
+  const baseSubject = context?.subject || params.subject;
+
   // asReply: false for a mail of our own (the drafts digest), which is not an answer to anything
-  const subject = params.asReply === false || params.subject.startsWith("Re:") ? params.subject : `Re: ${params.subject}`;
+  const subject = params.asReply === false || /^re:/i.test(baseSubject) ? baseSubject : `Re: ${baseSubject}`;
 
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
   const boundary = `__NextPart_${Date.now().toString(16)}__`;
@@ -205,7 +244,7 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
     `From: ${merchantEmail}`,
     `To: ${cleanTo}`,
     `Subject: ${utf8Subject}`,
-    ...Object.entries(params.headers ?? {}).map(([name, value]) => `${name}: ${value}`),
+    ...Object.entries({ ...replyHeaders, ...(params.headers ?? {}) }).map(([name, value]) => `${name}: ${value}`),
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     ``,
