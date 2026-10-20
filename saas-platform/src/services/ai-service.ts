@@ -560,15 +560,23 @@ STRIKT_SYSTEEM_OVERRIDE:
           };
         } else if (nextStep && !isLastStep) {
           const pct = nextStep.percentage;
-          const type = nextStep.type === 'store_credit' 
+          const type = nextStep.type === 'store_credit'
             ? 'store credit' : 'terugbetaling';
+          // No offer made yet: this is the FIRST offer, so it must not answer an "earlier offer" that never existed
+          const isFirstOffer = currentStepIndex === -1;
           resultAction = {
             action: "offer_partial_refund",
-            messageBody: languageCode === "en" 
-              ? `We understand the previous offer wasn't enough. We can now offer you ${pct}% ${type}. Would this work for you?`
-              : languageCode === "pt"
-                ? `Compreendemos que a oferta anterior não foi suficiente. Podemos agora oferecer ${pct}% de ${type}. Isto seria aceitável para si?`
-                : `We begrijpen dat het eerdere aanbod niet voldoende was. We bieden u nu ${pct}% ${type} aan. Zou dit voor u werken?`,
+            messageBody: isFirstOffer
+              ? languageCode === "en"
+                ? `Thanks for letting us know, and sorry it is not quite what you were looking for. Instead of sending it back, you can keep it and we refund ${pct}% of the price. Would that work for you? If you would rather return it, just tell us and we will send you the return details.`
+                : languageCode === "pt"
+                  ? `Obrigado por nos avisar, e lamentamos que não seja bem o que procurava. Em vez de devolver, pode ficar com o artigo e reembolsamos ${pct}% do preço. Isso funciona para si? Se preferir devolver, diga-nos e enviamos os detalhes da devolução.`
+                  : `Bedankt voor je bericht, en jammer dat het niet helemaal is wat je zocht. In plaats van terugsturen kun je het houden en krijg je ${pct}% van het bedrag terug. Zou dat voor je werken? Wil je het toch liever retourneren, laat het ons weten, dan sturen we je de retourgegevens.`
+              : languageCode === "en"
+                ? `We understand the previous offer wasn't enough. We can now offer you ${pct}% ${type}. Would this work for you?`
+                : languageCode === "pt"
+                  ? `Compreendemos que a oferta anterior não foi suficiente. Podemos agora oferecer ${pct}% de ${type}. Isto seria aceitável para si?`
+                  : `We begrijpen dat het eerdere aanbod niet voldoende was. We bieden u nu ${pct}% ${type} aan. Zou dit voor u werken?`,
             negotiationDecision: "next_step",
           };
         } else if (isLastStep) {
