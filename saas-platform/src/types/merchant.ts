@@ -113,6 +113,14 @@ export interface IMerchantSettings {
    */
   exchange_mode?: "off" | "suggest" | "automatic";
 
+  /**
+   * Mail to the merchant listing the drafts that wait for approval, each with a link to send it from a phone:
+   * "daily" (08:00 in the business-hours timezone), "instant" (soon after a new draft) or "off".
+   */
+  draft_digest?: "daily" | "instant" | "off";
+  /** Bookkeeping written by the cron, never by the settings page */
+  draft_digest_last_sent_at?: string | null;
+
   /** Escalation email address (not in spec, kept for compat) */
   escalation_email?: string | null;
 }
@@ -174,6 +182,9 @@ export const DEFAULT_MERCHANT_SETTINGS: IMerchantSettings = {
 
   // Exchange first
   exchange_mode: "suggest",
+
+  // Drafts waiting mail
+  draft_digest: "daily",
 
   // Legacy compat
   business_hours: { start: "09:00", end: "17:00" },

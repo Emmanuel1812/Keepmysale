@@ -53,7 +53,10 @@ export async function PATCH(request: NextRequest) {
 
     // Merge existing settings with new settings
     const existingSettings = (merchant.settings as unknown as Record<string, unknown>) ?? {};
-    const newSettings = settings ? { ...existingSettings, ...settings } : existingSettings;
+    // draft_digest_last_sent_at is the cron's bookkeeping: a page that loaded an older copy must not roll it back
+    const { draft_digest_last_sent_at: _ignored, ...incoming } = (settings ?? {}) as Record<string, unknown>;
+    void _ignored;
+    const newSettings = settings ? { ...existingSettings, ...incoming } : existingSettings;
 
     const updatedMerchant = await merchantService.update(merchant.id, {
       shopName: shopName !== undefined ? shopName : merchant.shopName,

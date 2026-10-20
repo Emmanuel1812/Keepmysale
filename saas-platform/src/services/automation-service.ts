@@ -3,6 +3,7 @@ import { WebhookService } from "@/services/webhook-service";
 import { getValidAccessToken, fetchNewEmails, markAsRead } from "@/lib/gmail/client";
 import type { IMerchant } from "@/types";
 import { EmailFilterService } from "@/lib/services/email-filter";
+import { DIGEST_HEADER, DIGEST_HEADER_VALUE } from "@/services/draft-digest-service";
 
 export interface SyncResult {
   shopDomain: string;
@@ -31,6 +32,12 @@ export class AutomationService {
       let processedCount = 0;
 
       for (const email of newEmails) {
+        // Our own "drafts waiting" mail, when the merchant's login address is this same inbox: not a customer,
+        // and left unread so the merchant still sees it
+        if ((email.headers || []).some((h) => h.name?.toLowerCase() === DIGEST_HEADER.toLowerCase() && h.value === DIGEST_HEADER_VALUE)) {
+          continue;
+        }
+
         // Pass headers for Layer 3 filtering
         const filterResult = await this.emailFilter.shouldProcessEmail(
           email, 

@@ -169,7 +169,7 @@ export async function getGmailMessage(accessToken: string, id: string): Promise<
   return parseGmailMessage(detail.data);
 }
 
-export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, text: string, threadId?: string }) {
+export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, text: string, threadId?: string, asReply?: boolean, headers?: Record<string, string> }) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({ access_token: accessToken });
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
@@ -178,7 +178,8 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
   const profile = await gmail.users.getProfile({ userId: "me" });
   const merchantEmail = profile.data.emailAddress;
 
-  const subject = params.subject.startsWith("Re:") ? params.subject : `Re: ${params.subject}`;
+  // asReply: false for a mail of our own (the drafts digest), which is not an answer to anything
+  const subject = params.asReply === false || params.subject.startsWith("Re:") ? params.subject : `Re: ${params.subject}`;
 
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
   const boundary = `__NextPart_${Date.now().toString(16)}__`;
@@ -192,6 +193,7 @@ export async function sendGmailReply(accessToken: string, params: { to: string, 
     `From: ${merchantEmail}`,
     `To: ${cleanTo}`,
     `Subject: ${utf8Subject}`,
+    ...Object.entries(params.headers ?? {}).map(([name, value]) => `${name}: ${value}`),
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     ``,

@@ -611,6 +611,38 @@ export default function SettingsPage() {
               </div>
 
               <div className="pt-8 border-t border-line">
+                <SectionHeader title="Drafts waiting mail" description="A mail listing the replies that wait for your approval. Each one opens on your phone with one Send button." />
+                <div role="radiogroup" aria-label="Drafts waiting mail" className="mt-4 grid gap-3 md:grid-cols-3">
+                  {([
+                    { value: "daily", title: "Daily", body: "One mail at 08:00 when drafts are waiting." },
+                    { value: "instant", title: "Right away", body: "Soon after a new draft, at most every 15 minutes." },
+                    { value: "off", title: "Off", body: "Approve drafts in the inbox only." },
+                  ] as const).map((option) => {
+                    const selected = (settings.draft_digest ?? "daily") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => updateSetting("draft_digest", option.value)}
+                        className={`kms-press rounded-[12px] p-4 text-left ring-1 ring-inset transition-colors ${selected ? "bg-kept-soft ring-kept" : "bg-white ring-line hover:ring-line-strong"}`}
+                      >
+                        <span className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-foreground">{option.title}</span>
+                          <span className={`grid h-4 w-4 place-items-center rounded-full ring-1 ring-inset ${selected ? "ring-kept" : "ring-line-strong"}`}>
+                            {selected ? <span className="h-2 w-2 rounded-full bg-kept" /> : null}
+                          </span>
+                        </span>
+                        <span className="mt-1.5 block text-xs text-muted">{option.body}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-xs text-muted">Sent from your connected Gmail to your account email. Nothing goes to a customer until you press Send.</p>
+              </div>
+
+              <div className="pt-8 border-t border-line">
                 <SectionHeader title="Response Timing" description="Define when the AI is allowed to send emails out to customers." />
                 <div className="grid md:grid-cols-2 gap-12 mt-4">
                   

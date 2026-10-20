@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { AutomationService, SyncResult } from "@/services/automation-service";
+import { DraftDigestService } from "@/services/draft-digest-service";
 import { MerchantsDal, mapMerchantRow } from "@/dal/merchants";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { getEnv } from "@/lib/env";
@@ -35,6 +36,7 @@ async function processGmailPolling(request: Request) {
 
   const supabase = createSupabaseServiceClient();
   const automationService = new AutomationService(supabase);
+  const digestService = new DraftDigestService(supabase);
 
   try {
     // 1. Fetch all merchants with Google linked
@@ -54,6 +56,13 @@ async function processGmailPolling(request: Request) {
       
       totalProcessed += result.emailsProcessed;
       summary.push(result);
+
+      // "N drafts are waiting" mail, after the poll so it includes the drafts it just made
+      try {
+        await digestService.runForMerchant(merchant, env.NEXT_PUBLIC_APP_URL);
+      } catch (err) {
+        console.error(`[CRON_GMAIL] Draft digest failed for ${merchant.shopDomain}:`, err);
+      }
     }
 
     // 2. Process Scheduled Messages
