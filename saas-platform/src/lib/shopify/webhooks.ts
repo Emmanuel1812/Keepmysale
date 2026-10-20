@@ -9,9 +9,14 @@ function matches(secret: string, rawBody: string, headerSignature: string | null
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-/** Store webhooks registered through the Admin API (signed with SHOPIFY_WEBHOOK_SECRET). */
+/**
+ * Webhooks an app registers through the Admin API are signed by Shopify with the app's client secret
+ * (SHOPIFY_API_SECRET). SHOPIFY_WEBHOOK_SECRET is a separate, hand-made value (".env.example" says "random-secret"), so
+ * requiring only that one rejects every real delivery unless someone copied the client secret into it. Accept either.
+ */
 export function verifyShopifyWebhookSignature(rawBody: string, headerSignature: string | null) {
-  return matches(getEnv().SHOPIFY_WEBHOOK_SECRET, rawBody, headerSignature);
+  const env = getEnv();
+  return matches(env.SHOPIFY_API_SECRET, rawBody, headerSignature) || matches(env.SHOPIFY_WEBHOOK_SECRET, rawBody, headerSignature);
 }
 
 /**

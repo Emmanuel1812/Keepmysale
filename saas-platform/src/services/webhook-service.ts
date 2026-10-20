@@ -628,6 +628,13 @@ export class WebhookService {
 
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
 
+    // The merchant removed the app: Shopify has revoked our access token. Drop it, so refunds and order syncs stop
+    // trying a dead token and the app asks the merchant to reconnect. Their data is erased later by shop/redact.
+    if (topic === "app/uninstalled") {
+      await this.merchantService.update(merchant.id, { shopifyAccessTokenEncrypted: null });
+      return { accepted: true as const, topic, disconnected: true as const };
+    }
+
     if (topic === "orders/create" || topic === "orders/updated") {
       const customerEmail = (payload.email as string | undefined) ?? null;
       let customerId: string | null = null;
