@@ -279,6 +279,7 @@ export class WebhookService {
       shopAccessToken: decryptedShopifyAccessToken,
       merchantSettings: merchant.settings,
       activeNegotiation: activeNeg,
+      merchantId: merchant.id,
     });
 
     console.log("[DEBUG] Action: " + action.action);
@@ -716,6 +717,7 @@ export class WebhookService {
       shopDomain: merchant.shopDomain,
       shopAccessToken: decryptedShopifyAccessToken,
       merchantSettings: merchant.settings,
+      merchantId: merchant.id,
     });
 
     const template = formatEmailResponse({

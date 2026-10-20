@@ -61,6 +61,7 @@ export async function POST(request: Request) {
               shopDomain: merchant.shopDomain,
               shopAccessToken,
               merchantSettings: merchant.settings,
+              merchantId: merchant.id,
             }),
         }),
       );

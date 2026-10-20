@@ -139,6 +139,8 @@ export class AiService {
     activeNegotiation?: any;
     /** A classification already made for this text (the inbox replay classifies first); skips a second AI call. */
     precomputedIntent?: IIntentStructuredResult;
+    /** Lets the reply use this merchant's synced orders (all of them, not only Shopify's last 60 days). */
+    merchantId?: string;
   }): Promise<ActionResult> {
     let intentResult: IIntentStructuredResult;
     const ms = input.merchantSettings;
@@ -254,11 +256,30 @@ export class AiService {
     let order: any = null;
 
     if (orderNumberCandidate) {
-      order = await this.orderService.fetchShopifyOrderByName(
-        input.shopDomain,
-        input.shopAccessToken,
-        orderNumberCandidate,
-      );
+      // Our own synced orders first: Shopify's REST orders endpoint only returns the last 60 days without the
+      // read_all_orders scope, so an older order came back "not found" and the AI told the customer so.
+      if (input.merchantId) {
+        const wanted = orderNumberCandidate.replace(/^#+/, "").trim().toLowerCase();
+        const local = (await this.orderService.findByMerchant(input.merchantId)).find(
+          (o) => (o.shopifyOrderNumber ?? "").replace(/^#+/, "").trim().toLowerCase() === wanted,
+        );
+        if (local) {
+          order = { ...local, name: local.shopifyOrderNumber, line_items: local.lineItems ?? [] };
+        }
+      }
+
+      if (!order) {
+        try {
+          order = await this.orderService.fetchShopifyOrderByName(
+            input.shopDomain,
+            input.shopAccessToken,
+            orderNumberCandidate,
+          );
+        } catch (error) {
+          // A Shopify outage or an expired token must not stop the reply; it is answered without order data
+          console.warn("[AI] Shopify order lookup failed:", error instanceof Error ? error.message : error);
+        }
+      }
 
       if (order) {
         const includeTracking = ms.include_tracking_in_wismo !== false;
