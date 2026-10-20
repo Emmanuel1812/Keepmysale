@@ -1,15 +1,16 @@
 import type { HTMLAttributes } from "react";
 
+// Elevation is declared once: a soft offset shadow, no border (see globals.css .kms-card).
 export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={`rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 ${className}`} {...props} />;
+  return <div className={`kms-card p-5 ${className}`} {...props} />;
 }
 
 export function CardHeader({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={`mb-3 ${className}`} {...props} />;
+  return <div className={`mb-4 ${className}`} {...props} />;
 }
 
 export function CardTitle({ className = "", ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={`text-base font-semibold ${className}`} {...props} />;
+  return <h3 className={`kms-section-title ${className}`} {...props} />;
 }
 
 export function CardContent({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -17,5 +18,5 @@ export function CardContent({ className = "", ...props }: HTMLAttributes<HTMLDiv
 }
 
 export function CardDescription({ className = "", ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={`text-sm text-zinc-500 dark:text-zinc-400 ${className}`} {...props} />;
+  return <p className={`mt-1 text-sm text-muted ${className}`} {...props} />;
 }

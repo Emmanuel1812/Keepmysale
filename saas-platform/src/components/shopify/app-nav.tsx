@@ -1,15 +1,9 @@
 "use client";
 
 import { createElement } from "react";
+import { NAV_LINKS } from "@/components/layout/nav-links";
 
-export const EMBEDDED_NAV: ReadonlyArray<{ href: string; label: string }> = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/inbox", label: "Inbox" },
-  { href: "/dashboard/orders", label: "Orders" },
-  { href: "/dashboard/returns", label: "Returns" },
-  { href: "/dashboard/replay", label: "Inbox replay" },
-  { href: "/dashboard/settings", label: "Settings" },
-];
+export const EMBEDDED_NAV: ReadonlyArray<{ href: string; label: string }> = NAV_LINKS.map(({ href, label }) => ({ href, label }));
 
 /**
  * Inside Shopify admin the app's own sidebar is hidden, which left Inbox, Orders, Returns and Settings

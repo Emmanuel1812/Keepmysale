@@ -1,27 +1,23 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { REPLAY_MAX_IDS_PER_REQUEST, summarizeReplay, type ReplayItem, type ReplayOutcome } from "@/lib/replay/summary";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader, Tabs } from "@/components/ui/page";
+import { AlertIcon, ChatIcon, CoinsIcon, MailIcon, ReplayIcon, ShieldIcon } from "@/components/ui/icons";
 
 type Phase = "idle" | "listing" | "analyzing" | "done" | "error";
 type View = "customers" | "returns" | "skipped" | "all";
 
-const OUTCOME_LABEL: Record<ReplayOutcome, string> = {
-  auto_reply: "Would answer",
-  draft: "Draft for you",
-  filtered: "Skipped: not support mail",
-  not_customer: "Skipped: never ordered",
-  error: "Could not analyse",
-};
-
-const OUTCOME_STYLE: Record<ReplayOutcome, string> = {
-  auto_reply: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  draft: "bg-amber-50 text-amber-700 border-amber-200",
-  filtered: "bg-zinc-50 text-zinc-500 border-zinc-200",
-  not_customer: "bg-zinc-50 text-zinc-500 border-zinc-200",
-  error: "bg-rose-50 text-rose-700 border-rose-200",
+const OUTCOME: Record<ReplayOutcome, { label: string; variant: "teal" | "amber" | "default" | "rose" }> = {
+  auto_reply: { label: "Would answer", variant: "teal" },
+  draft: { label: "Draft for you", variant: "amber" },
+  filtered: { label: "Skipped: not support mail", variant: "default" },
+  not_customer: { label: "Skipped: never ordered", variant: "default" },
+  error: { label: "Could not analyse", variant: "rose" },
 };
 
 const RATES = [
@@ -81,6 +77,13 @@ export default function ReplayPage() {
     }
   }
 
+  const counts = {
+    customers: items.filter((i) => i.outcome === "auto_reply" || i.outcome === "draft" || i.outcome === "error").length,
+    returns: items.filter((i) => i.returnCase).length,
+    skipped: items.filter((i) => i.outcome === "filtered" || i.outcome === "not_customer").length,
+    all: items.length,
+  };
+
   const visible = items.filter((item) => {
     if (view === "all") return true;
     if (view === "returns") return Boolean(item.returnCase);
@@ -89,155 +92,183 @@ export default function ReplayPage() {
   });
 
   const running = phase === "listing" || phase === "analyzing";
+  const progress = total > 0 ? Math.round((items.length / total) * 100) : 0;
+  const rateLabel = RATES.find((r) => Math.abs(r.value - rate) < 0.001)?.label ?? "";
 
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 p-4 sm:p-6 pb-24 font-sans">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Inbox replay</h1>
-          <p className="max-w-2xl text-sm text-zinc-500">
-            Keepmysale reads your last 50 inbox emails and shows what it would have answered, which returns it could have
-            saved, and what that is worth. Nothing is sent, saved or marked as read.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {running ? (
-            <button
-              onClick={() => { stopRef.current = true; }}
-              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-            >
-              Stop
-            </button>
-          ) : null}
-          <button
-            onClick={run}
-            disabled={running}
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
-          >
-            {phase === "idle" ? "Run replay" : running ? "Running…" : "Run again"}
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-7 pb-12">
+      <PageHeader
+        title="Inbox replay"
+        description="What KeepMySale would have done with your last 50 inbox emails: the answers, the returns it could have saved, and what that is worth. Nothing is sent, saved or marked as read."
+        actions={
+          phase === "idle" ? null : (
+            <>
+              {running ? <Button variant="outline" onClick={() => { stopRef.current = true; }}>Stop</Button> : null}
+              <Button onClick={run} loading={running}>
+                {running ? "Reading" : <><ReplayIcon className="h-4 w-4" /> Run again</>}
+              </Button>
+            </>
+          )
+        }
+      />
+
+      {phase === "idle" ? (
+        <section className="kms-card kms-enter overflow-hidden" style={{ ["--i" as string]: 1 }}>
+          <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <h2 className="text-xl font-semibold tracking-[-0.02em] text-foreground">See KeepMySale on your own inbox</h2>
+              <p className="mt-2 max-w-xl text-sm text-muted">
+                One read of your recent mail, about a minute. You see every answer before anything is ever switched on.
+              </p>
+              <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+                <ReplayPromise icon={<ChatIcon className="h-[18px] w-[18px]" />} title="The answers">Which emails it answers itself, and the reply it would send.</ReplayPromise>
+                <ReplayPromise icon={<CoinsIcon className="h-[18px] w-[18px]" />} title="The money">Return requests valued with your own first offer.</ReplayPromise>
+                <ReplayPromise icon={<ShieldIcon className="h-[18px] w-[18px]" />} title="Read only">Nothing leaves your inbox. Strangers are never sent to the AI.</ReplayPromise>
+              </ul>
+            </div>
+            <Button size="lg" onClick={run} className="md:self-center">
+              <ReplayIcon className="h-5 w-5" /> Run replay
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       {phase === "error" && error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          {error}{" "}
-          {error.toLowerCase().includes("gmail") ? <Link href="/dashboard/settings" className="underline">Open Settings</Link> : null}
+        <div role="alert" className="kms-enter flex items-start gap-3 rounded-[var(--radius-card)] bg-lost-soft p-4 text-sm text-lost ring-1 ring-inset ring-[#fbcdd6]">
+          <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            {error}{" "}
+            {error.toLowerCase().includes("gmail") ? <Link href="/dashboard/settings" className="font-semibold underline">Open Settings</Link> : null}
+          </p>
         </div>
       ) : null}
 
       {running ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          {phase === "listing" ? "Reading your inbox…" : `Analysed ${items.length} of ${total} emails…`}
-          {phase === "analyzing" && total > 0 ? (
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-              <div className="h-full bg-teal-600 transition-all" style={{ width: `${Math.round((items.length / total) * 100)}%` }} />
-            </div>
-          ) : null}
+        <div className="kms-card kms-enter p-5" aria-live="polite">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 font-medium text-foreground">
+              <MailIcon className="h-4 w-4 text-kept" />
+              {phase === "listing" ? "Reading your inbox" : `Analysed ${items.length} of ${total} emails`}
+            </span>
+            {phase === "analyzing" ? <span className="text-muted tabular">{progress}%</span> : null}
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+            <div
+              className={`h-full rounded-full bg-kept transition-[width] duration-500 ease-out ${phase === "listing" ? "w-1/5 animate-pulse" : ""}`}
+              style={phase === "analyzing" ? { width: `${Math.max(progress, 3)}%` } : undefined}
+            />
+          </div>
         </div>
       ) : null}
 
       {items.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="Customer emails" value={String(summary.autoReplies + summary.drafts)} note={`of ${summary.total} read; ${summary.filtered + summary.notCustomer} skipped`} />
-            <Stat label="Would answer itself" value={String(summary.autoReplies)} note={`${summary.drafts} as a draft for you to check`} />
-            <Stat label="Return requests" value={String(summary.returnRequests)} note={`${summary.eligibleReturns} eligible for an offer`} />
-            <Stat
-              tone="emerald"
-              label="Revenue you could keep"
-              value={money(summary.expectedKept)}
-              note={`if ${RATES.find((r) => Math.abs(r.value - rate) < 0.001)?.label ?? ""} take your first offer (max ${money(summary.keptIfAllAccept)} of ${money(summary.valueAtStake)} at stake)`}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-zinc-500">Assume</span>
-            {RATES.map((r) => (
-              <button
-                key={r.label}
-                onClick={() => setRate(r.value)}
-                className={`rounded-full border px-3 py-1 ${Math.abs(rate - r.value) < 0.001 ? "border-teal-600 bg-teal-50 text-teal-800" : "border-zinc-200 text-zinc-600"}`}
-              >
-                {r.label}
-              </button>
-            ))}
-            <span className="text-zinc-500">customers accept your first offer. This is an assumption, not a forecast.</span>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {([
-              ["customers", "Customers"],
-              ["returns", "Returns"],
-              ["skipped", "Skipped"],
-              ["all", "All"],
-            ] as Array<[View, string]>).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setView(key)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${view === key ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 border border-zinc-200"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <ul className="flex flex-col gap-3">
-            {visible.map((item) => (
-              <li key={item.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-zinc-900">{item.subject || "(no subject)"}</p>
-                    <p className="truncate text-xs text-zinc-500">
-                      {item.from}
-                      {item.receivedAt ? ` · ${new Date(item.receivedAt).toLocaleDateString()}` : ""}
-                    </p>
-                  </div>
-                  <span className={`shrink-0 self-start rounded-full border px-2.5 py-0.5 text-xs font-medium ${OUTCOME_STYLE[item.outcome]}`}>
-                    {OUTCOME_LABEL[item.outcome]}
-                  </span>
-                </div>
-
-                {item.snippet ? <p className="mt-2 line-clamp-2 text-sm text-zinc-600">{item.snippet}</p> : null}
-
-                {item.returnCase ? (
-                  <div className="mt-3 rounded-lg bg-emerald-50/60 px-3 py-2 text-sm text-emerald-900">
-                    {item.returnCase.eligible && item.returnCase.orderValue !== null ? (
-                      <>
-                        Return of {item.returnCase.orderLabel} ({formatMoney(item.returnCase.orderValue, item.returnCase.currency ?? summary.currency)}).
-                        First offer: {item.returnCase.firstOfferPercentage}% {item.returnCase.firstOfferType === "store_credit" ? "store credit" : "refund"}, keep the sale and{" "}
-                        <strong>{formatMoney(item.returnCase.keptIfAccepted ?? 0, item.returnCase.currency ?? summary.currency)}</strong> if accepted.
-                      </>
-                    ) : (
-                      <>Return request, no offer: {returnReason(item.returnCase.reason)}.</>
-                    )}
-                  </div>
-                ) : null}
-
-                {item.reply ? (
-                  <div className="mt-3">
+          <section className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+            <div className="kms-enter relative overflow-hidden rounded-[18px] bg-ink p-6 text-white shadow-raised">
+              <p className="text-sm font-medium text-slate-300">Revenue you could have kept</p>
+              <p className="mt-3 text-[2.5rem] font-bold leading-none tracking-[-0.035em] tabular">
+                <span className="kms-kept-number" data-landed={phase === "done" && summary.expectedKept > 0 ? "true" : "false"}>{money(summary.expectedKept)}</span>
+              </p>
+              <p className="mt-3 text-[13px] text-slate-400">
+                If {rateLabel} customers take your first offer. Up to {money(summary.keptIfAllAccept)} of {money(summary.valueAtStake)} at stake.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Assumed acceptance">
+                {RATES.map((r) => {
+                  const on = Math.abs(rate - r.value) < 0.001;
+                  return (
                     <button
-                      onClick={() => setOpenReply(openReply === item.id ? null : item.id)}
-                      className="text-sm font-medium text-teal-700 hover:underline"
+                      key={r.label}
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setRate(r.value)}
+                      className={`kms-press rounded-full px-3 py-1 text-[13px] font-medium ${on ? "bg-kept-glow text-ink" : "bg-white/[0.08] text-slate-300 hover:bg-white/[0.14]"}`}
                     >
-                      {openReply === item.id ? "Hide the answer" : "Show the answer Keepmysale would send"}
+                      {r.label}
                     </button>
-                    {openReply === item.id ? (
-                      <p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">{item.reply}</p>
-                    ) : null}
-                  </div>
-                ) : null}
+                  );
+                })}
+                <span className="text-xs text-slate-400">accept: an assumption, not a forecast</span>
+              </div>
+            </div>
 
-                {item.outcome !== "auto_reply" && item.outcome !== "draft" && item.reason ? (
-                  <p className="mt-2 text-xs text-zinc-400">{item.reason}</p>
-                ) : null}
-              </li>
-            ))}
-            {visible.length === 0 ? <li className="text-sm text-zinc-500">Nothing in this view.</li> : null}
-          </ul>
+            <dl className="kms-card kms-enter grid grid-cols-2 gap-x-6 gap-y-5 p-6" style={{ ["--i" as string]: 1 }}>
+              <Fact label="Customer emails" value={summary.autoReplies + summary.drafts} note={`of ${summary.total} read`} />
+              <Fact label="Answered itself" value={summary.autoReplies} note={`${summary.drafts} as a draft for you`} tone="kept" />
+              <Fact label="Return requests" value={summary.returnRequests} note={`${summary.eligibleReturns} eligible for an offer`} />
+              <Fact label="Skipped" value={summary.filtered + summary.notCustomer} note="Not support, or never ordered" />
+            </dl>
+          </section>
+
+          <section className="kms-card overflow-hidden">
+            <div className="px-3 pt-2">
+              <Tabs
+                tabs={[
+                  { key: "customers", label: "Customers", count: counts.customers },
+                  { key: "returns", label: "Returns", count: counts.returns },
+                  { key: "skipped", label: "Skipped", count: counts.skipped },
+                  { key: "all", label: "All", count: counts.all },
+                ]}
+                active={view}
+                onChange={setView}
+              />
+            </div>
+
+            <ul className="divide-y divide-line">
+              {visible.map((item, index) => (
+                <li key={item.id} className="kms-enter px-5 py-4" style={{ ["--i" as string]: Math.min(index % REPLAY_MAX_IDS_PER_REQUEST, 3) }}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-foreground">{item.subject || "(no subject)"}</p>
+                      <p className="truncate text-xs text-muted">
+                        {item.from}
+                        {item.receivedAt ? ` · ${new Date(item.receivedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant={OUTCOME[item.outcome].variant} dot className="shrink-0 self-start">{OUTCOME[item.outcome].label}</Badge>
+                  </div>
+
+                  {item.snippet ? <p className="mt-2 line-clamp-2 text-sm text-muted">{item.snippet}</p> : null}
+
+                  {item.returnCase ? (
+                    <div className="mt-3 rounded-[10px] bg-kept-soft px-3 py-2.5 text-[13px] text-[#134e4a]">
+                      {item.returnCase.eligible && item.returnCase.orderValue !== null ? (
+                        <>
+                          Return of {item.returnCase.orderLabel} ({formatMoney(item.returnCase.orderValue, item.returnCase.currency ?? summary.currency)}).
+                          First offer {item.returnCase.firstOfferPercentage}% {item.returnCase.firstOfferType === "store_credit" ? "store credit" : "refund"}: you keep the sale and{" "}
+                          <strong className="font-semibold">{formatMoney(item.returnCase.keptIfAccepted ?? 0, item.returnCase.currency ?? summary.currency)}</strong> if accepted.
+                        </>
+                      ) : (
+                        <>Return request, no offer: {returnReason(item.returnCase.reason)}.</>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {item.reply ? (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => setOpenReply(openReply === item.id ? null : item.id)}
+                        aria-expanded={openReply === item.id}
+                        className="text-[13px] font-semibold text-kept-strong hover:underline"
+                      >
+                        {openReply === item.id ? "Hide the answer" : "Show the answer KeepMySale would send"}
+                      </button>
+                      {openReply === item.id ? (
+                        <p className="kms-enter mt-2 whitespace-pre-wrap rounded-[10px] bg-surface-2 p-3.5 text-sm leading-relaxed text-foreground ring-1 ring-inset ring-line">{item.reply}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {item.outcome !== "auto_reply" && item.outcome !== "draft" && item.reason ? (
+                    <p className="mt-2 text-xs text-faint">{item.reason}</p>
+                  ) : null}
+                </li>
+              ))}
+              {visible.length === 0 ? <li className="px-5 py-10 text-center text-sm text-muted">Nothing in this view yet.</li> : null}
+            </ul>
+          </section>
         </>
       ) : phase === "done" ? (
-        <p className="text-sm text-zinc-500">No inbox email from the last 90 days to replay.</p>
+        <p className="text-sm text-muted">No inbox email from the last 90 days to replay.</p>
       ) : null}
     </div>
   );
@@ -249,14 +280,24 @@ function returnReason(reason?: string) {
   return reason ?? "not eligible under your settings";
 }
 
-function Stat({ label, value, note, tone }: { label: string; value: string; note: string; tone?: "emerald" }) {
-  const box = tone === "emerald" ? "border-emerald-200 bg-emerald-50/40" : "border-zinc-200 bg-white";
-  const num = tone === "emerald" ? "text-emerald-700" : "text-zinc-900";
+function ReplayPromise({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className={`rounded-xl border p-5 shadow-sm ${box}`}>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{label}</h3>
-      <p className={`mt-2 text-2xl font-bold ${num}`}>{value}</p>
-      <p className="mt-1 text-xs text-zinc-500">{note}</p>
+    <li className="flex gap-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-kept-soft text-kept-strong">{icon}</span>
+      <span>
+        <span className="block text-sm font-semibold text-foreground">{title}</span>
+        <span className="mt-0.5 block text-[13px] text-muted">{children}</span>
+      </span>
+    </li>
+  );
+}
+
+function Fact({ label, value, note, tone }: { label: string; value: number; note: string; tone?: "kept" }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-muted">{label}</dt>
+      <dd className={`mt-1 text-[1.5rem] font-semibold tracking-[-0.02em] tabular ${tone === "kept" ? "text-kept-strong" : "text-foreground"}`}>{value}</dd>
+      <dd className="text-xs text-faint">{note}</dd>
     </div>
   );
 }

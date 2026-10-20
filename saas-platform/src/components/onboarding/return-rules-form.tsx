@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { StepCard } from "@/components/onboarding/step-indicator";
 
 export function ReturnRulesForm() {
   const router = useRouter();
@@ -38,62 +41,37 @@ export function ReturnRulesForm() {
         router.replace("/onboarding?step=email");
         return;
       }
-      setErrorMessage(payload.error?.message ?? "Could not save configuration.");
+      setErrorMessage(payload.error?.message ?? "Could not save your details. Try again.");
     } catch {
-      setErrorMessage("Could not save configuration.");
+      setErrorMessage("Could not save your details. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-      <div className="border-b border-zinc-200 bg-white px-6 py-5">
-        <h3 className="text-lg font-bold text-[#111827]">Negotiation Configuration</h3>
-        <p className="mt-1 text-sm text-zinc-500">Configure your store details. You can fine-tune return percentages later in Settings.</p>
-      </div>
-      <div className="p-6 grid gap-5 bg-white">
-        <label className="grid gap-1.5 text-sm font-semibold text-[#111827]">
-          Merchant name
-          <input
-            className="w-full rounded-lg border border-zinc-200 bg-[#f8fafb] px-3 py-2 text-sm text-[#111827] outline-none transition-all placeholder:text-zinc-400 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
-            value={merchantName}
-            onChange={(event) => setMerchantName(event.target.value)}
-          />
-        </label>
-        
-        <label className="grid gap-1.5 text-sm font-semibold text-[#111827]">
-          Shopify domain
-          <input
-            className="w-full rounded-lg border border-zinc-200 bg-[#f8fafb] px-3 py-2 text-sm text-[#111827] outline-none transition-all placeholder:text-zinc-400 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
-            placeholder="your-store.myshopify.com"
-            value={shopDomain}
-            onChange={(event) => setShopDomain(event.target.value)}
-          />
-        </label>
-        
-        <label className="grid gap-1.5 text-sm font-semibold text-[#111827]">
-          Support email
-          <input
-            className="w-full rounded-lg border border-zinc-200 bg-[#f8fafb] px-3 py-2 text-sm text-[#111827] outline-none transition-all placeholder:text-zinc-400 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
-            type="email"
-            placeholder="support@yourdomain.com"
-            value={supportEmail}
-            onChange={(event) => setSupportEmail(event.target.value)}
-          />
-        </label>
+    <StepCard title="Your store" description="How KeepMySale signs its replies. Return offers start at 20%, 35% and 50%; you can change them later in Settings.">
+      <label className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-foreground">Store name</span>
+        <Input value={merchantName} onChange={(event) => setMerchantName(event.target.value)} placeholder="Your brand" />
+      </label>
 
-        <div className="mt-2 flex items-center justify-between border-t border-zinc-100 pt-5">
-          {errorMessage ? <p className="text-sm font-medium text-red-600">{errorMessage}</p> : <div />}
-          <button 
-            className="flex items-center justify-center rounded-lg bg-[#111827] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black disabled:opacity-50"
-            onClick={submitConfiguration} 
-            disabled={saving || !merchantName || !shopDomain || !supportEmail}
-          >
-            {saving ? "Saving..." : "Save configuration"}
-          </button>
-        </div>
+      <label className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-foreground">Shopify address</span>
+        <Input placeholder="your-store.myshopify.com" value={shopDomain} spellCheck={false} onChange={(event) => setShopDomain(event.target.value)} />
+      </label>
+
+      <label className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-foreground">Support email</span>
+        <Input type="email" placeholder="support@yourstore.com" value={supportEmail} onChange={(event) => setSupportEmail(event.target.value)} />
+      </label>
+
+      <div className="flex items-center justify-between gap-4 border-t border-line pt-5">
+        {errorMessage ? <p role="alert" className="text-sm font-medium text-lost">{errorMessage}</p> : <span />}
+        <Button onClick={submitConfiguration} disabled={!merchantName || !shopDomain || !supportEmail} loading={saving}>
+          {saving ? "Saving" : "Continue"}
+        </Button>
       </div>
-    </div>
+    </StepCard>
   );
 }

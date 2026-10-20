@@ -179,13 +179,12 @@ export function LandingPage() {
         <ul className="nav-links">
           <li><a href="#features">Features</a></li>
           <li><a href="#how-it-works">How It Works</a></li>
-          <li><a href="#pricing">Pricing</a></li>
           <li><a href="#faq">FAQ</a></li>
         </ul>
 
         <div className="nav-right">
-          <Link href="/login" className="nav-login">Log in</Link>
-          <Link href="/signup" className="nav-cta">
+          <Link href="/onboarding?step=shopify" className="nav-login">Log in</Link>
+          <Link href="/onboarding" className="nav-cta">
             Get Started
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -215,7 +214,7 @@ export function LandingPage() {
           </p>
 
           <div className="nav-right" style={{ justifyContent: 'flex-start', marginTop: '36px' }}>
-             <Link href="/signup" className="nav-cta" style={{ padding: '14px 32px', fontSize: '16px' }}>
+             <Link href="/onboarding" className="nav-cta" style={{ padding: '14px 32px', fontSize: '16px' }}>
               Start Free Trial
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '10px' }}>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -558,7 +557,7 @@ export function LandingPage() {
           <h3 className="cta-panel-headline">Ready to stop losing money on returns?</h3>
           <p className="cta-panel-desc">Connect your Shopify store and see how AI-powered return prevention works on your own orders.</p>
           <div className="cta-btn-wrap">
-            <Link href="/signup" className="cta-signup-btn">
+            <Link href="/onboarding" className="cta-signup-btn">
               Start Your Free Trial
               <span className="btn-arrow">→</span>
             </Link>
@@ -611,8 +610,7 @@ export function LandingPage() {
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-              </ul>
+                    </ul>
            </div>
            <div>
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Company</div>
@@ -626,17 +624,11 @@ export function LandingPage() {
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px' }}>Support</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
                 <li><a href="#faq">FAQ</a></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Status</a></li>
               </ul>
            </div>
         </div>
         <div style={{ marginTop: '60px', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
            <p>© 2026 KeepMySale. All rights reserved.</p>
-           <div style={{ display: 'flex', gap: '20px' }}>
-              <a href="#">Twitter</a>
-              <a href="#">LinkedIn</a>
-           </div>
         </div>
       </footer>
     </div>

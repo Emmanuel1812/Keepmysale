@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ReplyComposer } from "@/components/inbox/reply-composer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/page";
+import { ArrowRightIcon, SparkIcon } from "@/components/ui/icons";
 
 interface ApiMessage {
   id: string;
@@ -26,20 +30,21 @@ interface ApiConversation {
   customer?: { name?: string | null; email?: string | null };
 }
 
+const INTENT_LABEL: Record<string, string> = {
+  wismo: "Where is my order",
+  return: "Return",
+  exchange: "Exchange",
+  complaint: "Complaint",
+  faq: "Question",
+  resend_confirmation: "Confirmation",
+  other: "Other",
+};
+
 function IntentBadge({ intent }: { intent: string | null }) {
   if (!intent) return null;
   const normalized = intent.toLowerCase();
-  let colorClass = "bg-zinc-100 text-zinc-600 border border-zinc-200";
-  if (normalized === "wismo") colorClass = "bg-blue-50 text-blue-700 border border-blue-200";
-  else if (normalized === "return" || normalized === "exchange") colorClass = "bg-orange-50 text-orange-700 border border-orange-200";
-  else if (normalized === "complaint") colorClass = "bg-red-50 text-red-700 border border-red-200";
-  else if (normalized === "faq") colorClass = "bg-indigo-50 text-indigo-700 border border-indigo-200";
-
-  return (
-    <span className={`text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded-md ${colorClass} flex items-center gap-1 w-fit`}>
-      🏷️ {intent}
-    </span>
-  );
+  const variant = normalized === "return" || normalized === "exchange" ? "amber" : normalized === "complaint" ? "rose" : "default";
+  return <Badge variant={variant}>{INTENT_LABEL[normalized] ?? intent}</Badge>;
 }
 
 export default function ConversationThreadPage() {
@@ -174,99 +179,72 @@ export default function ConversationThreadPage() {
   };
 
   if (!conversation) {
-    return <div className="flex h-full items-center justify-center bg-white"><div className="animate-pulse flex items-center text-teal-600 font-semibold gap-2"><span>Loading thread...</span></div></div>;
+    return (
+      <div className="flex h-full flex-col gap-4 bg-white p-6" aria-busy="true">
+        <div className="flex items-center gap-3"><Skeleton className="h-10 w-10 !rounded-full" /><Skeleton className="h-5 w-48" /></div>
+        <Skeleton className="h-16 w-2/3" />
+        <Skeleton className="ml-auto h-20 w-1/2" />
+        <Skeleton className="h-12 w-3/5" />
+      </div>
+    );
   }
 
   const customerName = conversation.customer?.name || "Unknown Customer";
   const customerEmail = conversation.customer?.email || "No email provided";
   const isOpen = conversation.status === "open" || conversation.status.startsWith("pending");
 
+  const orderRef = conversation.shopifyOrderId?.split("/").pop() ?? null;
+
   return (
-    <div className="flex flex-col h-full bg-white relative">
+    <div className="relative flex h-full flex-col bg-white">
       {/* Header */}
-      <div className="border-b border-zinc-200 px-6 py-4 flex flex-col gap-4 sticky top-0 bg-white/95 backdrop-blur z-10">
-        
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg">
+      <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/dashboard/inbox" className="-ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-muted hover:bg-surface-2 md:hidden" aria-label="Back to inbox">
+              <ArrowRightIcon className="h-4 w-4 rotate-180" />
+            </Link>
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-kept-soft text-base font-semibold text-kept-strong">
               {customerName.charAt(0).toUpperCase()}
             </div>
-            <div className="flex flex-col">
-              <h2 className="text-base font-bold text-[#111827]">{customerName}</h2>
-              <span className="text-sm text-zinc-500">{customerEmail}</span>
+            <div className="flex min-w-0 flex-col">
+              <h2 className="truncate text-base font-semibold text-foreground">{customerName}</h2>
+              <span className="truncate text-[13px] text-muted">{customerEmail}</span>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleResolveAI}
-              disabled={isResolvingAI}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md border border-teal-200 bg-teal-600 text-white hover:bg-teal-700 transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {isResolvingAI ? (
-                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <span className="text-[14px]">✨</span>
-              )}
-              {isResolvingAI ? "AI Thinking..." : "✨ AI Reply"}
-            </button>
-            <button className="px-3 py-1.5 text-xs font-semibold rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 shadow-sm transition-colors">
-              Assign to Me
-            </button>
-            <button className="px-3 py-1.5 text-xs font-semibold rounded-md border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors shadow-sm">
-              Mark Resolved
-            </button>
-          </div>
+
+          <Button size="sm" onClick={handleResolveAI} loading={isResolvingAI}>
+            {isResolvingAI ? "Drafting" : <><SparkIcon className="h-4 w-4" /> AI reply</>}
+          </Button>
         </div>
 
-        <div>
-          <p className="text-sm font-semibold text-[#111827] flex items-center gap-2">
-            <span className="text-zinc-500 font-normal">Subject:</span> {conversation.subject ?? "No Subject"}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4 text-sm bg-[#f8fafb] rounded-lg p-3 border border-zinc-100">
-          <div className="flex items-center gap-2 font-medium">
-            <span className="text-zinc-500">Intent:</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+          <p className="min-w-0 truncate font-medium text-foreground">{conversation.subject ?? "No subject"}</p>
+          <span className="flex items-center gap-2">
             <IntentBadge intent={conversation.intent} />
-          </div>
-          
-          <div className="h-4 w-px bg-zinc-200" />
-          
-          <div className="flex items-center gap-2 font-medium">
-            <span className="text-zinc-500">Status:</span>
-            <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${isOpen ? "bg-teal-500" : "bg-zinc-300"}`} />
-              <span className="capitalize">{conversation.status.replace("_", " ")}</span>
-            </div>
-          </div>
-
-          {conversation.shopifyOrderId && (
-            <>
-              <div className="h-4 w-px bg-zinc-200" />
-              <div className="flex items-center gap-2 font-medium">
-                <span className="text-zinc-500">Order:</span>
-                <span>#{conversation.shopifyOrderId}</span>
-                <Link href={`/dashboard/orders/${conversation.shopifyOrderId}`} className="text-teal-600 hover:text-teal-700 ml-1 hover:underline">
-                  [View Order &rarr;]
-                </Link>
-              </div>
-            </>
+            <Badge variant={isOpen ? "teal" : "default"} dot>
+              {conversation.status.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
+            </Badge>
+          </span>
+          {orderRef && (
+            <Link href="/dashboard/orders" className="group flex items-center gap-1 font-medium text-kept-strong hover:underline">
+              Order {orderRef} <ArrowRightIcon className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           )}
         </div>
       </div>
 
       {/* Messages */}
-      <MessageThread 
-         messages={threadMessages} 
-         onSendDraft={handleSendDraft} 
-         onDiscardDraft={handleDiscardDraft} 
-         onEditDraft={handleEditDraft} 
+      <MessageThread
+         messages={threadMessages}
+         onSendDraft={handleSendDraft}
+         onDiscardDraft={handleDiscardDraft}
+         onEditDraft={handleEditDraft}
          onSendNow={handleSendNowAction}
       />
-      
+
       {/* Reply Composer */}
-      <div className="sticky bottom-0 bg-white pt-2 border-t border-transparent z-10 w-full">
+      <div className="sticky bottom-0 z-10 w-full border-t border-line bg-white">
         <ReplyComposer conversationId={conversationId} onSent={() => void loadData()} />
       </div>
     </div>

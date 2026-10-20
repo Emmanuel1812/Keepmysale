@@ -1,12 +1,14 @@
 "use client";
 
 import { dominantCurrency, formatMoney } from "@/lib/money";
+import { orderLabel } from "@/lib/order-label";
 import { useEffect, useState } from "react";
 import { FulfillmentBadge, FinancialBadge } from "@/components/ui/status-badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState, PageHeader, Skeleton } from "@/components/ui/page";
+import { AlertIcon, BoxIcon, CheckIcon, CloseIcon, SearchIcon, SyncIcon } from "@/components/ui/icons";
 
 interface LineItem {
   id: string;
@@ -34,19 +36,27 @@ interface OrderItem {
   createdAt: string;
 }
 
+type Notice = { type: "success" | "error"; message: string } | null;
+
+const money = (amount: string | number | null | undefined, currency: string) =>
+  amount === null || amount === undefined || amount === "" ? "–" : formatMoney(Number(amount), currency);
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  
+  const [syncStatus, setSyncStatus] = useState<Notice>(null);
+  const [query, setQuery] = useState("");
+  const [shopDomain, setShopDomain] = useState<string | null>(null);
+
   // Side Panel State
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  
+
   // Refund State
   const [refundAmount, setRefundAmount] = useState("");
   const [refunding, setRefunding] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [refundNotice, setRefundNotice] = useState<Notice>(null);
 
   async function loadOrders() {
     try {
@@ -65,20 +75,33 @@ export default function OrdersPage() {
 
   useEffect(() => {
     void loadOrders();
+    // The shop's own domain, for "open in Shopify" links
+    fetch("/api/merchant/profile", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((p) => setShopDomain(p?.data?.merchant?.shopDomain ?? null))
+      .catch(() => {});
   }, []);
+
+  // Escape closes the order panel
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && closePanel();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedOrder]);
 
   async function handleSync() {
     if (syncing) return;
     setSyncing(true);
     setSyncStatus(null);
-    
+
     try {
       await fetch("/api/shopify/sync-orders", { method: "POST" });
       await fetch("/api/automation/sync-emails", { method: "POST" });
-      setSyncStatus({ type: 'success', message: 'Sync completed successfully!' });
+      setSyncStatus({ type: "success", message: "Orders and emails are up to date." });
       await loadOrders();
-    } catch (err) {
-      setSyncStatus({ type: 'error', message: 'Sync failed.' });
+    } catch {
+      setSyncStatus({ type: "error", message: "Sync failed. Check your connection and try again." });
     } finally {
       setSyncing(false);
       setTimeout(() => setSyncStatus(null), 5000);
@@ -87,12 +110,15 @@ export default function OrdersPage() {
 
   async function handleRefund() {
     if (!selectedOrder || !refundAmount || refunding) return;
-    
-    if (!confirm(`Are you sure you want to refund ${selectedOrder.currency} ${refundAmount} for order ${selectedOrder.shopifyOrderNumber}?`)) {
+
+    // First click asks, second click refunds (no browser confirm dialog)
+    if (!confirming) {
+      setConfirming(true);
       return;
     }
 
     setRefunding(true);
+    setRefundNotice(null);
     try {
       const res = await fetch("/api/shopify/order/refund", {
         method: "POST",
@@ -100,279 +126,288 @@ export default function OrdersPage() {
         body: JSON.stringify({
           orderId: selectedOrder.shopifyOrderId,
           amount: refundAmount,
-          currency: selectedOrder.currency
-        })
+          currency: selectedOrder.currency,
+        }),
       });
 
       const data = await res.json();
       if (data.success) {
-        alert("Refund successful! It may take a few minutes to reflect in Shopify.");
+        setRefundNotice({ type: "success", message: "Refund sent. It can take a few minutes to show in Shopify." });
         setRefundAmount("");
         await loadOrders();
-        setIsPanelOpen(false);
       } else {
-        alert(`Refund failed: ${data.error?.message || "Unknown error"}`);
+        setRefundNotice({ type: "error", message: `Refund failed: ${data.error?.message || "unknown error"}` });
       }
-    } catch (err) {
-      alert("An error occurred while processing the refund.");
+    } catch {
+      setRefundNotice({ type: "error", message: "The refund could not be sent. Nothing was charged; try again." });
     } finally {
       setRefunding(false);
+      setConfirming(false);
     }
   }
 
   const openPanel = (order: OrderItem) => {
     setSelectedOrder(order);
-    setIsPanelOpen(true);
     setRefundAmount("");
+    setConfirming(false);
+    setRefundNotice(null);
   };
 
   const closePanel = () => {
-    setIsPanelOpen(false);
     setSelectedOrder(null);
   };
 
+  const shopifyOrderUrl = (order: OrderItem) => {
+    const rawId = order.shopifyOrderId?.split("/").pop();
+    return shopDomain && rawId ? `https://${shopDomain}/admin/orders/${rawId}` : null;
+  };
+
+  const currency = dominantCurrency(orders.map((o) => o.currency));
   const totalRevenue = orders.reduce((acc, order) => acc + Number(order.totalPrice || 0), 0);
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? orders.filter((o) =>
+        [o.shopifyOrderNumber, o.customerName, o.email, o.trackingNumber].some((v) => (v ?? "").toLowerCase().includes(q)),
+      )
+    : orders;
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 pb-20 font-sans animate-in fade-in duration-500">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#111827]">Order History</h1>
-            <p className="text-sm text-zinc-500">Detailed view of your synced store transactions.</p>
-          </div>
-          <button 
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 shadow-md shadow-teal-600/20 transition-all disabled:opacity-50"
-          >
-            <svg className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {syncing ? "Syncing..." : "Sync All Data"}
-          </button>
-        </div>
+    <div className="relative w-full">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pb-12">
+        <PageHeader
+          title="Orders"
+          description="Every order KeepMySale can see, with payment, delivery and tracking."
+          actions={
+            <Button onClick={handleSync} loading={syncing}>
+              {syncing ? null : <SyncIcon className="h-4 w-4" />}
+              {syncing ? "Syncing" : "Sync orders"}
+            </Button>
+          }
+        />
 
         {syncStatus && (
-          <div className={`p-4 rounded-xl text-sm font-medium animate-in slide-in-from-top-2 ${syncStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+          <p role="status" className={`kms-enter -mt-3 flex items-center gap-2 text-sm ${syncStatus.type === "success" ? "text-kept-strong" : "text-lost"}`}>
+            {syncStatus.type === "success" ? <CheckIcon className="h-4 w-4" /> : <AlertIcon className="h-4 w-4" />}
             {syncStatus.message}
-          </div>
+          </p>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-zinc-200/60 shadow-xs">
-            <CardHeader className="p-4 pb-0">
-               <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Total Orders</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-1">
-              <p className="text-2xl font-bold">{orders.length}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-zinc-200/60 shadow-xs">
-            <CardHeader className="p-4 pb-0">
-               <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Total Revenue</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-1">
-              <p className="text-2xl font-bold">{formatMoney(totalRevenue, dominantCurrency(orders.map((o) => o.currency)))}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-zinc-200/60 shadow-xs">
-            <CardHeader className="p-4 pb-0">
-               <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Fulfilled</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-1 text-green-600">
-              <p className="text-2xl font-bold">{orders.filter(o => o.fulfillmentStatus === 'fulfilled').length}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-zinc-200/60 shadow-xs">
-            <CardHeader className="p-4 pb-0">
-               <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Pending Sync</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-1 text-amber-600">
-              <p className="text-2xl font-bold">{orders.filter(o => !o.fulfillmentStatus).length}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <section className="kms-card kms-enter grid grid-cols-2 gap-x-6 gap-y-5 p-5 lg:grid-cols-4" style={{ ["--i" as string]: 1 }}>
+          <Stat label="Orders" value={loading ? null : String(orders.length)} />
+          <Stat label="Revenue" value={loading ? null : formatMoney(totalRevenue, currency)} />
+          <Stat label="Fulfilled" value={loading ? null : String(orders.filter((o) => o.fulfillmentStatus === "fulfilled").length)} tone="kept" />
+          <Stat label="Not yet shipped" value={loading ? null : String(orders.filter((o) => !o.fulfillmentStatus || o.fulfillmentStatus === "unfulfilled").length)} tone="attention" />
+        </section>
 
-        {/* Table */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-lg shadow-zinc-200/40">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-100 text-left text-[11px] font-bold uppercase tracking-widest text-zinc-400">
-                <tr>
-                  <th className="px-6 py-4">Order</th>
-                  <th className="px-6 py-4">Customer</th>
-                  <th className="px-6 py-4 text-right">Amount</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Tracking</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {orders.map((order) => (
-                  <tr 
-                    key={order.id} 
-                    onClick={() => openPanel(order)}
-                    className="group cursor-pointer transition-all hover:bg-teal-50/30"
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-zinc-900 group-hover:text-teal-700">{order.shopifyOrderNumber ?? `#${order.id.substring(0,6)}`}</span>
-                        <span className="text-[10px] text-zinc-400 uppercase font-medium">{new Date(order.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-zinc-900">{order.customerName || "No Name"}</span>
-                        <span className="text-xs text-zinc-400">{order.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-right font-bold text-zinc-900">
-                      {order.totalPrice ? new Intl.NumberFormat('en-US', { style: 'currency', currency: order.currency }).format(Number(order.totalPrice)) : "-"}
-                    </td>
-                    <td className="px-6 py-5">
-                       <div className="flex gap-2">
-                        <FinancialBadge status={order.financialStatus} />
-                        <FulfillmentBadge status={order.fulfillmentStatus} />
-                       </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      {order.trackingNumber ? (
-                        <Badge className="bg-zinc-100 text-zinc-600 border-none font-mono text-[10px]">{order.trackingNumber}</Badge>
-                      ) : (
-                        <span className="text-zinc-300">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <section className="kms-card kms-enter overflow-hidden" style={{ ["--i" as string]: 2 }}>
+          <div className="flex items-center gap-3 border-b border-line px-5 py-3">
+            <label className="relative w-full max-w-xs">
+              <span className="sr-only">Search orders</span>
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Order, customer or tracking" className="h-9 pl-9" />
+            </label>
+            {q ? <span className="text-sm text-muted tabular">{visible.length} of {orders.length}</span> : null}
           </div>
-        </div>
+
+          {loading ? (
+            <div className="flex flex-col gap-3 p-5">
+              {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+          ) : orders.length === 0 ? (
+            <EmptyState
+              icon={<BoxIcon className="h-5 w-5" />}
+              title="No orders yet"
+              body="Sync your Shopify store and your orders appear here, with tracking and refunds one click away."
+              action={<Button onClick={handleSync} loading={syncing}>{syncing ? "Syncing" : "Sync orders"}</Button>}
+            />
+          ) : visible.length === 0 ? (
+            <EmptyState icon={<SearchIcon className="h-5 w-5" />} title="No matching orders" body={`Nothing matches "${query}". Try an order number, a name or an email address.`} />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-surface-2 text-left text-xs font-semibold text-muted">
+                  <tr>
+                    <th className="px-5 py-2.5">Order</th>
+                    <th className="px-5 py-2.5">Customer</th>
+                    <th className="px-5 py-2.5 text-right">Amount</th>
+                    <th className="px-5 py-2.5">Status</th>
+                    <th className="px-5 py-2.5">Tracking</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {visible.map((order) => (
+                    <tr
+                      key={order.id}
+                      onClick={() => openPanel(order)}
+                      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), openPanel(order))}
+                      tabIndex={0}
+                      aria-label={`Open order ${orderLabel(order.shopifyOrderNumber, order.id)}`}
+                      className={`kms-row group cursor-pointer focus-visible:bg-kept-soft/60 ${selectedOrder?.id === order.id ? "bg-kept-soft/60" : ""}`}
+                    >
+                      <td className="px-5 py-3.5">
+                        <span className="block font-semibold text-foreground group-hover:text-kept-strong">{orderLabel(order.shopifyOrderNumber, order.id)}</span>
+                        <span className="text-xs text-faint">{new Date(order.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</span>
+                      </td>
+                      <td className="max-w-[16rem] px-5 py-3.5">
+                        <span className="block truncate font-medium text-foreground">{order.customerName || <span className="text-faint">No name</span>}</span>
+                        <span className="block truncate text-xs text-faint">{order.email}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 text-right font-semibold text-foreground">{money(order.totalPrice, order.currency)}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-wrap gap-1.5">
+                          <FinancialBadge status={order.financialStatus} />
+                          <FulfillmentBadge status={order.fulfillmentStatus} />
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-muted">
+                        {order.trackingNumber ? <span className="tabular text-[13px]">{order.trackingNumber}</span> : <span className="text-faint">–</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* --- SIDE PANEL (ORDER DETAILS) --- */}
-      {isPanelOpen && selectedOrder && (
-        <>
-          {/* Overlay */}
-          <div className="fixed inset-0 z-50 bg-zinc-900/40 backdrop-blur-sm transition-opacity" onClick={closePanel} />
-          
-          {/* Panel */}
-          <div className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-50 shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={`Order ${orderLabel(selectedOrder.shopifyOrderNumber, selectedOrder.id)}`}>
+          <button aria-label="Close" className="absolute inset-0 bg-ink/40 backdrop-blur-[2px] [animation:kms-fade-in_200ms_ease_both]" onClick={closePanel} />
+
+          <div className="absolute right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-y-auto bg-background shadow-raised [animation:kms-panel-in_300ms_var(--ease-out)_both] motion-reduce:[animation:kms-fade-in_150ms_ease_both]">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-white/95 px-6 py-4 backdrop-blur">
               <div>
-                <h2 className="text-lg font-bold text-zinc-900">Order {selectedOrder.shopifyOrderNumber}</h2>
-                <p className="text-xs text-zinc-500">Placed on {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">Order {orderLabel(selectedOrder.shopifyOrderNumber, selectedOrder.id)}</h2>
+                <p className="text-xs text-muted">Placed {new Date(selectedOrder.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</p>
               </div>
-              <button onClick={closePanel} className="rounded-full p-2 hover:bg-zinc-100">
-                <svg className="h-5 w-5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={closePanel} aria-label="Close order" className="kms-press grid h-9 w-9 place-items-center rounded-[10px] text-muted hover:bg-surface-2 hover:text-foreground">
+                <CloseIcon className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Customer Info Card */}
-              <Card className="border-zinc-200 shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Customer Info</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Name</span>
-                    <span className="font-bold">{selectedOrder.customerName || "Unknown"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Email</span>
-                    <span className="font-medium underline text-teal-600">{selectedOrder.email}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Payment Via</span>
-                    <Badge variant="outline" className="capitalize">{selectedOrder.paymentGateway?.replace(/_/g, ' ') || "Unknown"}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="flex flex-col gap-5 p-6">
+              <section className="kms-card p-5">
+                <h3 className="kms-section-title mb-3">Customer</h3>
+                <dl className="flex flex-col gap-2.5 text-sm">
+                  <Row label="Name"><span className="font-medium">{selectedOrder.customerName || "Unknown"}</span></Row>
+                  <Row label="Email">
+                    {selectedOrder.email ? <a href={`mailto:${selectedOrder.email}`} className="font-medium text-kept-strong hover:underline">{selectedOrder.email}</a> : "–"}
+                  </Row>
+                  <Row label="Paid with"><Badge variant="outline">{selectedOrder.paymentGateway?.replace(/_/g, " ") || "Unknown"}</Badge></Row>
+                  <Row label="Status">
+                    <span className="flex gap-1.5"><FinancialBadge status={selectedOrder.financialStatus} /><FulfillmentBadge status={selectedOrder.fulfillmentStatus} /></span>
+                  </Row>
+                </dl>
+              </section>
 
-              {/* Line Items Card */}
-              <Card className="border-zinc-200 shadow-sm overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Order Items</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <table className="w-full text-sm">
-                    <thead className="bg-zinc-50 text-left text-[10px] font-bold uppercase text-zinc-400">
-                      <tr>
-                        <th className="px-4 py-2 text-zinc-500">Product</th>
-                        <th className="px-4 py-2 text-center">Qty</th>
-                        <th className="px-4 py-2 text-right">Price</th>
+              <section className="kms-card overflow-hidden">
+                <h3 className="kms-section-title px-5 pb-2 pt-5">Items</h3>
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs font-semibold text-muted">
+                    <tr>
+                      <th className="px-5 py-2">Product</th>
+                      <th className="px-5 py-2 text-center">Qty</th>
+                      <th className="px-5 py-2 text-right">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {(selectedOrder.lineItems ?? []).map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="px-5 py-3">
+                          <p className="font-medium text-foreground">{item.title}</p>
+                          {item.sku ? <p className="text-xs text-faint">SKU {item.sku}</p> : null}
+                        </td>
+                        <td className="px-5 py-3 text-center tabular">{item.quantity}</td>
+                        <td className="px-5 py-3 text-right font-medium">{money(item.price, selectedOrder.currency)}</td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {(selectedOrder.lineItems as any[] || []).map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="px-4 py-3">
-                             <p className="font-medium text-zinc-900">{item.title}</p>
-                             <p className="text-[10px] text-zinc-400">SKU: {item.sku || "N/A"}</p>
-                          </td>
-                          <td className="px-4 py-3 text-center">{item.quantity}</td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedOrder.currency }).format(Number(item.price))}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="bg-zinc-100/50 px-4 py-3 flex justify-between items-center border-t border-zinc-100">
-                    <span className="text-xs font-bold uppercase text-zinc-500">Order Total</span>
-                    <span className="text-lg font-black text-zinc-900">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedOrder.currency }).format(Number(selectedOrder.totalPrice))}
-                    </span>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="flex items-center justify-between border-t border-line bg-surface-2 px-5 py-3.5">
+                  <span className="text-sm font-medium text-muted">Total</span>
+                  <span className="text-lg font-semibold text-foreground tabular">{money(selectedOrder.totalPrice, selectedOrder.currency)}</span>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="kms-section-title">Partial refund</h3>
+                <p className="mt-1 text-[13px] text-muted">Refund part of this order without leaving KeepMySale.</p>
+
+                {selectedOrder.paymentGateway === "shopify_payments" ? (
+                  <div className="kms-card mt-3 flex flex-col gap-3 p-5">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-[13px] font-medium text-foreground">Amount ({selectedOrder.currency})</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="font-semibold tabular"
+                        value={refundAmount}
+                        onChange={(e) => { setRefundAmount(e.target.value); setConfirming(false); }}
+                      />
+                      <span className="text-xs text-muted">Paid with Shopify Payments, so you can refund from here.</span>
+                    </label>
+                    <Button
+                      className={`w-full ${confirming ? "!bg-attention hover:!bg-[#92400e]" : ""}`}
+                      disabled={!refundAmount || Number(refundAmount) <= 0}
+                      loading={refunding}
+                      onClick={handleRefund}
+                    >
+                      {refunding
+                        ? "Refunding"
+                        : confirming
+                          ? `Confirm: refund ${money(refundAmount, selectedOrder.currency)}`
+                          : "Refund"}
+                    </Button>
+                    {refundNotice ? (
+                      <p role="status" className={`kms-enter text-[13px] ${refundNotice.type === "success" ? "text-kept-strong" : "text-lost"}`}>{refundNotice.message}</p>
+                    ) : null}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Partial Refund Section */}
-              <div className="pt-4">
-                 <div className="mb-4">
-                    <h3 className="text-sm font-bold text-zinc-900">Issue Partial Refund</h3>
-                    <p className="text-xs text-zinc-500">Quickly process a refund without leaving the dashboard.</p>
-                 </div>
-                 
-                 {selectedOrder.paymentGateway === "shopify_payments" ? (
-                   <div className="space-y-4 rounded-2xl border border-teal-100 bg-teal-50/50 p-5 shadow-inner">
-                      <div className="space-y-2">
-                         <label className="text-xs font-bold text-teal-800 uppercase tracking-wide">Refund Amount ({selectedOrder.currency})</label>
-                         <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            className="bg-white border-teal-200 focus:ring-teal-500 font-bold"
-                            value={refundAmount}
-                            onChange={(e) => setRefundAmount(e.target.value)}
-                         />
-                         <p className="text-[10px] text-teal-600">This order was paid with Shopify Payments and is eligible for direct refund.</p>
-                      </div>
-                      <Button 
-                        className="w-full bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/20"
-                        disabled={!refundAmount || refunding}
-                        onClick={handleRefund}
+                ) : (
+                  <div className="mt-3 rounded-[var(--radius-card)] bg-surface-2 p-5 ring-1 ring-inset ring-line">
+                    <p className="text-[13px] text-muted">
+                      Paid with <span className="font-semibold text-foreground">{selectedOrder.paymentGateway?.replace(/_/g, " ") || "an external gateway"}</span>, so refunds go through Shopify.
+                    </p>
+                    {shopifyOrderUrl(selectedOrder) ? (
+                      <a
+                        href={shopifyOrderUrl(selectedOrder)!}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="kms-press mt-3 inline-flex h-9 items-center rounded-[10px] border border-line-strong bg-white px-4 text-sm font-semibold text-foreground hover:bg-surface-2"
                       >
-                        {refunding ? "Processing..." : "Confirm Partial Refund"}
-                      </Button>
-                   </div>
-                 ) : (
-                   <div className="rounded-2xl border border-zinc-200 bg-zinc-100 p-5 text-center">
-                      <p className="text-xs text-zinc-500">This order was paid via <span className="font-bold">{selectedOrder.paymentGateway || "External Gateway"}</span>. Please process refunds directly in your Shopify Admin.</p>
-                      <Button variant="outline" className="mt-4 text-[10px] uppercase font-bold" onClick={() => window.open(`https://admin.shopify.com/store/${selectedOrder.shopifyOrderId.split('/')[2]}/orders/${selectedOrder.shopifyOrderId.split('/').pop()}`, '_blank')}>
-                        Open Shopify Admin
-                      </Button>
-                   </div>
-                 )}
-              </div>
-
+                        Open in Shopify
+                      </a>
+                    ) : null}
+                  </div>
+                )}
+              </section>
             </div>
           </div>
-        </>
+        </div>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string | null; tone?: "kept" | "attention" }) {
+  const color = tone === "kept" ? "text-kept-strong" : tone === "attention" ? "text-attention" : "text-foreground";
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted">{label}</p>
+      <p className={`mt-1 text-[1.5rem] font-semibold tracking-[-0.02em] tabular ${color}`}>{value ?? <Skeleton className="h-7 w-16 align-middle" />}</p>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right text-foreground">{children}</dd>
     </div>
   );
 }

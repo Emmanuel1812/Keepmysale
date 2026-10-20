@@ -1,36 +1,38 @@
 import { Badge } from "@/components/ui/badge";
 
+// Colour = meaning: teal is done/kept, amber is waiting on someone, rose is money going back, grey is neutral.
+const label = (status: string) => status.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+
 export function FulfillmentBadge({ status }: { status?: string | null }) {
-  if (!status) {
-    return <Badge className="!bg-zinc-100 !text-zinc-600 border border-zinc-200">Unknown</Badge>;
-  }
-  
+  if (!status) return <Badge dot>Unknown</Badge>;
+
   switch (status.toLowerCase()) {
     case "fulfilled":
-      return <Badge className="!bg-blue-50 !text-blue-700 border border-blue-200">Fulfilled</Badge>;
+      return <Badge variant="teal" dot>Fulfilled</Badge>;
     case "unfulfilled":
-      return <Badge className="!bg-yellow-50 !text-yellow-700 border border-yellow-200">Unfulfilled</Badge>;
+      return <Badge variant="amber" dot>Unfulfilled</Badge>;
     case "partial":
     case "partially_fulfilled":
-      return <Badge className="!bg-orange-50 !text-orange-700 border border-orange-200">Partial</Badge>;
+      return <Badge variant="amber" dot>Partial</Badge>;
     default:
-      return <Badge className="!bg-zinc-100 !text-zinc-600 border border-zinc-200">{status}</Badge>;
+      return <Badge dot>{label(status)}</Badge>;
   }
 }
 
 export function FinancialBadge({ status }: { status?: string | null }) {
-  if (!status) {
-    return <Badge className="!bg-zinc-100 !text-zinc-600 border border-zinc-200">Unknown</Badge>;
-  }
+  if (!status) return <Badge dot>Unknown</Badge>;
 
   switch (status.toLowerCase()) {
     case "paid":
-      return <Badge className="!bg-emerald-50 !text-emerald-700 border border-emerald-200">Paid</Badge>;
+      return <Badge variant="teal" dot>Paid</Badge>;
     case "refunded":
-      return <Badge className="!bg-red-50 !text-red-700 border border-red-200">Refunded</Badge>;
+      return <Badge variant="rose" dot>Refunded</Badge>;
     case "partially_refunded":
-      return <Badge className="!bg-orange-50 !text-orange-700 border border-orange-200">Partial Refund</Badge>;
+      return <Badge variant="amber" dot>Partial refund</Badge>;
+    case "pending":
+    case "authorized":
+      return <Badge variant="amber" dot>{label(status)}</Badge>;
     default:
-      return <Badge className="!bg-zinc-100 !text-zinc-600 border border-zinc-200">{status}</Badge>;
+      return <Badge dot>{label(status)}</Badge>;
   }
 }

@@ -8,9 +8,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   const isThreadView = pathname !== "/dashboard/inbox";
 
   return (
-    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-white">Loading inbox...</div>}>
-      <div className="flex h-[calc(100vh-6rem)] w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-        <div className={`${isThreadView ? "hidden md:flex" : "flex"} w-full md:w-[380px] shrink-0 flex-col border-r border-zinc-200 bg-[#f8fafb] overflow-hidden`}>
+    <Suspense fallback={<div className="kms-card h-[calc(100dvh-8rem)] w-full md:h-[calc(100vh-3.5rem)]" />}>
+      <div className="kms-card kms-enter flex h-[calc(100dvh-8rem)] w-full overflow-hidden md:h-[calc(100vh-3.5rem)]">
+        <div className={`${isThreadView ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface-2 md:w-[360px]`}>
           <InboxSidebar />
         </div>
         <div className={`${!isThreadView ? "hidden md:flex" : "flex"} flex-1 flex-col bg-white overflow-hidden`}>

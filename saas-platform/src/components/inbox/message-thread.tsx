@@ -42,8 +42,8 @@ function formatCountdown(scheduledSendAt: string): string {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  if (hours > 0 && minutes > 0) return `${hours}u ${minutes}m`;
-  if (hours > 0) return `${hours}u`;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
   return `${minutes}m`;
 }
 
@@ -60,8 +60,8 @@ function CountdownTimer({ scheduledSendAt }: { scheduledSendAt: string }) {
   }, [scheduledSendAt]);
 
   return (
-    <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
-      <ClockIcon /> ⏱️ Wordt verzonden over {countdownText}
+    <span className="flex items-center gap-1.5 text-xs font-medium text-attention">
+      <ClockIcon /> Sends in {countdownText}
     </span>
   );
 }
@@ -88,10 +88,10 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-5 overflow-y-auto bg-surface-2/60 px-4 py-6 sm:px-6">
       {messages.length === 0 ? (
-        <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
-          No messages in this thread yet.
+        <div className="flex h-full items-center justify-center text-sm text-muted">
+          No messages in this conversation yet.
         </div>
       ) : (
         messages.map((message) => {
@@ -105,7 +105,7 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
           if (isSystem) {
             return (
               <div key={message.id} className="self-center my-4">
-                <span className="bg-zinc-100 text-zinc-500 text-xs px-3 py-1 rounded-full font-medium">
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-muted shadow-card">
                   {message.body}
                 </span>
               </div>
@@ -115,31 +115,34 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
           return (
             <div
               key={message.id}
-              className={`flex flex-col max-w-[85%] ${isCustomer ? "self-start" : "self-end"}`}
+              className={`kms-enter flex max-w-[85%] flex-col ${isCustomer ? "self-start" : "self-end"}`}
             >
               {/* Message Bubble */}
               <div
-                className={`rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm ${
+                className={`rounded-[18px] px-4 py-2.5 text-[15px] leading-relaxed ${
                   isCustomer
-                    ? "bg-[#f1f5f9] text-[#111827] rounded-tl-sm border border-zinc-200/60"
-                    : isAiType
-                      ? "bg-teal-600 text-white rounded-tr-sm"
-                      : "bg-blue-600 text-white rounded-tr-sm"
-                } ${isDraft ? "opacity-75 border border-dashed border-teal-300" : ""}
-                  ${isScheduled ? "border border-dashed border-amber-300" : ""}`}
+                    ? "rounded-tl-[6px] bg-white text-foreground shadow-card"
+                    : isDraft
+                      ? "rounded-tr-[6px] bg-kept-soft text-[#134e4a] [outline:1.5px_dashed_#7dd3c8] [outline-offset:-1.5px]"
+                      : isScheduled
+                        ? "rounded-tr-[6px] bg-attention-soft text-[#7c2d12] [outline:1.5px_dashed_#f2c27b] [outline-offset:-1.5px]"
+                        : isAiType
+                          ? "rounded-tr-[6px] bg-kept text-white shadow-card"
+                          : "rounded-tr-[6px] bg-ink text-white shadow-card"
+                }`}
               >
                 {editingId === message.id ? (
                   <div className="flex flex-col gap-2 min-w-[300px]">
                     <textarea
-                      className="w-full text-black p-2 rounded-md border border-teal-200 outline-none text-sm resize-none"
+                      className="w-full resize-none rounded-[10px] border border-line-strong bg-white p-2.5 text-sm text-foreground focus:border-kept focus:shadow-[0_0_0_3px_rgb(13_148_136/0.15)] focus:outline-none"
                       rows={4}
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       autoFocus
                     />
                     <div className="flex gap-2 justify-end">
-                      <Button variant="secondary" size="sm" className="h-7 text-xs bg-white text-zinc-700 hover:bg-zinc-100" onClick={() => setEditingId(null)}>Cancel</Button>
-                      <Button variant="default" size="sm" className="h-7 text-xs bg-teal-800 hover:bg-teal-900" onClick={() => handleSaveEdit(message.id)}>Save Edit</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                      <Button size="sm" onClick={() => handleSaveEdit(message.id)}>Save</Button>
                     </div>
                   </div>
                 ) : (
@@ -152,17 +155,17 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                 <div className="flex flex-col gap-2 mt-2 self-end">
                   {/* Countdown Timer */}
                   {message.scheduledSendAt && (
-                    <div className="bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg w-fit self-end">
+                    <div className="w-fit self-end rounded-[10px] bg-attention-soft px-3 py-1.5 ring-1 ring-inset ring-[#f7dfb4]">
                       <CountdownTimer scheduledSendAt={message.scheduledSendAt} />
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 p-1.5 rounded-lg w-fit shadow-xs self-end">
+                  <div className="flex w-fit items-center gap-1.5 self-end">
                     <Button
                       variant="default"
                       size="sm"
-                      className="h-8 text-xs px-3 bg-amber-500 hover:bg-amber-600 text-white"
+                      className="bg-attention hover:bg-[#92400e]"
                       disabled={isSending !== null}
                       onClick={async () => {
                         if (onSendNow) {
@@ -173,27 +176,27 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                       }}
                     >
                       {isSending === message.id ? (
-                        <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       ) : <ZapIcon />}
-                      {isSending === message.id ? "Verzenden..." : "Nu Versturen"}
+                      {isSending === message.id ? "Sending" : "Send now"}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-xs px-3 text-zinc-600 border-zinc-200 bg-white"
+                     
                       onClick={() => { setEditingId(message.id); setEditContent(message.body); }}
                       disabled={isSending !== null}
                     >
-                      <EditIcon /> Bewerken
+                      <EditIcon /> Edit
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="h-8 text-xs px-3 bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 shadow-none"
+                      className="!bg-lost-soft !text-lost hover:!bg-[#ffe4e8]"
                       onClick={() => onDiscardDraft && onDiscardDraft(message.id)}
                       disabled={isSending !== null}
                     >
-                      <TrashIcon /> Verwijderen
+                      <TrashIcon /> Discard
                     </Button>
                   </div>
                 </div>
@@ -201,11 +204,11 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
 
               {/* ======= DRAFT MESSAGE: Send/Edit/Discard buttons ======= */}
               {isDraft && editingId !== message.id && (
-                <div className="flex items-center gap-2 mt-2 bg-zinc-50 border border-zinc-200 p-1.5 rounded-lg w-fit shadow-xs self-end">
+                <div className="mt-2 flex w-fit items-center gap-1.5 self-end">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs px-3 text-zinc-600 border-zinc-200 bg-white"
+                   
                     onClick={() => { setEditingId(message.id); setEditContent(message.body); }}
                     disabled={isSending !== null}
                   >
@@ -214,7 +217,7 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="h-8 text-xs px-3 bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 shadow-none"
+                    className="!bg-lost-soft !text-lost hover:!bg-[#ffe4e8]"
                     onClick={() => onDiscardDraft && onDiscardDraft(message.id)}
                     disabled={isSending !== null}
                   >
@@ -223,7 +226,7 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                   <Button
                     variant="default"
                     size="sm"
-                    className="h-8 text-xs px-3 bg-teal-600 hover:bg-teal-700 text-white"
+                   
                     disabled={isSending !== null}
                     onClick={async () => {
                       if (onSendDraft) {
@@ -234,19 +237,19 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                     }}
                   >
                     {isSending === message.id ? (
-                      <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     ) : <SendIcon />}
-                    {isSending === message.id ? "Sending..." : "Send Draft"}
+                    {isSending === message.id ? "Sending" : "Send"}
                   </Button>
                 </div>
               )}
 
               {/* ======= Sender label + timestamp ======= */}
-              <div className={`flex items-center gap-1.5 mt-1 mx-1 text-[11px] font-medium text-zinc-400 ${isCustomer ? "justify-start" : "justify-end"}`}>
+              <div className={`flex items-center gap-1.5 mt-1 mx-1 text-[11px] font-medium text-faint ${isCustomer ? "justify-start" : "justify-end"}`}>
                 {isAiType && (
-                  <span className="flex items-center gap-1 text-teal-600">
+                  <span className="flex items-center gap-1 text-kept">
                     <BotIconSmall />
-                    {isScheduled ? "AI Agent (Gepland)" : isDraft ? "AI Agent (Draft)" : "AI Agent"}
+                    {isScheduled ? "AI, scheduled" : isDraft ? "AI draft" : "AI"}
                   </span>
                 )}
                 {!isAiType && !isCustomer && "You"}

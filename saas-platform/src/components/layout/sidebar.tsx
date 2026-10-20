@@ -1,4 +1,6 @@
 import { NavItem } from "@/components/layout/nav-item";
+import { MobileNav } from "@/components/layout/mobile-nav";
+import { NAV_LINKS } from "@/components/layout/nav-links";
 import { getMerchantFromSession } from "@/lib/auth";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { ConversationsDal } from "@/dal/conversations";
@@ -7,15 +9,23 @@ import { countUnanswered, deriveThreadStates } from "@/lib/inbox-visibility";
 import Image from "next/image";
 import logo from "@/app/logo.png";
 
+function planLabel(tier?: string | null, status?: string | null) {
+  if (status === "trial") return "Free trial";
+  if (!tier) return "";
+  return `${tier.charAt(0).toUpperCase()}${tier.slice(1)} plan`;
+}
+
 export async function Sidebar() {
-  let shopName = "efo-testing-store";
-  let plan = "Starter Plan";
+  // No placeholder shop name: if the session cannot be read, show nothing rather than someone else's store
+  let shopName = "";
+  let plan = "";
 
   let unanswered = 0;
 
   try {
     const merchant = await getMerchantFromSession();
-    if (merchant?.shopName) shopName = merchant.shopName;
+    shopName = merchant?.shopName || merchant?.shopDomain?.replace(".myshopify.com", "") || "";
+    plan = planLabel(merchant?.subscriptionTier, merchant?.subscriptionStatus);
     // The Inbox badge is the real number of conversations waiting for an answer (it used to be a fixed 3).
     const db = createSupabaseServiceClient();
     // Both reads at once, and only who-wrote-when for the messages: this runs on every dashboard page.
@@ -33,28 +43,36 @@ export async function Sidebar() {
     );
   } catch {}
 
+  const badgeFor = (href: string) => (href === "/dashboard/inbox" && unanswered > 0 ? unanswered : undefined);
+
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#111827] p-4 text-white md:flex">
-      <div className="mb-8 flex items-center gap-3 px-2">
-        <Image src={logo} alt="KeepMySale Logo" width={32} height={32} className="rounded-md bg-white p-1" />
-        <h2 className="text-xl font-bold tracking-tight">KeepMySale</h2>
-      </div>
-      
-      <nav className="flex flex-1 flex-col gap-1">
-        <NavItem href="/dashboard" label="Overview" />
-        <NavItem href="/dashboard/inbox" label="Inbox" badge={unanswered > 0 ? unanswered : undefined} />
-        <NavItem href="/dashboard/orders" label="Orders" />
-        <NavItem href="/dashboard/returns" label="Returns" />
-        <NavItem href="/dashboard/replay" label="Inbox replay" />
-        <NavItem href="/dashboard/settings" label="Settings" />
-      </nav>
-      
-      <div className="mt-auto border-t border-zinc-800 pt-4 px-2">
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-white">{shopName}</span>
-          <span className="text-xs text-zinc-400">{plan}</span>
+    <>
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-white md:flex">
+        <div className="mb-8 flex items-center gap-3 px-2">
+          <Image src={logo} alt="" width={32} height={32} className="rounded-[9px] bg-white p-1" />
+          <span className="text-[17px] font-bold tracking-[-0.02em]">KeepMySale</span>
         </div>
-      </div>
-    </aside>
+
+        <nav aria-label="Main" className="flex flex-1 flex-col gap-0.5">
+          {NAV_LINKS.map((link) => (
+            <NavItem key={link.href} href={link.href} label={link.label} icon={link.icon} badge={badgeFor(link.href)} />
+          ))}
+        </nav>
+
+        {shopName ? (
+          <div className="mt-auto flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kept/20 text-[13px] font-bold uppercase text-kept-glow">
+              {shopName.charAt(0)}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-medium text-white">{shopName}</span>
+              {plan ? <span className="text-xs text-slate-400">{plan}</span> : null}
+            </span>
+          </div>
+        ) : null}
+      </aside>
+
+      <MobileNav shopName={shopName} inboxBadge={unanswered > 0 ? unanswered : undefined} />
+    </>
   );
 }

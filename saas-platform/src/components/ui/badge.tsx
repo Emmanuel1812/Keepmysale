@@ -1,21 +1,27 @@
 import type { HTMLAttributes } from "react";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: "default" | "outline" | "teal" | "amber";
+  variant?: "default" | "outline" | "teal" | "amber" | "rose";
+  /** A small leading dot in the badge colour, for statuses. */
+  dot?: boolean;
 }
 
-export function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
-  const variants = {
-    default: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-    outline: "bg-transparent border border-zinc-200 text-zinc-600 dark:border-zinc-800 dark:text-zinc-400",
-    teal: "bg-teal-50 text-teal-700 border border-teal-100 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800",
-    amber: "bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
-  };
+const variants = {
+  default: "bg-surface-2 text-muted ring-line",
+  outline: "bg-transparent text-muted ring-line-strong",
+  teal: "bg-kept-soft text-kept-strong ring-[#bfe7e2]",
+  amber: "bg-attention-soft text-attention ring-[#f7dfb4]",
+  rose: "bg-lost-soft text-lost ring-[#fbcdd6]",
+};
 
+export function Badge({ className = "", variant = "default", dot = false, children, ...props }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${variants[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${variants[variant]} ${className}`}
       {...props}
-    />
+    >
+      {dot ? <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" /> : null}
+      {children}
+    </span>
   );
 }

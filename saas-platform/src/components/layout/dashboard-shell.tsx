@@ -15,19 +15,20 @@ function DashboardShellInner({ children, sidebar, header }: DashboardShellProps)
 
   if (isEmbedded) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-[#f8fafb]">
+      <div className="flex min-h-screen w-full flex-col bg-background">
         <AppNav />
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-auto px-4 py-5 md:px-8 md:py-7">{children}</main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden md:flex">{sidebar}</div>
+    // The sidebar renders the desktop rail and, below md, the mobile top bar + drawer
+    <div className="flex min-h-screen flex-col md:flex-row">
+      {sidebar}
       <div className="flex min-w-0 flex-1 flex-col">
         {header}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto px-4 py-5 md:px-8 md:py-7">{children}</main>
       </div>
     </div>
   );
@@ -35,7 +36,7 @@ function DashboardShellInner({ children, sidebar, header }: DashboardShellProps)
 
 export function DashboardShell(props: DashboardShellProps) {
   return (
-    <Suspense fallback={<div className="flex min-h-screen w-full items-center justify-center bg-[#f8fafb]" />}>
+    <Suspense fallback={<div className="flex min-h-screen w-full items-center justify-center bg-background" />}>
       <DashboardShellInner {...props} />
     </Suspense>
   );

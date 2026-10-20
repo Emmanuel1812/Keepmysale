@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-[#f8fafb]">Loading...</div>}>
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background" />}>
       <DashboardShell 
         sidebar={<Sidebar />} 
         header={<Header />}

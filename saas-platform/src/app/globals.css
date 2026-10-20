@@ -10,19 +10,321 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * The KeepMySale world: deep ink for the frame (sidebar, the "money kept" band), a cool paper surface for work,
+ * and one teal that means "kept / yours / go". Amber is "needs you", rose is "lost or failed". Colour carries
+ * meaning only; decoration stays neutral.
+ */
 :root {
   color-scheme: light;
-  --background: #f8fafb;
-  --foreground: #111827;
+  --background: #f5f7f8;
+  --foreground: #0f172a;
+
+  --ink: #0b1220;
+  --ink-2: #111a2c;
+  --ink-line: rgb(255 255 255 / 0.08);
+  --surface: #ffffff;
+  --surface-2: #f8fafb;
+  --line: #e6eaee;
+  --line-strong: #d5dbe1;
+  --muted: #5b6676;
+  --faint: #8a94a3;
+
+  --kept: #0d9488;
+  --kept-strong: #0f766e;
+  --kept-soft: #e6f6f4;
+  --kept-glow: #5eead4;
+  --attention: #b45309;
+  --attention-soft: #fff6e6;
+  --lost: #be123c;
+  --lost-soft: #fff1f3;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px -2px rgb(15 23 42 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(15 23 42 / 0.05), 0 12px 28px -6px rgb(15 23 42 / 0.14);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-kept: var(--kept);
+  --color-kept-strong: var(--kept-strong);
+  --color-kept-soft: var(--kept-soft);
+  --color-kept-glow: var(--kept-glow);
+  --color-attention: var(--attention);
+  --color-attention-soft: var(--attention-soft);
+  --color-lost: var(--lost);
+  --color-lost-soft: var(--lost-soft);
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --radius-card: var(--radius-card);
+  --ease-out-expo: var(--ease-out);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* ── Browser surfaces carry the palette too ─────────────────────────────── */
+::selection {
+  background: rgb(13 148 136 / 0.18);
+  color: var(--foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--kept);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--kept);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7ced6 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c7ced6;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #a9b2bd;
+}
+
+/* Numbers in tables and metrics line up */
+table,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Shared surfaces ────────────────────────────────────────────────────── */
+@layer components {
+  .kms-card {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .kms-card-interactive {
+    transition:
+      box-shadow 200ms var(--ease-out),
+      transform 200ms var(--ease-out);
+  }
+
+  .kms-card-interactive:hover {
+    box-shadow: var(--shadow-raised);
+    transform: translateY(-1px);
+  }
+
+  .kms-heading {
+    font-size: 1.625rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--foreground);
+    text-wrap: balance;
+  }
+
+  .kms-subheading {
+    font-size: 0.875rem;
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .kms-section-title {
+    font-size: 0.9375rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+  }
+
+  /* Table rows: a quiet hover that does not shift layout */
+  .kms-row {
+    transition: background-color 150ms ease;
+  }
+  .kms-row:hover {
+    background: #f6faf9;
+  }
+
+  /* Loading placeholder with a slow sheen */
+  .kms-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: #edf0f3;
+    border-radius: 8px;
+  }
+  .kms-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.7), transparent);
+    animation: kms-sheen 1.4s ease-in-out infinite;
+  }
+}
+
+/* ── Motion: feedback and continuity, fast; one authored moment (money kept) ─ */
+@keyframes kms-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Content arriving: a short settle from slightly below and soft focus. Starts visible-ish so a failed
+   script never hides content for long. */
+@keyframes kms-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.kms-enter {
+  animation: kms-enter 320ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* The authored moment: when kept money lands, a teal rule draws itself under the figure, left to right,
+   as the count settles. It stays: the line is the "kept" mark. */
+@keyframes kms-kept-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.kms-kept-number {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 6px;
+}
+
+.kms-kept-number::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--kept-glow);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.kms-kept-number[data-landed="true"]::after {
+  animation: kms-kept-rule 900ms var(--ease-out) 150ms both;
+}
+
+/* Something new that needs the merchant: one soft pulse on the dot, not a blinking badge */
+@keyframes kms-ping {
+  0% {
+    box-shadow: 0 0 0 0 rgb(13 148 136 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgb(13 148 136 / 0);
+  }
+}
+
+.kms-ping {
+  animation: kms-ping 1.8s var(--ease-out) 2;
+}
+
+@keyframes kms-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes kms-panel-in {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes kms-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Buttons and pressable things acknowledge the press */
+.kms-press {
+  transition:
+    transform 120ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+.kms-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kms-enter {
+    animation: kms-fade-in 200ms ease both;
+    animation-delay: 0ms;
+  }
+  .kms-kept-number[data-landed="true"]::after {
+    animation: none;
+    transform: scaleX(1);
+  }
+  .kms-ping,
+  .kms-skeleton::after {
+    animation: none;
+  }
+  .kms-card-interactive:hover {
+    transform: none;
+  }
+  .kms-press:active:not(:disabled) {
+    transform: none;
+  }
 }

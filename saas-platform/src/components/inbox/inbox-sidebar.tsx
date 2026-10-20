@@ -6,10 +6,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-// --- [ICONS] ---
-const SearchIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>);
-const BotIconSmall = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="14" x="3" y="6" rx="2" ry="2"/><path d="M12 2v4"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16c-2 0-3-1-3-1"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>);
-const SparklesIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>);
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/page";
+import { ChatIcon, SearchIcon, SparkIcon, SyncIcon } from "@/components/ui/icons";
 
 interface ApiConversation {
   id: string;
@@ -42,22 +41,21 @@ function formatRelativeTime(dateString: string) {
   return date.toLocaleDateString();
 }
 
+const INTENT_LABEL: Record<string, string> = {
+  wismo: "Where is my order",
+  return: "Return",
+  exchange: "Exchange",
+  complaint: "Complaint",
+  faq: "Question",
+  resend_confirmation: "Confirmation",
+  other: "Other",
+};
+
 function IntentBadge({ intent }: { intent: string | null }) {
   if (!intent) return null;
   const normalized = intent.toLowerCase();
-  
-  let colorClass = "bg-zinc-100 text-zinc-600 border border-zinc-200"; // default general
-  
-  if (normalized === "wismo") colorClass = "bg-blue-50 text-blue-700 border border-blue-200";
-  else if (normalized === "return" || normalized === "exchange") colorClass = "bg-orange-50 text-orange-700 border border-orange-200";
-  else if (normalized === "complaint") colorClass = "bg-red-50 text-red-700 border border-red-200";
-  else if (normalized === "faq") colorClass = "bg-indigo-50 text-indigo-700 border border-indigo-200";
-
-  return (
-    <span className={`text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md ${colorClass} flex items-center gap-1 w-fit`}>
-      🏷️ {intent}
-    </span>
-  );
+  const variant = normalized === "return" || normalized === "exchange" ? "amber" : normalized === "complaint" ? "rose" : "default";
+  return <Badge variant={variant}>{INTENT_LABEL[normalized] ?? intent}</Badge>;
 }
 
 export function InboxSidebar() {
@@ -69,13 +67,17 @@ export function InboxSidebar() {
   const [showResolved, setShowResolved] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const loadConversations = useCallback(async () => {
     try {
       const response = await fetch("/api/inbox/conversations", { cache: "no-store" });
       const payload = await response.json();
       if (payload.success) setConversations(payload.data?.conversations ?? []);
-    } catch {}
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const handleSync = async () => {
@@ -186,90 +188,60 @@ export function InboxSidebar() {
   const totalActionable = getUnreadCount("All");
 
   return (
-    <div className="flex w-full flex-col h-full">
+    <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-zinc-200 bg-white">
-        <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-line bg-white px-4 pb-3 pt-4">
+        <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-[#111827]">Inbox</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-foreground">Inbox</h2>
             {totalActionable > 0 && (
-              <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="kms-ping rounded-full bg-kept px-2 py-0.5 text-[11px] font-bold text-white tabular" title="Waiting for an answer">
                 {totalActionable}
               </span>
             )}
           </div>
-          
-          <button 
+
+          <button
             onClick={handleSync}
             disabled={syncing}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-              syncing 
-                ? "bg-zinc-50 text-zinc-400 border-zinc-200 cursor-not-allowed" 
-                : "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100 hover:border-teal-200 shadow-sm"
-            }`}
+            className="kms-press flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-semibold text-kept-strong hover:bg-kept-soft disabled:cursor-not-allowed disabled:text-faint"
           >
-            <svg 
-              className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="3" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24" />
-              <path d="M21 3v9h-9" />
-            </svg>
-            {syncing ? "Syncing..." : "Sync"}
+            <SyncIcon className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing" : "Sync"}
           </button>
         </div>
 
         {/* Search */}
-        <div className="relative mb-4">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-            <SearchIcon />
-          </div>
+        <label className="relative mb-3 block">
+          <span className="sr-only">Search conversations</span>
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
           <input
             type="text"
-            className="block w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-zinc-200 bg-[#f8fafb] focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all placeholder:text-zinc-400"
-            placeholder="Search conversations..."
+            className="block h-9 w-full rounded-[10px] border border-line bg-surface-2 pl-9 pr-3 text-sm text-foreground transition-[border-color,box-shadow] placeholder:text-faint focus:border-kept focus:bg-white focus:shadow-[0_0_0_3px_rgb(13_148_136/0.15)] focus:outline-none"
+            placeholder="Search name, email or subject"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        
-        {/* Toggle Resolved */}
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <input
-            type="checkbox"
-            id="showResolved"
-            checked={showResolved}
-            onChange={(e) => setShowResolved(e.target.checked)}
-            className="rounded border-zinc-300 text-[#111827] focus:ring-[#111827]"
-          />
-          <label htmlFor="showResolved" className="text-xs font-medium text-zinc-600 cursor-pointer select-none">
-            Show resolved conversations
-          </label>
-        </div>
-        
-        {/* Unified Tab Row */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        </label>
+
+        {/* Filter pills */}
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Filter conversations">
           {TABS.map((tab) => {
             const count = getUnreadCount(tab);
+            const on = activeTab === tab;
             return (
               <button
                 key={tab}
+                role="tab"
+                aria-selected={on}
                 onClick={() => setActiveTab(tab)}
-                className={`whitespace-nowrap px-3 py-1 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-                  activeTab === tab 
-                    ? "bg-[#111827] text-white" 
-                    : "bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200"
+                className={`kms-press flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
+                  on ? "bg-ink text-white" : "bg-white text-muted ring-1 ring-inset ring-line hover:bg-surface-2 hover:text-foreground"
                 }`}
               >
                 {tab}
                 {count > 0 && (
-                  <span className={`w-4 h-4 flex items-center justify-center rounded-full text-[9px] ${activeTab === tab ? "bg-white text-zinc-900" : "bg-zinc-200 text-zinc-600"}`}>
+                  <span className={`min-w-4 rounded-full px-1 text-center text-[10px] tabular ${on ? "bg-kept-glow text-ink" : "bg-surface-2 text-muted"}`}>
                     {count}
                   </span>
                 )}
@@ -277,82 +249,81 @@ export function InboxSidebar() {
             );
           })}
         </div>
+
+        <label className="mt-2 flex w-fit cursor-pointer select-none items-center gap-2 px-1 text-xs font-medium text-muted">
+          <input
+            type="checkbox"
+            checked={showResolved}
+            onChange={(e) => setShowResolved(e.target.checked)}
+            className="h-3.5 w-3.5 rounded accent-[var(--kept)]"
+          />
+          Show resolved
+        </label>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col flex-1 items-center justify-center p-8 text-center bg-white border border-zinc-200 border-dashed rounded-xl mt-4">
-            <span className="text-2xl mb-2">📬</span>
-            <h3 className="text-sm font-semibold text-[#111827]">No conversations found</h3>
-            <p className="text-xs text-zinc-500 mt-1">Try switching filters or adjusting your search.</p>
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2.5">
+        {loading && conversations.length === 0 ? (
+          [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[92px] w-full !rounded-[12px]" />)
+        ) : filtered.length === 0 ? (
+          <div className="mt-6 flex flex-col items-center px-6 text-center">
+            <span className="mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-kept-soft text-kept-strong"><ChatIcon className="h-5 w-5" /></span>
+            <h3 className="text-sm font-semibold text-foreground">{search ? "No matches" : "Nothing here"}</h3>
+            <p className="mt-1 text-xs text-muted">{search ? "Try another name, email or subject." : "Conversations in this filter show up here."}</p>
           </div>
         ) : (
-          filtered.map((item) => {
+          filtered.map((item, index) => {
             const isActive = activeId === item.id;
             const isUnanswered = item.lastMessageSenderType === "customer";
             const isDraft = item.lastMessageSenderType === "ai_draft";
             const isAiHandled = item.lastMessageSenderType === "ai" || item.status === "negotiating";
-            const customerName = item.customer?.name || item.customer?.email || "Unknown Customer";
+            const isResolved = item.status === "resolved" || item.status === "closed";
+            const customerName = item.customer?.name || item.customer?.email || "Unknown customer";
             const timeAgo = formatRelativeTime(item.lastMessageAt);
 
             return (
-              <Link key={item.id} href={`/dashboard/inbox/${item.id}`} className="block">
-                <div className={`p-4 rounded-xl border transition-all duration-200 flex flex-col gap-2 relative ${
-                  isActive 
-                    ? "bg-teal-50/50 border-teal-200 shadow-sm before:content-[''] before:absolute before:left-[-1px] before:top-3 before:bottom-3 before:w-[3px] before:bg-teal-500 before:rounded-r-md" 
-                    : "bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
-                }`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <h4 className={`text-sm tracking-tight truncate ${isUnanswered ? "font-bold text-[#111827]" : "font-semibold text-[#111827]"}`}>
-                        {customerName}
-                      </h4>
-                      {isUnanswered && <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" title="Needs Reply" />}
+              <Link
+                key={item.id}
+                href={`/dashboard/inbox/${item.id}`}
+                aria-current={isActive ? "page" : undefined}
+                className={`group kms-enter relative block rounded-[12px] px-3.5 py-3 transition-[background-color,box-shadow] duration-150 ${
+                  isActive ? "bg-white shadow-card ring-1 ring-inset ring-[#bfe7e2]" : "hover:bg-white hover:shadow-card"
+                }`}
+                style={{ ["--i" as string]: Math.min(index, 6) }}
+              >
+                {isActive ? <span aria-hidden="true" className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-kept" /> : null}
+                <div className="flex items-start gap-3">
+                  <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold uppercase ${isUnanswered ? "bg-kept text-white" : "bg-[#e7ecf0] text-muted"}`}>
+                    {customerName.charAt(0)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h4 className={`truncate text-sm ${isUnanswered ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>{customerName}</h4>
+                      <span className={`shrink-0 text-[11px] tabular ${isUnanswered ? "font-semibold text-kept-strong" : "text-faint"}`}>{timeAgo}</span>
                     </div>
-                    <span className="text-xs font-medium text-zinc-400 whitespace-nowrap pt-0.5">{timeAgo}</span>
-                  </div>
-
-                  <p className={`text-sm truncate ${isUnanswered ? "font-semibold text-zinc-900" : "font-medium text-zinc-600"}`}>
-                    {item.lastMessageContent || item.subject || "No content"}
-                  </p>
-                  
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-100/80">
-                    <div className="flex items-center gap-2">
-                      <IntentBadge intent={item.intent} />
-                      {isAiHandled && (
-                        <div className="text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-bold" title="AI Managed">
-                          <BotIconSmall /> AI MANAGED
-                        </div>
-                      )}
-                      {isDraft && (
-                        <div className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-bold" title="AI Draft Ready">
-                          <SparklesIcon /> DRAFT READY
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 min-w-[100px] justify-end">
+                    <p className={`mt-0.5 truncate text-[13px] ${isUnanswered ? "text-foreground" : "text-muted"}`}>
+                      {item.lastMessageContent || item.subject || "No content"}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <IntentBadge intent={item.intent} />
+                        {isDraft && <Badge variant="amber" dot>Draft ready</Badge>}
+                        {!isDraft && isAiHandled && <Badge variant="teal">Answered by AI</Badge>}
+                        {isResolved && <Badge>Resolved</Badge>}
+                      </div>
                       <button
                         onClick={(e) => handleResolveAI(e, item.id)}
                         disabled={!!resolvingId}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                        className={`kms-press flex h-7 shrink-0 items-center gap-1 rounded-[8px] px-2 text-[11px] font-semibold transition-opacity ${
                           resolvingId === item.id
-                            ? "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-                            : "bg-teal-500 text-white hover:bg-teal-600 shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        } ${isDraft ? "opacity-100!" : ""}`}
-                        title="Resolve with AI"
+                            ? "cursor-not-allowed bg-surface-2 text-faint opacity-100"
+                            : "bg-kept text-white hover:bg-kept-strong opacity-0 focus:opacity-100 group-hover:opacity-100"
+                        } ${isDraft ? "opacity-100" : ""}`}
+                        title="Let the AI draft a reply"
                       >
-                        {resolvingId === item.id ? (
-                          <div className="w-2.5 h-2.5 border-2 border-zinc-300 border-t-zinc-500 rounded-full animate-spin" />
-                        ) : (
-                          "✨ AI REPLY"
-                        )}
+                        {resolvingId === item.id ? <SyncIcon className="h-3.5 w-3.5 animate-spin" /> : <SparkIcon className="h-3.5 w-3.5" />}
+                        {resolvingId === item.id ? "Drafting" : "AI reply"}
                       </button>
-                      <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <div className={`w-2 h-2 rounded-full ${item.status === 'resolved' || item.status === 'closed' ? "bg-zinc-300" : "bg-teal-500 shadow-[0_0_0_3px_rgba(20,184,166,0.1)]"}`} />
-                        <span className="text-xs font-medium text-zinc-500 capitalize">{item.status.replace("_", " ")}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
