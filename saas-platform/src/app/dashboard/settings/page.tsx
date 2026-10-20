@@ -198,7 +198,7 @@ export default function SettingsPage() {
       />
 
       {/* --- Navigation Tabs --- */}
-      <div role="tablist" aria-label="Settings sections" className="sticky top-14 z-30 -mx-1 flex gap-1 overflow-x-auto rounded-[12px] bg-[#e9edf1]/80 p-1 backdrop-blur-md md:top-3 md:w-fit">
+      <div role="tablist" aria-label="Settings sections" className="kms-no-scrollbar sticky top-14 z-30 -mx-1 flex gap-1 overflow-x-auto rounded-[12px] bg-[#e9edf1]/80 p-1 backdrop-blur-md md:top-3 md:w-fit">
         <TabButton active={activeTab === "general"} label="General" icon={StoreIcon} onClick={() => setActiveTab("general")} />
         <TabButton active={activeTab === "persona"} label="AI persona" icon={BotIcon} onClick={() => setActiveTab("persona")} />
         <TabButton active={activeTab === "negotiation"} label="Negotiation" icon={ScaleIcon} onClick={() => setActiveTab("negotiation")} />

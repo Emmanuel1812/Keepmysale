@@ -225,7 +225,7 @@ export function InboxSidebar() {
         </label>
 
         {/* Filter pills */}
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Filter conversations">
+        <div className="kms-no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Filter conversations">
           {TABS.map((tab) => {
             const count = getUnreadCount(tab);
             const on = activeTab === tab;

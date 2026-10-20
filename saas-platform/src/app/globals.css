@@ -120,6 +120,14 @@ a {
   background-color: #a9b2bd;
 }
 
+/* Horizontal strips (tabs, filter pills) scroll by touch or trackpad without a visible bar */
+.kms-no-scrollbar {
+  scrollbar-width: none;
+}
+.kms-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Numbers in tables and metrics line up */
 table,
 .tabular {
@@ -205,12 +213,10 @@ table,
   from {
     opacity: 0;
     transform: translateY(6px);
-    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 

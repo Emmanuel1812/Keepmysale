@@ -41,7 +41,7 @@ export function Tabs<T extends string>({
   onChange: (key: T) => void;
 }) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line">
+    <div role="tablist" className="kms-no-scrollbar flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
       {tabs.map((tab) => {
         const isActive = tab.key === active;
         return (
