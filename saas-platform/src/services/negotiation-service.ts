@@ -42,7 +42,7 @@ export function checkNegotiationEligibility(
 
   // Check min_order_value
   if (merchantSettings.min_order_value > 0 && orderAmount < merchantSettings.min_order_value) {
-    return { eligible: false, reason: `Order value €${orderAmount} below minimum €${merchantSettings.min_order_value}` };
+    return { eligible: false, reason: `Order value ${orderAmount} below minimum ${merchantSettings.min_order_value}` };
   }
 
   // Check excluded_categories

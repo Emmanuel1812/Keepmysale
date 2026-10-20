@@ -81,6 +81,8 @@ interface OrderItem {
   fulfillmentStatus: string | null;
   trackingNumber: string | null;
   trackingUrl?: string | null;
+  customerName?: string | null;
+  email?: string | null;
   createdAt?: string;
   syncedAt?: string;
 }
@@ -385,7 +387,7 @@ function DashboardContent() {
                         {orderLabel(order.shopifyOrderNumber, order.id)}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap text-[#111827]">
-                        Customer
+                        {order.customerName || order.email || "—"}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap text-[#111827] font-medium">
                         {order.totalPrice ?? "0.00"} {order.currency}

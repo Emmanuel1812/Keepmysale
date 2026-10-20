@@ -43,6 +43,8 @@ interface EnrichedNegotiation {
 interface KPIs {
   activeCount: number;
   savedRevenue: number;
+  /** The store's main currency (from its orders); savings are in it. */
+  currency: string;
   refundsIssued: number;
   pendingReturns: number;
 }
@@ -360,7 +362,7 @@ export default function ReturnsPage() {
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-5 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Saved Revenue</h3>
-          <p className="mt-2 text-3xl font-bold text-emerald-600">{kpis ? formatCurrency(kpis.savedRevenue, "EUR") : '-'}</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">{kpis ? formatCurrency(kpis.savedRevenue, kpis.currency) : '-'}</p>
           <p className="mt-1 text-xs text-emerald-600/70">Money kept from accepted offers</p>
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">

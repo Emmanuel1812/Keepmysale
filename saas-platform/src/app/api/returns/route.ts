@@ -1,6 +1,7 @@
 import { apiError, apiResponse } from "@/lib/api-helpers";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getMerchantFromSession } from "@/lib/auth";
+import { dominantCurrency } from "@/lib/money";
 
 export async function GET(req: Request) {
   let merchantId = "";
@@ -75,16 +76,18 @@ export async function GET(req: Request) {
   });
 
   // Calculate top-level KPIs based on all-time data securely by omitting tab filters
-  const { data: allNegs } = await supabase
-    .from("negotiations")
-    .select("status, savings, refund_processed")
-    .eq("merchant_id", merchantId);
+  const [{ data: allNegs }, { data: orderCurrencies }] = await Promise.all([
+    supabase.from("negotiations").select("status, savings, refund_processed").eq("merchant_id", merchantId),
+    supabase.from("orders").select("currency").eq("merchant_id", merchantId),
+  ]);
 
   const kpis = {
     activeCount: 0,
     savedRevenue: 0,
     refundsIssued: 0,
-    pendingReturns: 0
+    pendingReturns: 0,
+    // Savings were shown as euros for every store; a USD store saw "€"
+    currency: dominantCurrency((orderCurrencies ?? []).map((o: { currency: string | null }) => o.currency)),
   };
 
   if (allNegs) {
