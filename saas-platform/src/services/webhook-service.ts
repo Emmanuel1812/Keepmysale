@@ -707,7 +707,8 @@ export class WebhookService {
     if (!merchant) throw new Error("Merchant not found");
 
     const conversation = await this.conversationService.findById(conversationId);
-    if (!conversation) throw new Error("Conversation not found");
+    // The id comes from the URL: another merchant's conversation must look exactly like a missing one
+    if (!conversation || conversation.merchantId !== merchantId) throw new Error("Conversation not found");
 
     const messages = await this.messageService.findByConversation(conversationId);
     const lastCustomerMsg = [...messages].reverse().find((m) => m.sender === "customer");
