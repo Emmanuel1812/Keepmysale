@@ -6,7 +6,9 @@ import { getEnv } from "@/lib/env";
 import { encryptAes256 } from "@/lib/encryption";
 import { MerchantService } from "@/services/merchant-service";
 import { ShopifyService } from "@/services/shopify-service";
-import { normalizeShopDomain } from "@/lib/shopify/auth";
+import { cookies } from "next/headers";
+import { isValidShopDomain, normalizeShopDomain } from "@/lib/shopify/auth";
+import { OAUTH_STATE_COOKIE, isFreshOAuthTimestamp, isValidOAuthState } from "@/lib/shopify/oauth-state";
 
 
 export async function GET(request: Request) {
@@ -19,7 +21,21 @@ export async function GET(request: Request) {
 
   try {
     const { shop, code } = shopifyService.validateOAuthCallback(url.searchParams);
-    const normalizedShop = normalizeShopDomain(shop);
+    const normalizedShop = normalizeShopDomain(shop).toLowerCase();
+
+    // The signature proves Shopify issued this callback, not that THIS browser started the install (login CSRF),
+    // and not that it is recent. Check the state cookie, the timestamp and the host before any token exchange.
+    const cookieJar = await cookies();
+    const storedState = cookieJar.get(OAUTH_STATE_COOKIE)?.value;
+    if (!isValidOAuthState(storedState, url.searchParams.get("state"))) {
+      return apiError("UNAUTHORIZED", "Install session expired or not started here. Start the install again.", 401);
+    }
+    if (!isFreshOAuthTimestamp(url.searchParams.get("timestamp"))) {
+      return apiError("UNAUTHORIZED", "Install link expired. Start the install again.", 401);
+    }
+    if (!isValidShopDomain(normalizedShop)) {
+      return apiError("VALIDATION_ERROR", "Invalid shop domain", 400);
+    }
 
     const tokenResponse = await fetch(`https://${normalizedShop}/admin/oauth/access_token`, {
       method: "POST",
@@ -140,7 +156,9 @@ export async function GET(request: Request) {
     const redirectUrl = new URL(redirectPath, env.NEXT_PUBLIC_APP_URL);
     redirectUrl.searchParams.set("shop", normalizedShop);
     
-    return NextResponse.redirect(redirectUrl);
+    const response = NextResponse.redirect(redirectUrl);
+    response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/shopify" });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid callback";
     if (message === "Missing OAuth callback parameters") {
