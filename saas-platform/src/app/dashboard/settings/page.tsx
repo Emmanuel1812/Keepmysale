@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader, Skeleton } from "@/components/ui/page";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { IMerchantSettings, DEFAULT_MERCHANT_SETTINGS } from "@/types/merchant";
+import { VoiceCard } from "@/components/settings/voice-card";
 
 // --- Icons ---
 const StoreIcon = () => (
@@ -391,6 +392,16 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === "persona" && (
+          <VoiceCard
+            profile={settings.voice_profile}
+            enabled={Boolean(settings.voice_enabled)}
+            gmailConnected={Boolean(googleEmail)}
+            onChange={(key, value) => updateSetting(key, value)}
+            onLearned={(profile) => setSettings((prev) => ({ ...prev, voice_profile: profile, voice_enabled: true }))}
+          />
         )}
 
         {/* --- TAB: NEGOTIATION --- */}

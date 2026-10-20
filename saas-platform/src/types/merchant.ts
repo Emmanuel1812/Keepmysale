@@ -118,6 +118,11 @@ export interface IMerchantSettings {
    * "daily" (08:00 in the business-hours timezone), "instant" (soon after a new draft) or "off".
    */
   draft_digest?: "daily" | "instant" | "off";
+
+  /** "Writes in your voice": learned from the merchant's own sent mails (lib/automation/voice.ts) */
+  voice_profile?: import("@/lib/automation/voice").VoiceProfile | null;
+  /** Use the learned voice instead of the tone presets */
+  voice_enabled?: boolean;
   /** Bookkeeping written by the cron, never by the settings page */
   draft_digest_last_sent_at?: string | null;
 

@@ -163,6 +163,18 @@ export async function listRecentInboxMessageIds(accessToken: string, max = 50): 
   return (response.data.messages || []).map((m) => String(m.id)).filter(Boolean);
 }
 
+/**
+ * Ids of replies the merchant sent from this inbox (not to themselves), for learning how they write. Read-only.
+ */
+export async function listSentReplyIds(accessToken: string, max = 40): Promise<string[]> {
+  const response = await gmailFor(accessToken).users.messages.list({
+    userId: "me",
+    q: "in:sent -to:me newer_than:365d",
+    maxResults: Math.min(Math.max(max, 1), 100),
+  });
+  return (response.data.messages || []).map((m) => String(m.id)).filter(Boolean);
+}
+
 /** One message by id. `messages.get` does not mark a message as read. */
 export async function getGmailMessage(accessToken: string, id: string): Promise<GmailMessage> {
   const detail = await gmailFor(accessToken).users.messages.get({ userId: "me", id, format: "full" });

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildStyleBlock } from "@/lib/automation/voice";
 import type { IIntentStructuredResult } from "@/types/ai";
 import { format } from "date-fns";
 import { OrderService } from "@/services/order-service";
@@ -184,21 +185,9 @@ export class AiService {
     const storeName = input.storeName || input.shopDomain.replace(".myshopify.com", "");
     const currencyDisplay = ms.currency_display ?? "EUR";
 
-    // ── Build settings-aware rules block for Gemini prompts ──
-    const toneMap: Record<string, string> = {
-      professional: "professioneel, kalm en empathisch",
-      friendly: "warm, vriendelijk en informeel",
-      formal: "zeer formeel en zakelijk",
-      casual: "casual, vrolijk en persoonlijk",
-    };
-    const toneDescription = toneMap[ms.tone] ?? toneMap.professional;
-
-    const settingsRulesBlock = [
-      `TONE-OF-VOICE: Wees ${toneDescription}. Gebruik volledige, goed geformuleerde zinnen.`,
-      ...(ms.custom_rules ?? []).map((r) => `EXTRA REGEL: ${r}`),
-      ...(ms.forbidden_topics ?? []).map((t) => `VERBODEN ONDERWERP (reageer hier NOOIT op, escaleer in plaats daarvan): ${t}`),
-      ...(ms.forbidden_phrases ?? []).map((p) => `ZIN NOOIT GEBRUIKEN: "${p}"`),
-    ].filter(Boolean).join("\n");
+    // ── How replies are written: tone or the learned voice, plus the Rules tab. This used to be built here and put
+    // into no prompt at all, so tone, custom rules and forbidden topics/phrases changed not a single reply ──
+    const styleBlock = buildStyleBlock(ms);
 
     const messagesByLanguage = {
       nl: {
@@ -353,6 +342,9 @@ export class AiService {
         5. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
         6. BELANGRIJK: Staat bij Verzending 'verzonden', dan is het pakket AL verstuurd en waarschijnlijk bezorgd. Zeg dan NIET dat het 'in behandeling' is. Noem het trackingnummer als dat er is.
         7. Gebruik gewone woorden, geen technische termen uit het systeem, en geen opmaak zoals *sterretjes* of **vet**.
+
+        STIJL EN REGELS VAN DE WINKEL:
+        ${styleBlock}
         
         CONTEXT:
         ${orderContext}
@@ -475,7 +467,8 @@ STRIKT_SYSTEEM_OVERRIDE:
         - Ga pas over naar 'reject' (retour accepteren) als ALLES is afgewezen en er geen stappen meer zijn.
         ${stepsContext}
         
-        Stijl: ${toneDescription}.
+        STIJL EN REGELS VAN DE WINKEL:
+        ${styleBlock}
         Context: ${orderContext}
         
         ACCEPTATIE HERKENNING — Als de klant EEN van deze dingen zegt, is het een ACCEPTATIE en moet negotiationDecision 'accept' zijn:
@@ -499,7 +492,6 @@ STRIKT_SYSTEEM_OVERRIDE:
         GESPREKSGESCHIEDENIS:
         ${historyContext}
         
-        Stijl: ${toneDescription}.
         Context: ${orderContext}
         
         JSON Output:
