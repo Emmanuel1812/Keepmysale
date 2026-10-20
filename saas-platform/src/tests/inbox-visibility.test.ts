@@ -8,7 +8,7 @@ const data = vi.hoisted(() => ({
   negotiations: [] as unknown[],
 }));
 vi.mock("@/dal/conversations", () => ({ ConversationsDal: class { findByMerchant = async () => data.conversations; } }));
-vi.mock("@/dal/messages", () => ({ MessagesDal: class { findByMerchant = async () => data.messages; } }));
+vi.mock("@/dal/messages", () => ({ MessagesDal: class { findTimelineByMerchant = async () => data.messages; } }));
 vi.mock("@/dal/orders", () => ({ OrdersDal: class { findByMerchant = async () => data.orders; } }));
 vi.mock("@/dal/negotiations", () => ({ NegotiationsDal: class { findByMerchant = async () => data.negotiations; } }));
 

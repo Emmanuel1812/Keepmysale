@@ -46,14 +46,18 @@ export class AnalyticsService {
   async getSummary(merchantId: string): Promise<IAnalyticsSummary> {
     // Only real support conversations count: mail the filter set aside (spam / financial / unknown
     // sender) is stored but is not "open work", and the AI never answered it.
-    const allConversations = await this.conversationsDal.findByMerchant(merchantId);
-    const allMessages = await this.messagesDal.findByMerchant(merchantId);
+    // The four reads do not depend on each other: one round trip instead of four in a row.
+    const [allConversations, allMessages, negotiations, orders] = await Promise.all([
+      this.conversationsDal.findByMerchant(merchantId),
+      this.messagesDal.findTimelineByMerchant(merchantId),
+      this.negotiationsDal.findByMerchant(merchantId),
+      this.ordersDal.findByMerchant(merchantId),
+    ]);
     const threadStates = deriveThreadStates(allMessages);
     const conversations = allConversations.filter((item) =>
       isSupportConversation({ ...item, hasHumanReply: threadStates.get(item.id)?.hasHumanReply ?? false }),
     );
     const supportIds = new Set(conversations.map((item) => item.id));
-    const negotiations = await this.negotiationsDal.findByMerchant(merchantId);
     const messages = allMessages.filter((m) => supportIds.has(m.conversationId));
 
     const openConversations = conversations.filter((item) => item.status === "open").length;
@@ -81,7 +85,6 @@ export class AnalyticsService {
     const successRate = totalNegotiations > 0 ? (returnsPrevented / totalNegotiations) * 100 : 0;
 
     // ORDERS METRICS (Row 2)
-    const orders = await this.ordersDal.findByMerchant(merchantId);
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;

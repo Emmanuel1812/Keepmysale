@@ -3,6 +3,8 @@ import type { IMessage, IMessageCreate, IMessageUpdate } from "@/types/message";
 
 type MessageRow = Record<string, unknown>;
 
+export type IMessageTimelineItem = Pick<IMessage, "conversationId" | "sender" | "createdAt">;
+
 function mapMessageRow(row: MessageRow): IMessage {
   return {
     id: String(row.id),
@@ -41,6 +43,24 @@ export class MessagesDal {
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => mapMessageRow(row as MessageRow));
+  }
+
+  /**
+   * Who wrote what, and when. The dashboard counts threads and answer times; it never reads the text, so it must not
+   * download every message body and HTML for the whole mailbox on each page load.
+   */
+  async findTimelineByMerchant(merchantId: string): Promise<IMessageTimelineItem[]> {
+    const { data, error } = await this.supabase
+      .from("messages")
+      .select("conversation_id, sender, created_at")
+      .eq("merchant_id", merchantId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      conversationId: String(row.conversation_id),
+      sender: row.sender as IMessage["sender"],
+      createdAt: String(row.created_at),
+    }));
   }
 
   async findByConversation(conversationId: string): Promise<IMessage[]> {
