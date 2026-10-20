@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 interface ThreadMessage {
@@ -75,6 +75,14 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [isSending, setIsSending] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const newestId = messages[messages.length - 1]?.id;
+
+  // Open at the newest message (the one to act on), and follow new ones; a long thread used to open at its first mail
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [newestId]);
 
   const handleSaveEdit = async (id: string) => {
     if (onEditDraft) {
@@ -92,7 +100,7 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col gap-5 overflow-y-auto bg-surface-2/60 px-4 py-6 sm:px-6">
+    <div ref={scrollRef} className="flex flex-1 flex-col gap-5 overflow-y-auto bg-surface-2/60 px-4 py-6 sm:px-6">
       {messages.length === 0 ? (
         <div className="flex h-full items-center justify-center text-sm text-muted">
           No messages in this conversation yet.

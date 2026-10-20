@@ -25,6 +25,10 @@ export class ConversationService {
     return this.conversationsDal.findOrCreate(input);
   }
 
+  findOrCreateForThread(input: IConversationCreate, threadId?: string | null): Promise<IConversation> {
+    return this.conversationsDal.findOrCreateForThread(input, threadId);
+  }
+
   update(id: string, input: IConversationUpdate): Promise<IConversation> {
     return this.conversationsDal.update(id, input);
   }

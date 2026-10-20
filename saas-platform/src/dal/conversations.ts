@@ -64,6 +64,30 @@ export class ConversationsDal {
     return this.create(input);
   }
 
+  /**
+   * The conversation an inbound mail belongs to. With a Gmail thread id: the conversation that already holds that
+   * thread, else a NEW one. A new mail is a new conversation; before this, every mail a customer ever sent went
+   * into their oldest open conversation, under its old subject, and was answered as part of an old negotiation.
+   * Without a thread id (SES) it falls back to the customer's latest open conversation.
+   */
+  async findOrCreateForThread(input: IConversationCreate, threadId?: string | null): Promise<IConversation> {
+    if (!threadId) return this.findOrCreate(input);
+    const { data, error } = await this.supabase
+      .from("messages")
+      .select("conversation_id")
+      .eq("merchant_id", input.merchantId)
+      .eq("metadata->>threadId", threadId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    const conversationId = (data ?? [])[0]?.conversation_id as string | undefined;
+    if (conversationId) {
+      const existing = await this.findById(conversationId);
+      if (existing && existing.customerId === input.customerId) return existing;
+    }
+    return this.create(input);
+  }
+
   async create(input: IConversationCreate): Promise<IConversation> {
     const { data, error } = await this.supabase
       .from("conversations")

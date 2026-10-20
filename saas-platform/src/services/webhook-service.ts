@@ -97,13 +97,13 @@ export class WebhookService {
       language: merchant.settings.language,
     });
 
-    const conversation = await this.conversationService.findOrCreate({
+    const conversation = await this.conversationService.findOrCreateForThread({
       merchantId: input.merchantId,
       customerId: customer.id,
       channel: "email",
       subject: input.subject,
-      metadata: { source: "ses_webhook" },
-    });
+      metadata: { source: input.gmailThreadId ? "gmail" : "ses_webhook" },
+    }, input.gmailThreadId);
 
     console.log(`[WEBHOOK] Processing inbound email from: ${input.from} | Subject: ${input.subject}`);
     console.log(`[WEBHOOK] Resolved conversation: ${conversation.id} (status: ${conversation.status}) | Customer: ${customer.id}`);
