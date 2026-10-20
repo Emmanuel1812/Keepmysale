@@ -1,16 +1,15 @@
 import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
 import { getEnv } from "@/lib/env";
 
+/** gemini-2.0-flash was retired in 2026. GEMINI_MODEL overrides the default in Vercel without a code change. */
 export const GEMINI_MODELS = {
-  PRIMARY: "gemini-2.0-flash",
-  FALLBACK: "gemini-2.0-flash-lite", // updated to match too, or left alone.
+  PRIMARY: process.env.GEMINI_MODEL || "gemini-2.5-flash",
 } as const;
 
-export function createGeminiClient() {
+/** Gemini is optional (Groq is the primary provider): no key means no Gemini client, not a crash. */
+export function createGeminiClient(): GoogleGenerativeAI | null {
   const env = getEnv();
-  if (!env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not defined in environment variables");
-  }
+  if (!env.GEMINI_API_KEY) return null;
   return new GoogleGenerativeAI(env.GEMINI_API_KEY);
 }
 

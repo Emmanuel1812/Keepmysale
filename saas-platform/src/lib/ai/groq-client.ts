@@ -1,9 +1,15 @@
 import OpenAI from "openai";
 import { getEnv } from "@/lib/env";
 
+/**
+ * Groq retired llama-3.3-70b-versatile and llama-3.1-8b-instant for non-enterprise accounts on 16 Aug 2026
+ * (console.groq.com/docs/deprecations); every call then failed and customers got the canned fallback text.
+ * Defaults are Groq's production replacements; GROQ_MODEL / GROQ_MODEL_LIGHT override them in Vercel when Groq
+ * retires these too, without a code change.
+ */
 export const GROQ_MODELS = {
-  PRIMARY: "llama-3.3-70b-versatile",
-  LIGHT: "llama-3.1-8b-instant",
+  PRIMARY: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+  LIGHT: process.env.GROQ_MODEL_LIGHT || "openai/gpt-oss-20b",
 } as const;
 
 export function createGroqClient() {
@@ -37,7 +43,9 @@ export async function callGroqWithRetry(
         messages,
         model,
         response_format: { type: "json_object" },
-      });
+        // gpt-oss models reason before answering; support replies do not need long reasoning
+        ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
+      } as Parameters<typeof client.chat.completions.create>[0]) as { choices: Array<{ message: { content: string | null } }> };
       return completion.choices[0].message.content;
     } catch (error: any) {
       lastError = error;

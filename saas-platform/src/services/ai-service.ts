@@ -300,14 +300,6 @@ export class AiService {
     
     if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "faq" || intentResult.intent === "other")) {
       try {
-        const model = this.geminiClient.getGenerativeModel({
-          model: GEMINI_MODELS.PRIMARY,
-          generationConfig: { 
-            responseMimeType: "application/json",
-            maxOutputTokens: 2048,
-            temperature: 0.7 
-          },
-        });
 
         const prompt = `
         Je bent een deskundige en behulpzame klantenservice medewerker voor '${storeName}'. 
@@ -412,14 +404,6 @@ export class AiService {
       if (!resultAction) {
         // Dynamic negotiation via Gemini
         try {
-        const model = this.geminiClient.getGenerativeModel({
-          model: GEMINI_MODELS.PRIMARY,
-          generationConfig: { 
-            responseMimeType: "application/json",
-            maxOutputTokens: 2048,
-            temperature: 0.7 
-          },
-        });
 
         const historyContext = (input.history || [])
           .map((h) => `${h.role === "user" ? "Klant" : "Assistent"}: ${h.content}`)
@@ -626,68 +610,54 @@ STRIKT_SYSTEEM_OVERRIDE:
     return null;
   }
 
+  /**
+   * Groq first (cheap, fast, current production models), then Groq's light model, then Gemini when a key is set.
+   * Throws only when every configured provider failed; callers then use their canned fallback text.
+   */
   private async callResilientAi(options: {
-    gemini: { 
-      model: string; 
-      prompt: string; 
+    gemini: {
+      model: string;
+      prompt: string;
       jsonMode?: boolean;
       config?: { maxOutputTokens?: number; temperature?: number; stopSequences?: string[] };
     };
     groq: { messages: any[]; model?: string };
   }): Promise<string> {
-    // 1. Attempt Gemini
-    try {
-      const gModel = this.geminiClient.getGenerativeModel({
-        model: options.gemini.model,
-        generationConfig: {
-          ...(options.gemini.jsonMode ? { responseMimeType: "application/json" } : {}),
-          ...options.gemini.config,
-        },
-      });
-      const result = await callGeminiWithRetry(gModel, options.gemini.prompt);
-      const text = result.response.text();
-      if (text) return text;
-      throw new Error("Gemini returned empty response");
-    } catch (geminiError: any) {
-      console.error("[AI] Gemini failed, checking fallback:", geminiError.message || geminiError);
-      
-      // 2. Fallback to Groq 70B if available
-      if (this.groqClient) {
-        let groqError70b: any;
-        
-        try {
-          console.log("[AI] Falling back to Groq 70B...");
-          const result = await callGroqWithRetry(
-            this.groqClient,
-            options.groq.messages,
-            GROQ_MODELS.PRIMARY, // 70b
-            0 // 0 max retries = exactly 1 attempt
-          );
-          if (result) return result;
-        } catch (error: any) {
-          console.error("[AI] Groq 70B fallback failed:", error.message || error);
-          groqError70b = error;
-        }
+    const errors: string[] = [];
 
-        // 3. Fallback to Groq 8B if 70B failed
+    if (this.groqClient) {
+      for (const model of [GROQ_MODELS.PRIMARY, GROQ_MODELS.LIGHT]) {
         try {
-          console.log("[AI] Falling back to Groq 8B as absolute last resort...");
-          const result = await callGroqWithRetry(
-            this.groqClient,
-            options.groq.messages,
-            GROQ_MODELS.LIGHT, // 8b
-            0 // exactly 1 attempt
-          );
+          const result = await callGroqWithRetry(this.groqClient, options.groq.messages, model, 0);
           if (result) return result;
+          errors.push(`groq ${model}: empty`);
         } catch (error: any) {
-          console.error("[AI] Groq 8B fallback also failed:", error.message || error);
+          errors.push(`groq ${model}: ${error?.status ?? ""} ${error?.message ?? error}`);
         }
-      } else {
-        console.warn("[AI] Groq fallback requested but GROQ_API_KEY is missing.");
       }
-      
-      // If we got here, both failed or fallback wasn't possible
-      throw geminiError;
     }
+
+    if (this.geminiClient) {
+      try {
+        const gModel = this.geminiClient.getGenerativeModel({
+          model: options.gemini.model,
+          generationConfig: {
+            ...(options.gemini.jsonMode ? { responseMimeType: "application/json" } : {}),
+            ...options.gemini.config,
+          },
+        });
+        const result = await callGeminiWithRetry(gModel, options.gemini.prompt);
+        const text = result.response.text();
+        if (text) return text;
+        errors.push("gemini: empty");
+      } catch (error: any) {
+        errors.push(`gemini: ${error?.status ?? ""} ${error?.message ?? error}`);
+      }
+    }
+
+    if (!this.groqClient && !this.geminiClient) errors.push("no AI provider configured (set GROQ_API_KEY)");
+    console.error("[AI] All providers failed:", errors.join(" | "));
+    throw new Error(`AI unavailable: ${errors.join(" | ")}`);
   }
+
 }
