@@ -12,7 +12,7 @@ Each wakeup: read this file, do ONE backlog item end to end, update this file, s
 - Stop the loop (ScheduleWakeup stop) when the backlog is empty or only "Needs Emmanuel" remains; then report in Dutch.
 
 ## Backlog (top first)
-0b. SECURITY FOUND loop 8: `/api/orders` returned ALL merchants' orders (with customer emails) whenever the signed-in merchant had none (a 'temporary workaround'); removed + `orders-isolation.test.ts`. Also deleted `/api/admin/cleanup` (GET, secret in URL, deleted conversations of EVERY merchant by subject keyword; guard test `no-global-admin-routes.test.ts`). admin/backfill-categories is merchant-scoped (fine). STILL TO AUDIT for merchant scoping/auth: returns, returns/[id]/process, webhooks/ses, inbox send + send-now + edit + [messageId] routes, negotiations/[id]/refund, shopify/order/refund, merchant/account/delete.
+0b. SECURITY FOUND loop 8: `/api/orders` returned ALL merchants' orders (with customer emails) whenever the signed-in merchant had none (a 'temporary workaround'); removed + `orders-isolation.test.ts`. Also deleted `/api/admin/cleanup` (GET, secret in URL, deleted conversations of EVERY merchant by subject keyword; guard test `no-global-admin-routes.test.ts`). admin/backfill-categories is merchant-scoped (fine). Audited and fine (merchant-scoped): returns, returns/[id]/process, negotiations, negotiations/[id]/refund, shopify/order/refund (uses the merchant's own token), inbox send (ownership check). FIXED loop 9: `/api/webhooks/ses` had NO authentication (anyone could inject mail that the AI answers, and make the server GET any SubscribeURL = SSRF); now needs `?secret=<AWS_SNS_WEBHOOK_SECRET>` (constant time, >= 16 chars) and only confirms real SNS https URLs (`ses-webhook-auth.test.ts`, mutation-checked). Only 1 message ever came in via SES (114 via Gmail poll). STILL TO AUDIT: inbox send-now/edit/[messageId], merchant/account/delete, merchant/settings, auth/google callback, sync routes.
 0. Every wakeup first: check the Vercel status of `git rev-parse origin/saas-platform-clean` (GitHub commit status API). If it is failure/error, fix or roll back before anything else. (Loop 4 commit was still "pending" when last checked.)
 1. ~~Email polling every 5 min~~ DONE in code (root `.github/workflows/keepmysale-gmail-poll.yml`, skips itself until GitHub secret CRON_SECRET exists). Also fixed a hole: `x-vercel-cron` header was trusted and an unset CRON_SECRET matched "Bearer undefined".
 1b. ~~old Python workflow~~ CHECKED: GitHub has it `disabled_inactivity` (last run 22 Jun), no credentials.json tracked, so it cannot send. Harmless; leave.
@@ -25,6 +25,7 @@ Each wakeup: read this file, do ONE backlog item end to end, update this file, s
 7. ~~Revenue mismatch~~ EXPLAINED: DB has 5 USD orders = $3095.13, no refunds; the old €3086.42 cannot be reproduced (earlier snapshot). Pre-existing failing e2e TEST 2 is a live-DB test, excluded by default; leave.
 
 ## Needs Emmanuel
+- SES inbound (only if you use it): the SNS subscription URL in AWS must become `https://keepmysale.com/api/webhooks/ses?secret=<value of AWS_SNS_WEBHOOK_SECRET in Vercel>` (needs >= 16 chars); until then the endpoint answers 401 (Gmail polling is unaffected).
 - Rotate leaked credentials (Shopify tokens of 3 old stores, Google OAuth client + Gmail token, Gemini/Groq keys, Supabase keys); make the GitHub repo private.
 - CRON_SECRET (>= 16 chars, random) must exist in Vercel Production env, and the same value as GitHub repo secret `CRON_SECRET`. Until it is set in Vercel, the cron routes answer 401 (Vercel then also sends it automatically on its daily cron). I could not read Vercel envs (MCP lacks team access).
 - Confirm company-name spelling "EFO Commerces".
@@ -32,6 +33,7 @@ Each wakeup: read this file, do ONE backlog item end to end, update this file, s
 
 ## Log
 - 20 Oct (loop 1): cron auth fixed (new src/lib/cron-auth.ts, 4 tests, mutation-checked; default suite 89 pass, tsc clean), 5-min poll workflow moved to repo root.
+- 20 Oct (loop 9): SES webhook authenticated + SSRF closed (suite 121 pass, tsc clean).
 - 20 Oct (loop 8b): removed the cross-merchant /api/admin/cleanup route.
 - 20 Oct (loop 8): cross-tenant orders leak fixed (suite green).
 - 20 Oct (loop 7): sidebar badge + inbox list reads slim/parallel (suite 112 pass, tsc clean).

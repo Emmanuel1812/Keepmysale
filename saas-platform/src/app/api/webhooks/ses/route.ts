@@ -2,8 +2,15 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { apiError, apiResponse } from "@/lib/api-helpers";
 import { WebhookService } from "@/services/webhook-service";
 import { simpleParser } from "mailparser";
+import { getEnv } from "@/lib/env";
+import { isAuthorizedSnsRequest, isSnsSubscribeUrl } from "@/lib/ses/sns-auth";
 
 export async function POST(request: Request) {
+  // Before reading anything: only our own SNS subscription knows the secret in its URL (see lib/ses/sns-auth.ts)
+  if (!isAuthorizedSnsRequest(request.url, getEnv().AWS_SNS_WEBHOOK_SECRET)) {
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
+  }
+
   const rawBody = await request.text();
   let snsPayload: Record<string, unknown>;
 
@@ -15,10 +22,11 @@ export async function POST(request: Request) {
 
   // Handle SNS subscription confirmation
   if (snsPayload.Type === "SubscriptionConfirmation") {
-    const subscribeUrl = snsPayload.SubscribeURL as string;
-    if (subscribeUrl) {
-      await fetch(subscribeUrl);
+    const subscribeUrl = snsPayload.SubscribeURL;
+    if (!isSnsSubscribeUrl(subscribeUrl)) {
+      return apiError("VALIDATION_ERROR", "SubscribeURL is not an SNS endpoint", 400);
     }
+    await fetch(subscribeUrl);
     return apiResponse({ confirmed: true });
   }
 
