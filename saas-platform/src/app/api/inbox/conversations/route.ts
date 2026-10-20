@@ -1,7 +1,7 @@
 import { apiError, apiResponse } from "@/lib/api-helpers";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getMerchantFromSession } from "@/lib/auth";
-import { deriveThreadStates } from "@/lib/inbox-visibility";
+import { deriveThreadStates, effectiveSender } from "@/lib/inbox-visibility";
 
 export async function GET(request: Request) {
   let merchantId = "";
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   // Who wrote last / has a person replied: derived from the messages (there is no such column).
   const messagesQuery = supabase
     .from("messages")
-    .select("conversation_id, sender, created_at")
+    .select("conversation_id, sender, created_at, is_fallback_draft:metadata->is_fallback_draft")
     .eq("merchant_id", merchantId);
   const [{ data: rawData, error }, { data: messageRows }] = await Promise.all([conversationsQuery, messagesQuery]);
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   const threadStates = deriveThreadStates(
-    (messageRows ?? []).map((m: any) => ({ conversationId: String(m.conversation_id), sender: String(m.sender), createdAt: String(m.created_at) })),
+    (messageRows ?? []).map((m: any) => ({ conversationId: String(m.conversation_id), sender: effectiveSender(String(m.sender), m.is_fallback_draft), createdAt: String(m.created_at) })),
   );
 
   // Map back to standard response shape but include customer object

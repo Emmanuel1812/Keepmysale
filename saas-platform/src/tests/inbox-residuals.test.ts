@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countUnanswered, deriveThreadStates, isSupportConversation } from "@/lib/inbox-visibility";
+import { countUnanswered, deriveThreadStates, effectiveSender, isSupportConversation } from "@/lib/inbox-visibility";
 import { currencySymbol, dominantCurrency, formatMoney } from "@/lib/money";
 import { EmailFilterService } from "@/lib/services/email-filter";
 
@@ -92,5 +92,14 @@ describe("senders that slipped through the filter are blocked before any databas
     const result = await filter.shouldProcessEmail({ id: "1", from, subject: "Hello", body: "" }, [], "m1");
     expect(result.shouldProcess).toBe(false);
     expect(result.layer).toBe(1);
+  });
+});
+
+
+describe("effectiveSender", () => {
+  it("an old fallback draft saved as 'ai' is a draft, not an answer", () => {
+    expect(effectiveSender("ai", true)).toBe("ai_draft");
+    expect(effectiveSender("ai", undefined)).toBe("ai");
+    expect(effectiveSender("customer", true)).toBe("customer");
   });
 });

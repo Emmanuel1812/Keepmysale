@@ -41,6 +41,14 @@ export interface ThreadState {
  * so it was always empty: the unread count never counted and the Drafts tab never filled). The messages are
  * the source of truth, so derive it from them.
  */
+/**
+ * Who really wrote last. Old rows saved while the `ai_draft` sender did not exist yet are sender "ai" with
+ * is_fallback_draft: they were never sent, so the inbox must not call them "Answered by AI".
+ */
+export function effectiveSender(sender: string, isFallbackDraft: unknown): string {
+  return sender === "ai" && (isFallbackDraft === true || isFallbackDraft === "true") ? "ai_draft" : sender;
+}
+
 export function deriveThreadStates(messages: ReadonlyArray<ThreadMessage>): Map<string, ThreadState> {
   const newestFirst = [...messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const states = new Map<string, ThreadState>();
