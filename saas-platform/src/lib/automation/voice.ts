@@ -44,20 +44,26 @@ export function extractOwnText(body: string): string {
 }
 
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+/** Letters and digits only: the same text sent as HTML or plain, with or without the greeting, still compares equal. */
+const letters = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
 /**
  * Sent mails worth learning from: written by a person (not one of our own AI replies or digests), long enough
- * to show a style, deduplicated.
+ * to show a style, deduplicated. An AI reply is recognised by a stretch from the middle of its text, because
+ * the greeting and sign-off around it are added separately and differ per mail.
  */
-export function selectVoiceSamples(texts: string[], aiWritten: string[]): string[] {
-  const ai = aiWritten.map((t) => normalize(t).slice(0, 120)).filter((t) => t.length >= 20);
+export function selectVoiceSamples(texts: string[], aiWritten: string[], systemSignOff?: string): string[] {
+  const ai = aiWritten.map(letters).filter((t) => t.length >= 60).map((t) => t.slice(20, 80));
+  const signOff = systemSignOff ? letters(systemSignOff) : "";
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of texts) {
     const text = extractOwnText(raw);
     const key = normalize(text);
     if (key.length < 40 || seen.has(key)) continue;
-    if (ai.some((a) => key.includes(a) || a.includes(key.slice(0, 120)))) continue;
+    const flat = letters(text);
+    if (ai.some((chunk) => flat.includes(chunk))) continue;
+    if (signOff.length >= 8 && flat.includes(signOff)) continue;
     seen.add(key);
     out.push(text.length > 1500 ? text.slice(0, 1500) : text);
     if (out.length >= VOICE_MAX_SAMPLES) break;
@@ -74,7 +80,7 @@ Beschrijf alleen de stijl, nooit klantgegevens, namen, ordernummers of bedragen:
 - aanspreekvorm (je/jij of u) en hoe formeel
 - warmte, humor, emoji, uitroeptekens
 - woorden en zinnetjes die vaak terugkomen
-- hoe ze openen en afsluiten
+Beschrijf NIET de aanhef en de afsluiting (zoals "Beste ..." of "Met vriendelijke groet"): die voegt het systeem zelf toe.
 
 Geef JSON:
 {

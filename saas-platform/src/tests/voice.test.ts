@@ -21,6 +21,7 @@ vi.mock("@/services/order-service", () => ({
 
 import { buildStyleBlock, extractOwnText, parseVoiceProfile, selectVoiceSamples, type VoiceProfile } from "@/lib/automation/voice";
 import { AiService } from "@/services/ai-service";
+import { isReply } from "@/services/voice-service";
 import { DEFAULT_MERCHANT_SETTINGS } from "@/types/merchant";
 import type { IIntentStructuredResult } from "@/types/ai";
 
@@ -43,10 +44,27 @@ describe("extractOwnText", () => {
 
 describe("selectVoiceSamples", () => {
   it("leaves out our own AI replies, short notes and duplicates", () => {
-    const ai = "Je bestelling #1005 heeft trackingnummer 26564613 en is onderweg naar je toe.";
+    const ai = "Je bestelling #1005 heeft trackingnummer 26564613 en is onderweg naar je toe. Je ontvangt hem binnen twee werkdagen.";
     const own = "Hoi! Je pakket is gisteren de deur uit gegaan, morgen heb je het binnen. Fijne dag!";
-    const samples = selectVoiceSamples([`${ai}\n\nMet vriendelijke groet`, "Ok thx", own, own], [ai]);
+    // as it went out: greeting added, different line breaks
+    const sentAi = `Goedemiddag Sanne,\n\nJe bestelling #1005 heeft trackingnummer 26564613 en is\nonderweg naar je toe. Je ontvangt hem binnen twee werkdagen.\n\nMet vriendelijke groet`;
+    const samples = selectVoiceSamples([sentAi, "Ok thx", own, own], [ai]);
     expect(samples).toEqual([own]);
+  });
+
+  it("leaves out mails carrying the sign-off KeepMySale adds itself", () => {
+    const sent = "Het spijt me dat de jas beschadigd is aangekomen, we lossen het op.\n\nMet vriendelijke groet,\nefo-testing-store Klantenservice";
+    expect(selectVoiceSamples([sent], [], "efo-testing-store Klantenservice")).toEqual([]);
+    expect(selectVoiceSamples([sent], [])).toHaveLength(1);
+  });
+});
+
+describe("isReply", () => {
+  it("learns only from answers, not from outreach the same mailbox sends", () => {
+    expect(isReply({ subject: "Re: waar is mijn pakket", headers: [] })).toBe(true);
+    expect(isReply({ subject: "Antw: retour", headers: [] })).toBe(true);
+    expect(isReply({ subject: "pakket", headers: [{ name: "In-Reply-To", value: "<a@b>" }] })).toBe(true);
+    expect(isReply({ subject: "Nemen jullie nog nieuwe klanten aan?", headers: [] })).toBe(false);
   });
 });
 
