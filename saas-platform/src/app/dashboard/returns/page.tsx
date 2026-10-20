@@ -53,7 +53,22 @@ interface KPIs {
   pendingReturns: number;
 }
 
-type TabType = "active" | "accepted" | "returns";
+type TabType = "active" | "accepted" | "returns" | "exchanges";
+
+interface ExchangeRow {
+  conversationId: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  orderLabel: string;
+  shopifyOrderId: string;
+  item: string;
+  fromSize: string | null;
+  toSize: string | null;
+  status: "requested" | "created" | "done";
+  error: string | null;
+  updatedAt: string;
+  shopDomain: string;
+}
 
 export default function ReturnsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("active");
@@ -61,6 +76,8 @@ export default function ReturnsPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [exchanges, setExchanges] = useState<ExchangeRow[]>([]);
+  const [exchangesToProcess, setExchangesToProcess] = useState<number | undefined>(undefined);
 
   const loadData = async (tab: TabType) => {
     setLoading(true);
@@ -69,6 +86,8 @@ export default function ReturnsPage() {
       const payload = await response.json();
       if (payload.success) {
         setNegotiations(payload.data?.negotiations ?? []);
+        setExchanges(payload.data?.exchanges ?? []);
+        if (typeof payload.data?.exchangesToProcess === "number") setExchangesToProcess(payload.data.exchangesToProcess);
         if (payload.data?.kpis) {
           setKpis(payload.data.kpis);
         }
@@ -132,6 +151,68 @@ export default function ReturnsPage() {
     const rawId = orderId?.includes('/') ? orderId.split('/').pop() : orderId;
     return `https://${domain}/admin/orders/${rawId}`;
   };
+
+  const handleExchangeDone = async (conversationId: string) => {
+    setProcessingId(conversationId);
+    try {
+      const res = await fetch(`/api/returns/exchange/${conversationId}`, { method: "POST" });
+      if (res.ok) await loadData(activeTab);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const renderExchangesTable = () => (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-surface-2 text-xs font-semibold text-muted">
+          <tr>
+            <th className="whitespace-nowrap px-5 py-3.5">Customer</th>
+            <th className="whitespace-nowrap px-5 py-3.5">Order</th>
+            <th className="whitespace-nowrap px-5 py-3.5">Exchange</th>
+            <th className="whitespace-nowrap px-5 py-3.5">Status</th>
+            <th className="whitespace-nowrap px-5 py-3.5">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {exchanges.length === 0 ? (
+            <tr><td colSpan={5}><EmptyState icon={<ReturnIcon className="h-5 w-5" />} title="No exchanges yet" body="When a customer returns something because of the size, KeepMySale offers a size that is in stock. Accepted swaps appear here." /></td></tr>
+          ) : exchanges.map((x) => (
+            <tr key={x.conversationId} className="kms-row">
+              <td className="min-w-[200px] px-5 py-4">
+                <div className="font-semibold text-foreground">{x.customerName || "Customer"}</div>
+                <div className="text-xs text-muted">{x.customerEmail}</div>
+              </td>
+              <td className="whitespace-nowrap px-5 py-4">
+                {x.shopDomain && x.shopifyOrderId ? (
+                  <a href={getShopifyLink(x.shopDomain, x.shopifyOrderId)} target="_blank" rel="noreferrer" className="font-semibold text-kept-strong hover:underline">{x.orderLabel}</a>
+                ) : <span className="font-semibold">{x.orderLabel}</span>}
+              </td>
+              <td className="px-5 py-4 text-foreground">
+                {x.item}: <span className="text-muted">{x.fromSize ?? "?"}</span> <ArrowRightIcon className="inline h-3.5 w-3.5 text-faint" /> <span className="font-semibold">{x.toSize ?? "?"}</span>
+              </td>
+              <td className="whitespace-nowrap px-5 py-4">
+                {x.status === "created" ? <Badge variant="teal" dot>Created in Shopify</Badge>
+                  : x.status === "done" ? <Badge dot>Done</Badge>
+                  : <Badge variant="amber" dot className="kms-ping" title={x.error ?? undefined}>To do in Shopify</Badge>}
+                {x.error ? <div className="mt-1 max-w-[16rem] truncate text-xs text-faint" title={x.error}>Not created automatically: {x.error}</div> : null}
+              </td>
+              <td className="whitespace-nowrap px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <Link href={`/dashboard/inbox/${x.conversationId}`} className="kms-press inline-flex h-8 items-center rounded-[10px] bg-surface-2 px-3 text-[13px] font-semibold text-foreground ring-1 ring-inset ring-line hover:bg-[#eef2f4]">Open conversation</Link>
+                  {x.status !== "done" ? (
+                    <Button size="sm" variant="outline" onClick={() => handleExchangeDone(x.conversationId)} loading={processingId === x.conversationId}>
+                      {processingId === x.conversationId ? "Saving" : <><CheckIcon className="h-3.5 w-3.5" /> Done</>}
+                    </Button>
+                  ) : null}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   // --- Render Sub-components ---
   
@@ -344,6 +425,7 @@ export default function ReturnsPage() {
     { key: "active" as const, label: "Negotiating", count: kpis?.activeCount },
     { key: "accepted" as const, label: "Accepted offers" },
     { key: "returns" as const, label: "Returns to process", count: kpis?.pendingReturns },
+    { key: "exchanges" as const, label: "Exchanges", count: exchangesToProcess },
   ];
 
   return (
@@ -375,6 +457,7 @@ export default function ReturnsPage() {
               {activeTab === 'active' && renderActiveTable()}
               {activeTab === 'accepted' && renderAcceptedTable()}
               {activeTab === 'returns' && renderReturnsTable()}
+              {activeTab === 'exchanges' && renderExchangesTable()}
             </div>
           )}
         </div>

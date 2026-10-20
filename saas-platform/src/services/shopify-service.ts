@@ -18,9 +18,9 @@ export class ShopifyService {
     return { accessToken, shopDomain: merchant.shopDomain };
   }
 
-  createInstallLink(shop: string) {
+  createInstallLink(shop: string, extraScopes: readonly string[] = []) {
     const state = randomUUID();
-    const installUrl = buildShopifyInstallUrl(shop, state);
+    const installUrl = buildShopifyInstallUrl(shop, state, extraScopes);
     return { installUrl, state };
   }
 

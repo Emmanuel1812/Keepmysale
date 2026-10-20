@@ -107,6 +107,12 @@ export interface IMerchantSettings {
   timezone?: string;
   /** @deprecated migrated to auto_reply_general */
   auto_respond?: boolean;
+  /**
+   * Exchange first for size returns: "off", "suggest" (offer an in-stock size; the merchant processes the
+   * exchange in Shopify) or "automatic" (also creates the return + exchange in Shopify; needs write_returns).
+   */
+  exchange_mode?: "off" | "suggest" | "automatic";
+
   /** Escalation email address (not in spec, kept for compat) */
   escalation_email?: string | null;
 }
@@ -165,6 +171,9 @@ export const DEFAULT_MERCHANT_SETTINGS: IMerchantSettings = {
   include_tracking_in_wismo: true,
   include_line_items_in_wismo: true,
   currency_display: "EUR",
+
+  // Exchange first
+  exchange_mode: "suggest",
 
   // Legacy compat
   business_hours: { start: "09:00", end: "17:00" },

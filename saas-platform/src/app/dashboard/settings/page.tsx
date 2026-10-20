@@ -91,6 +91,7 @@ export default function SettingsPage() {
   const [shopDomain, setShopDomain] = useState("");
   const [subscriptionTier, setSubscriptionTier] = useState("starter");
   const [subscriptionStatus, setSubscriptionStatus] = useState("trial");
+  const [exchangeScopesGranted, setExchangeScopesGranted] = useState(false);
   
   // Full Spec Settings
   const [settings, setSettings] = useState<IMerchantSettings>(DEFAULT_MERCHANT_SETTINGS);
@@ -109,6 +110,7 @@ export default function SettingsPage() {
           setShopDomain(shopDomain ?? "");
           setSubscriptionTier(subscriptionTier ?? "starter");
           setSubscriptionStatus(subscriptionStatus ?? "trial");
+          setExchangeScopesGranted(Boolean(payload.data.exchangeScopesGranted));
           
           if (rawSettings) {
              setSettings({
@@ -511,6 +513,62 @@ export default function SettingsPage() {
                    </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* --- TAB: NEGOTIATION, exchanges --- */}
+        {activeTab === "negotiation" && (
+          <Card className="overflow-hidden !p-0">
+            <CardHeader className="!mb-0 border-b border-line px-6 py-5 sm:px-8">
+              <CardTitle className="text-base">Exchange first</CardTitle>
+              <CardDescription>When a customer returns something because of the size, offer a size that is in stock before any discount. An exchange keeps the whole sale.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 p-6 sm:p-8">
+              <div role="radiogroup" aria-label="Exchange mode" className="grid gap-3 md:grid-cols-3">
+                {([
+                  { value: "off", title: "Off", body: "Size returns get your normal return offers." },
+                  { value: "suggest", title: "Suggest", body: "KeepMySale offers an in-stock size. Accepted swaps appear under Returns → Exchanges for you to process in Shopify." },
+                  { value: "automatic", title: "Automatic", body: "Also creates the return and exchange in Shopify, and Shopify emails the customer the return details." },
+                ] as const).map((option) => {
+                  const selected = (settings.exchange_mode ?? "suggest") === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => updateSetting("exchange_mode", option.value)}
+                      className={`kms-press rounded-[12px] p-4 text-left ring-1 ring-inset transition-colors ${selected ? "bg-kept-soft ring-kept" : "bg-white ring-line hover:ring-line-strong"}`}
+                    >
+                      <span className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">{option.title}</span>
+                        <span className={`grid h-4 w-4 place-items-center rounded-full ring-1 ring-inset ${selected ? "ring-kept" : "ring-line-strong"}`}>
+                          {selected ? <span className="h-2 w-2 rounded-full bg-kept" /> : null}
+                        </span>
+                      </span>
+                      <span className="mt-1.5 block text-xs text-muted">{option.body}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(settings.exchange_mode ?? "suggest") === "automatic" && (
+                exchangeScopesGranted ? (
+                  <p className="flex items-center gap-2 text-[13px] text-kept-strong">
+                    <span className="h-2 w-2 rounded-full bg-kept" /> Shopify permission for returns is granted.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-[12px] bg-attention-soft p-4 ring-1 ring-inset ring-[#f7dfb4] sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[13px] text-[#7c2d12]">
+                      Automatic needs one more Shopify permission (manage returns). Until you grant it, KeepMySale works as Suggest.
+                    </p>
+                    <Button size="sm" className="shrink-0 bg-attention hover:bg-[#92400e]" onClick={() => window.open(`/api/shopify/install?shop=${encodeURIComponent(shopDomain)}&extra=exchanges`, "_top")}>
+                      Grant permission
+                    </Button>
+                  </div>
+                )
+              )}
             </CardContent>
           </Card>
         )}

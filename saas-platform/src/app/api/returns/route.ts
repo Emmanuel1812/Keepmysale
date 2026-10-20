@@ -15,9 +15,41 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const tab = searchParams.get("tab") || "active"; // "active", "accepted", "returns", "all"
+  const tab = searchParams.get("tab") || "active"; // "active", "accepted", "returns", "exchanges", "all"
 
   const supabase = createSupabaseServiceClient();
+
+  // Exchanges live on the conversation (metadata.exchange), see services/exchange-service.ts
+  const { data: convRows } = await supabase
+    .from("conversations")
+    .select("id, subject, updated_at, metadata, customer:customers(name, email)")
+    .eq("merchant_id", merchantId)
+    .order("updated_at", { ascending: false });
+  const exchanges = (convRows ?? [])
+    .map((row: any) => ({ row, exchange: row.metadata?.exchange }))
+    .filter(({ exchange }) => exchange && ["requested", "created", "done"].includes(exchange.status))
+    .map(({ row, exchange }) => {
+      const customer = Array.isArray(row.customer) ? row.customer[0] : row.customer;
+      return {
+        conversationId: row.id,
+        customerName: customer?.name ?? null,
+        customerEmail: customer?.email ?? null,
+        orderLabel: exchange.orderLabel,
+        shopifyOrderId: exchange.orderId,
+        item: exchange.lineItem?.title ?? "",
+        fromSize: exchange.lineItem?.variantTitle ?? null,
+        toSize: exchange.chosen?.label ?? null,
+        status: exchange.status,
+        error: exchange.error ?? null,
+        updatedAt: exchange.updatedAt ?? row.updated_at,
+        shopDomain,
+      };
+    });
+  const exchangesToProcess = exchanges.filter((e) => e.status === "requested").length;
+
+  if (tab === "exchanges") {
+    return apiResponse({ negotiations: [], exchanges, kpis: null, exchangesToProcess });
+  }
 
   let query = supabase
     .from("negotiations")
@@ -103,6 +135,7 @@ export async function GET(req: Request) {
 
   return apiResponse({ 
     negotiations: enriched,
-    kpis
+    kpis,
+    exchangesToProcess,
   });
 }

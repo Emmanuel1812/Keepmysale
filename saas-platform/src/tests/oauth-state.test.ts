@@ -77,6 +77,14 @@ describe("shopify install + callback", () => {
     expect(cookie?.sameSite).toBe("lax");
   });
 
+  it("install with ?extra=exchanges also asks for the returns scopes, keeping the base scopes", async () => {
+    const res = await install(new Request("https://keepmysale.com/api/shopify/install?shop=efo-testing-store.myshopify.com&extra=exchanges"));
+    const scope = new URL(res.headers.get("location")!).searchParams.get("scope")!.split(",");
+    expect(scope).toEqual(expect.arrayContaining(["read_orders", "read_returns", "write_returns", "read_inventory"]));
+    const plain = await install(new Request("https://keepmysale.com/api/shopify/install?shop=efo-testing-store.myshopify.com"));
+    expect(new URL(plain.headers.get("location")!).searchParams.get("scope")).toBe("read_orders");
+  });
+
   it("install started on another host (preview, www) is first moved to the canonical host so the cookie survives", async () => {
     vi.stubEnv("NODE_ENV", "production");
     try {

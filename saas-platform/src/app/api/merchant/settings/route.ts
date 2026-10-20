@@ -3,12 +3,24 @@ import { getMerchantFromSession } from "@/lib/auth";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { MerchantService } from "@/services/merchant-service";
 import { apiError, apiResponse } from "@/lib/api-helpers";
+import { decryptAes256 } from "@/lib/encryption";
+import { fetchGrantedScopes, hasExchangeScopes } from "@/lib/shopify/exchange-client";
 
 export async function GET() {
   try {
     const merchant = await getMerchantFromSession();
+    // Whether the automatic exchange can work for this shop (it needs read_returns + write_returns)
+    let exchangeScopesGranted = false;
+    if (merchant.shopifyAccessTokenEncrypted) {
+      try {
+        exchangeScopesGranted = hasExchangeScopes(await fetchGrantedScopes(merchant.shopDomain, decryptAes256(merchant.shopifyAccessTokenEncrypted)));
+      } catch {
+        exchangeScopesGranted = false;
+      }
+    }
     return apiResponse({
       id: merchant.id,
+      exchangeScopesGranted,
       shopDomain: merchant.shopDomain,
       shopName: merchant.shopName,
       email: merchant.email,

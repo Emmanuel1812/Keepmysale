@@ -8,7 +8,7 @@ export function isValidShopDomain(shop: string): boolean {
   return SHOP_DOMAIN_PATTERN.test(shop);
 }
 
-export function buildShopifyInstallUrl(shopInput: string, state: string) {
+export function buildShopifyInstallUrl(shopInput: string, state: string, extraScopes: readonly string[] = []) {
   // The merchant types this by hand ("https://store.myshopify.com/", "store.myshopify.com/admin"...).
   // Clean it first, then refuse anything that is not a real myshopify host: building the URL from raw
   // input produced "https://https//store.myshopify.com//admin/..." and let any host be redirected to.
@@ -20,7 +20,8 @@ export function buildShopifyInstallUrl(shopInput: string, state: string) {
   const redirectUri = `${env.SHOPIFY_APP_URL}/api/shopify/callback`;
   const query = new URLSearchParams({
     client_id: env.SHOPIFY_API_KEY,
-    scope: env.SHOPIFY_SCOPES,
+    // Extra scopes for an optional feature (the automatic exchange asks for write_returns); base scopes always stay
+    scope: [...new Set([...env.SHOPIFY_SCOPES.split(",").map((x) => x.trim()).filter(Boolean), ...extraScopes])].join(","),
     redirect_uri: redirectUri,
     state,
   });

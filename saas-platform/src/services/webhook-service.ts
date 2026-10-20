@@ -15,6 +15,11 @@ import { formatEmailResponse } from "@/lib/utils/email-formatter";
 import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
 import { decideAutoReply } from "@/lib/automation/reply-policy";
 import { withinOfferMemory } from "@/lib/automation/acceptance";
+import type { ExchangeMode, ExchangeState } from "@/lib/automation/exchange";
+import { ExchangeService } from "@/services/exchange-service";
+import { findOrderForEmail } from "@/services/replay-service";
+import { createExchangeReturn, fetchGrantedScopes, fetchProductVariants, hasExchangeScopes } from "@/lib/shopify/exchange-client";
+import type { ActionResult } from "@/types/domain";
 
 export function stripQuotedText(text: string): string {
   const patterns = [
@@ -194,6 +199,42 @@ export class WebhookService {
       ? decryptAes256(merchant.shopifyAccessTokenEncrypted)
       : "";
 
+    // ── Exchange first (settings.exchange_mode): a size return gets an in-stock size before any discount ──
+    const exchangeMode = (settings.exchange_mode ?? "suggest") as ExchangeMode;
+    const existingExchange = (((conversation.metadata as Record<string, unknown>) ?? {}).exchange ?? null) as ExchangeState | null;
+    let exchangeAction: ActionResult | null = null;
+    if (exchangeMode !== "off" && (existingExchange || classification.intent === "return" || classification.intent === "exchange")) {
+      try {
+        const localOrders = await this.orderService.findByMerchant(input.merchantId);
+        const exchangeOrder = findOrderForEmail(localOrders, cleanFrom, classification.extracted_order_number);
+        const exchange = new ExchangeService({
+          loadVariants: (productId) => fetchProductVariants(merchant.shopDomain, decryptedShopifyAccessToken, productId),
+          createReturn: (args) => createExchangeReturn(merchant.shopDomain, decryptedShopifyAccessToken, args),
+          canCreateReturns: async () => hasExchangeScopes(await fetchGrantedScopes(merchant.shopDomain, decryptedShopifyAccessToken)),
+        });
+        const decision = await exchange.decide({
+          mode: exchangeMode,
+          text: cleanBody,
+          intent: classification.intent,
+          existing: existingExchange,
+          order: exchangeOrder,
+          language: classification.language_detected === "other" ? settings.language : classification.language_detected,
+          storeName: merchant.shopName || merchant.shopDomain.replace(".myshopify.com", ""),
+        });
+        if (decision) {
+          const metadata = { ...((conversation.metadata as Record<string, unknown>) ?? {}), exchange: decision.state };
+          await this.conversationService.update(conversation.id, { metadata });
+          conversation.metadata = metadata;
+          if (decision.messageBody) {
+            exchangeAction = { action: "send_general_reply", messageBody: decision.messageBody, facts: decision.facts, grounded: true };
+          }
+        }
+      } catch (error) {
+        // Never let the exchange path break the reply: the normal return flow answers instead
+        console.warn("[WEBHOOK] Exchange flow failed:", error instanceof Error ? error.message : error);
+      }
+    }
+
     let orderIdForNegotiation: string | null = null;
     const orderNameGuess = classification.extracted_order_number ?? undefined;
 
@@ -222,7 +263,7 @@ export class WebhookService {
       }
     }
 
-    if (classification.intent === "return" && orderIdForNegotiation && settings.auto_negotiate !== false) {
+    if (classification.intent === "return" && orderIdForNegotiation && settings.auto_negotiate !== false && !exchangeAction) {
       // Check negotiation eligibility based on settings
       const existingOrders = await this.orderService.findByMerchant(input.merchantId);
       const matchedOrder = existingOrders.find((o) => o.id === orderIdForNegotiation);
@@ -271,7 +312,7 @@ export class WebhookService {
       console.log(`[WEBHOOK] NO active negotiation found. shouldSkipAutoReply remains: ${shouldSkipAutoReply}`);
     }
 
-    const action = await this.aiService.buildAutomatedAction({
+    const action = exchangeAction ?? await this.aiService.buildAutomatedAction({
       incomingText: cleanBody,
       history: recentHistory,
       orderNameGuess: classification.extracted_order_number ?? undefined,
@@ -347,6 +388,9 @@ export class WebhookService {
         action.negotiationDecision + ", forcing send regardless of all flags.");
       shouldSkipAutoReply = false;
     }
+
+    // An exchange step answers like a negotiation step: sent (shadow mode and business hours still apply)
+    if (exchangeAction) shouldSkipAutoReply = false;
 
     // ── Grounding: a reply about an order that was not found is only a draft for a person ──
     if (action.grounded === false && !shouldSkipAutoReply) {
@@ -505,6 +549,8 @@ export class WebhookService {
         assignedCategory = "human_required";
       }
     }
+
+    if (!assignedCategory && exchangeAction) assignedCategory = "returns";
 
     if (!assignedCategory) {
       if (classification.intent === "wismo" || classification.intent === "resend_confirmation") assignedCategory = "shipping";
