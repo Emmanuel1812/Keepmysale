@@ -34,6 +34,7 @@ LOOP STOPPED 20 Oct ~21:10 after loop 12: every engineering item is done or expl
 - Gmail restricted-scope verification (Google) or SES forwarding before real pilot merchants.
 
 ## Log
+- 21 Oct: drafts-waiting mail + /approve/<token> (428cb93) verified end to end on the test shop: draft at 22:40:14Z, digest 0.2 s later, approved from the page, a second press answered "already". Your voice (94ad8d7, 5808bf7): learns only from Re:/In-Reply-To sent mail and skips our AI replies; the test inbox has no hand-written replies so it refuses (correct). FIXED: tone + Rules tab reached no prompt; approved/scheduled/send-now replies went out as a NEW mail titled after the conversation's first subject (conversations.external_id is never filled) — now the customer's latest thread, its subject, In-Reply-To/References (4f266f1); supplier account mail (STRATO login details) became customer conversations — filter tightened (c534a0e).
 - 20 Oct (loop 1): cron auth fixed (new src/lib/cron-auth.ts, 4 tests, mutation-checked; default suite 89 pass, tsc clean), 5-min poll workflow moved to repo root.
 - 20 Oct: loop stopped, only 'Needs Emmanuel' items remain.
 - 20 Oct (loop 12): currency + customer-name polish (suite 128 pass, tsc clean).

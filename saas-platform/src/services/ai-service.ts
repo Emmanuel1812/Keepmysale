@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildStyleBlock } from "@/lib/automation/voice";
 import type { IIntentStructuredResult } from "@/types/ai";
-import { format } from "date-fns";
 import { OrderService } from "@/services/order-service";
 import type { ActionResult } from "@/types/domain";
 import type { IMerchantSettings } from "@/types/merchant";
@@ -197,7 +196,7 @@ export class AiService {
           `Je bestelling ${orderName} heeft trackingnummer ${trackingNumber}.`,
         negotiation:
           "We kunnen je direct helpen. Als je wilt, kunnen we een gedeeltelijke terugbetaling aanbieden om een retourzending te vermijden.",
-        general: `Bedankt voor je bericht. We hebben je aanvraag ontvangen op ${format(new Date(), "yyyy-MM-dd HH:mm")} en reageren zo snel mogelijk.`,
+        general: "Bedankt voor je bericht. We hebben je vraag ontvangen en reageren zo snel mogelijk.",
       },
       en: {
         resend:
@@ -206,7 +205,7 @@ export class AiService {
           `Your order ${orderName} has tracking number ${trackingNumber}.`,
         negotiation:
           "We can help right away. If you prefer, we can offer a partial refund to avoid return shipping delays.",
-        general: `Thanks for your message. We received your request on ${format(new Date(), "yyyy-MM-dd HH:mm")} and will respond shortly.`,
+        general: "Thanks for your message. We have received your request and will respond shortly.",
       },
       pt: {
         resend:
@@ -215,7 +214,7 @@ export class AiService {
           `A sua encomenda ${orderName} tem o número de seguimento ${trackingNumber}.`,
         negotiation:
           "Podemos ajudar já. Se preferir, podemos oferecer um reembolso parcial para evitar devolução.",
-        general: `Obrigado pela sua mensagem. Recebemos o seu pedido em ${format(new Date(), "yyyy-MM-dd HH:mm")} e responderemos em breve.`,
+        general: "Obrigado pela sua mensagem. Recebemos o seu pedido e responderemos em breve.",
       },
     } as const;
 
@@ -326,7 +325,10 @@ export class AiService {
     // Dynamic handling for WISMO, FAQ, Exchange, Return, or General/Other if we have order context
     const hasOrderContext = orderContext !== "Geen order gevonden.";
     
-    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "faq" || intentResult.intent === "other")) {
+    // Complaints get a written reply too (it is a draft unless the merchant allows sending complaints); they used to
+    // get only the canned "we received your request" text, the least helpful answer to an unhappy customer
+    const isComplaint = intentResult.intent === "complaint";
+    if (!resultAction && (intentResult.intent === "wismo" || intentResult.intent === "faq" || intentResult.intent === "other" || isComplaint)) {
       try {
 
         const prompt = `
@@ -341,7 +343,8 @@ export class AiService {
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
         5. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
         6. BELANGRIJK: Staat bij Verzending 'verzonden', dan is het pakket AL verstuurd en waarschijnlijk bezorgd. Zeg dan NIET dat het 'in behandeling' is. Noem het trackingnummer als dat er is.
-        7. Gebruik gewone woorden, geen technische termen uit het systeem, en geen opmaak zoals *sterretjes* of **vet**.
+        7. Gebruik gewone woorden, geen technische termen uit het systeem, en geen opmaak zoals *sterretjes* of **vet**.${isComplaint ? `
+        8. KLACHT: De klant is ontevreden. Erken concreet wat er mis ging (in hun woorden), bied oprecht excuses aan en stel één duidelijke volgende stap voor (bijv. vraag om een foto, of zeg dat we een vervanging of retour regelen). Beloof NOOIT een bedrag, korting, terugbetaling of termijn die niet in de context staat.` : ""}
 
         STIJL EN REGELS VAN DE WINKEL:
         ${styleBlock}
