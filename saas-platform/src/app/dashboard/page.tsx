@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { currencySymbol } from "@/lib/money";
+import { orderLabel } from "@/lib/order-label";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -45,8 +46,10 @@ function useCountUp(endValue: number, duration = 700) {
   return value;
 }
 
-const AnimatedValue = ({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) => {
-  const count = useCountUp(value);
+const AnimatedValue = ({ value, ready = true, prefix = "", suffix = "", decimals = 0 }: { value: number; ready?: boolean; prefix?: string; suffix?: string; decimals?: number }) => {
+  const count = useCountUp(ready ? value : 0);
+  // Until the numbers have arrived a "0" or a guessed currency looks like real data (and sat next to a full orders table)
+  if (!ready) return <span className="inline-block h-7 w-16 animate-pulse rounded bg-zinc-200 align-middle" aria-label="Loading" />;
   return <>{prefix}{count.toFixed(decimals)}{suffix}</>;
 };
 
@@ -93,6 +96,7 @@ function DashboardContent() {
     pendingRefundsCount: 0,
     currency: "EUR",
   });
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -150,7 +154,10 @@ function DashboardContent() {
           headers: getAuthHeaders(),
         });
         const payload = await response.json();
-        if (payload.success && payload.data) setSummary(payload.data);
+        if (payload.success && payload.data) {
+          setSummary(payload.data);
+          setSummaryLoaded(true);
+        }
       } catch {}
     }
     void loadSummary();
@@ -218,7 +225,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-extrabold tracking-tight text-teal-800">
-                  <AnimatedValue value={summary.moneySaved} prefix={currencySymbol(summary.currency)} decimals={2} />
+                  <AnimatedValue ready={summaryLoaded} value={summary.moneySaved} prefix={currencySymbol(summary.currency)} decimals={2} />
                 </span>
                 <p className="mt-1 text-sm font-medium text-teal-700/80">Total Saved</p>
               </div>
@@ -230,7 +237,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-bold tracking-tight text-teal-800">
-                  <AnimatedValue value={summary.returnsPrevented} decimals={0} />
+                  <AnimatedValue ready={summaryLoaded} value={summary.returnsPrevented} decimals={0} />
                 </span>
                 <p className="mt-1 text-sm font-medium text-teal-700/80">Returns Prevented</p>
               </div>
@@ -242,7 +249,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-bold tracking-tight text-teal-800">
-                  <AnimatedValue value={summary.partialRefunds} decimals={0} />
+                  <AnimatedValue ready={summaryLoaded} value={summary.partialRefunds} decimals={0} />
                 </span>
                 <p className="mt-1 text-sm font-medium text-teal-700/80">Partial Refunds Issued</p>
               </div>
@@ -254,7 +261,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-bold tracking-tight text-teal-800">
-                  <AnimatedValue value={summary.successRate} suffix="%" decimals={1} />
+                  <AnimatedValue ready={summaryLoaded} value={summary.successRate} suffix="%" decimals={1} />
                 </span>
                 <p className="mt-1 text-sm font-medium text-teal-700/80">Negotiation Success Rate</p>
               </div>
@@ -272,28 +279,28 @@ function DashboardContent() {
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><PackageIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.totalOrders} decimals={0} />
+                <AnimatedValue ready={summaryLoaded} value={summary.totalOrders} decimals={0} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Total Orders</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><BanknoteIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.totalRevenue} prefix={currencySymbol(summary.currency)} decimals={2} />
+                <AnimatedValue ready={summaryLoaded} value={summary.totalRevenue} prefix={currencySymbol(summary.currency)} decimals={2} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Total Revenue</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><BarChartIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.avgOrderValue} prefix={currencySymbol(summary.currency)} decimals={2} />
+                <AnimatedValue ready={summaryLoaded} value={summary.avgOrderValue} prefix={currencySymbol(summary.currency)} decimals={2} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Avg Order Value</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-emerald-500 mb-3"><CheckCircleIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.fulfilledOrders} decimals={0} />
+                <AnimatedValue ready={summaryLoaded} value={summary.fulfilledOrders} decimals={0} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Fulfilled</p>
             </Card>
@@ -307,28 +314,28 @@ function DashboardContent() {
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-zinc-400 mb-3"><MessageIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.openConversations} decimals={0} />
+                <AnimatedValue ready={summaryLoaded} value={summary.openConversations} decimals={0} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Open Conversations</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-teal-500 mb-3"><CheckCircleIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.resolvedToday} decimals={0} />
+                <AnimatedValue ready={summaryLoaded} value={summary.resolvedToday} decimals={0} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Resolved Today</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-indigo-500 mb-3"><BotIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                <AnimatedValue value={summary.aiHandled} decimals={0} />
+                <AnimatedValue ready={summaryLoaded} value={summary.aiHandled} decimals={0} />
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">AI Handled</p>
             </Card>
             <Card className="rounded-xl border-zinc-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="text-amber-500 mb-3"><ZapIcon /></div>
               <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                {formatTime(summary.avgResponseTime)}
+                {summaryLoaded ? formatTime(summary.avgResponseTime) : "–"}
               </span>
               <p className="text-sm font-medium text-zinc-500 mt-0.5">Avg Response Time</p>
             </Card>
@@ -375,7 +382,7 @@ function DashboardContent() {
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-"}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap font-medium text-[#111827]">
-                        #{order.shopifyOrderNumber ?? order.id.slice(0,8)}
+                        {orderLabel(order.shopifyOrderNumber, order.id)}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap text-[#111827]">
                         Customer
