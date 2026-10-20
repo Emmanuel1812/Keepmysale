@@ -34,9 +34,10 @@ export default function ReplayPage() {
   const [rate, setRate] = useState(0.25);
   const [view, setView] = useState<View>("customers");
   const [openReply, setOpenReply] = useState<string | null>(null);
+  const [storeCurrency, setStoreCurrency] = useState("EUR");
   const stopRef = useRef(false);
 
-  const summary = useMemo(() => summarizeReplay(items, rate), [items, rate]);
+  const summary = useMemo(() => summarizeReplay(items, rate, storeCurrency), [items, rate, storeCurrency]);
   const money = (n: number) => formatMoney(n, summary.currency);
 
   async function run() {
@@ -52,6 +53,7 @@ export default function ReplayPage() {
         return;
       }
       const ids: string[] = listed.data.ids ?? [];
+      if (listed.data.currency) setStoreCurrency(listed.data.currency);
       setTotal(ids.length);
       setPhase("analyzing");
       for (let i = 0; i < ids.length && !stopRef.current; i += REPLAY_MAX_IDS_PER_REQUEST) {

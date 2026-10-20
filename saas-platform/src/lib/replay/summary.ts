@@ -54,11 +54,12 @@ export interface ReplaySummary {
   acceptanceRate: number;
 }
 
-export function summarizeReplay(items: ReplayItem[], acceptanceRate: number): ReplaySummary {
+/** `fallbackCurrency`: the store's own currency, shown when no return request names one. */
+export function summarizeReplay(items: ReplayItem[], acceptanceRate: number, fallbackCurrency = "EUR"): ReplaySummary {
   const rate = Math.min(Math.max(acceptanceRate, 0), 1);
   const returns = items.filter((i) => i.returnCase);
   const eligible = returns.filter((i) => i.returnCase!.eligible);
-  const currency = dominantCurrency(eligible.map((i) => i.returnCase!.currency));
+  const currency = dominantCurrency(eligible.map((i) => i.returnCase!.currency), fallbackCurrency);
   const inCurrency = eligible.filter((i) => (i.returnCase!.currency ?? "").toUpperCase() === currency);
   const round = (n: number) => Number(n.toFixed(2));
   const valueAtStake = round(inCurrency.reduce((sum, i) => sum + (i.returnCase!.orderValue ?? 0), 0));

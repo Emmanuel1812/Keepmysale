@@ -157,6 +157,12 @@ describe("summarizeReplay", () => {
     expect(s).toMatchObject({ currency: "USD", valueAtStake: 150, keptIfAllAccept: 120, expectedKept: 60 });
   });
 
+  it("uses the store's currency when no return request names one", () => {
+    const noReturns: ReplayItem[] = [{ id: "x", from: "", subject: "", receivedAt: null, snippet: "", outcome: "filtered" }];
+    expect(summarizeReplay(noReturns, 0.25, "USD").currency).toBe("USD");
+    expect(summarizeReplay(noReturns, 0.25).currency).toBe("EUR");
+  });
+
   it("clamps the acceptance assumption to 0..1", () => {
     expect(summarizeReplay(items, 7).expectedKept).toBe(120);
     expect(summarizeReplay(items, -1).expectedKept).toBe(0);
