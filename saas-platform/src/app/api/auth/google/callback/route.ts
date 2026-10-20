@@ -5,6 +5,9 @@ import { getMerchantFromSession } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MerchantService } from "@/services/merchant-service";
 import { apiError } from "@/lib/api-helpers";
+import { cookies } from "next/headers";
+import { GOOGLE_OAUTH_STATE_COOKIE, GOOGLE_OAUTH_STATE_PATH } from "@/lib/google/oauth-state";
+import { isValidOAuthState } from "@/lib/shopify/oauth-state";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,6 +21,13 @@ export async function GET(request: Request) {
 
   if (!code) {
     return apiError("VALIDATION_ERROR", "Missing authorization code", 400);
+  }
+
+  // Without this, someone can send a merchant a callback link carrying THEIR Google code, and the merchant's
+  // account ends up connected to the attacker's mailbox (customer mail and replies then live in it).
+  const storedState = (await cookies()).get(GOOGLE_OAUTH_STATE_COOKIE)?.value;
+  if (!isValidOAuthState(storedState, url.searchParams.get("state"))) {
+    return NextResponse.redirect(new URL("/onboarding?error=google_state_mismatch", env.NEXT_PUBLIC_APP_URL));
   }
 
   try {
@@ -75,7 +85,9 @@ export async function GET(request: Request) {
     });
 
     // 6. Redirect to dashboard
-    return NextResponse.redirect(new URL("/dashboard?google_success=true", env.NEXT_PUBLIC_APP_URL));
+    const done = NextResponse.redirect(new URL("/dashboard?google_success=true", env.NEXT_PUBLIC_APP_URL));
+    done.cookies.delete({ name: GOOGLE_OAUTH_STATE_COOKIE, path: GOOGLE_OAUTH_STATE_PATH });
+    return done;
   } catch (err) {
     console.error("[GOOGLE_CALLBACK_ERROR]", err);
     return NextResponse.redirect(new URL("/onboarding?error=google_callback_failed", env.NEXT_PUBLIC_APP_URL));
