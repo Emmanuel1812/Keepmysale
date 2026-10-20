@@ -14,21 +14,23 @@ export async function GET(request: Request) {
   const supabase = createSupabaseServiceClient();
   
   // Custom query to fetch conversations and their customers
-  const { data: rawData, error } = await supabase
+  // The two reads are independent, so run them together.
+  const conversationsQuery = supabase
       .from("conversations")
       .select("*, customer:customers(name, email)")
       .eq("merchant_id", merchantId)
       .order("updated_at", { ascending: false });
+  // Who wrote last / has a person replied: derived from the messages (there is no such column).
+  const messagesQuery = supabase
+    .from("messages")
+    .select("conversation_id, sender, created_at")
+    .eq("merchant_id", merchantId);
+  const [{ data: rawData, error }, { data: messageRows }] = await Promise.all([conversationsQuery, messagesQuery]);
 
   if (error) {
     return apiError("INTERNAL_ERROR", error.message, 500);
   }
 
-  // Who wrote last / has a person replied: derived from the messages (there is no such column).
-  const { data: messageRows } = await supabase
-    .from("messages")
-    .select("conversation_id, sender, created_at")
-    .eq("merchant_id", merchantId);
   const threadStates = deriveThreadStates(
     (messageRows ?? []).map((m: any) => ({ conversationId: String(m.conversation_id), sender: String(m.sender), createdAt: String(m.created_at) })),
   );

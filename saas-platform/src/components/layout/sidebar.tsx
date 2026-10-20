@@ -18,8 +18,12 @@ export async function Sidebar() {
     if (merchant?.shopName) shopName = merchant.shopName;
     // The Inbox badge is the real number of conversations waiting for an answer (it used to be a fixed 3).
     const db = createSupabaseServiceClient();
-    const conversations = await new ConversationsDal(db).findByMerchant(merchant.id);
-    const states = deriveThreadStates(await new MessagesDal(db).findByMerchant(merchant.id));
+    // Both reads at once, and only who-wrote-when for the messages: this runs on every dashboard page.
+    const [conversations, timeline] = await Promise.all([
+      new ConversationsDal(db).findByMerchant(merchant.id),
+      new MessagesDal(db).findTimelineByMerchant(merchant.id),
+    ]);
+    const states = deriveThreadStates(timeline);
     unanswered = countUnanswered(
       conversations.map((c) => ({
         ...c,
