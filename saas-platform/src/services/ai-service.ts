@@ -7,6 +7,7 @@ import type { IMerchantSettings } from "@/types/merchant";
 import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/gemini/client";
 import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
+import { isClearAcceptance } from "@/lib/automation/acceptance";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -400,15 +401,7 @@ export class AiService {
       const isLastStep = currentStepIndex >= steps.length - 1;
       const currentActiveStep = currentStepIndex !== -1 ? steps[currentStepIndex] : null;
 
-      const acceptPatterns = [
-        /\bja\b/i, /\bok[eé]?\b/i, /\bakkoord\b/i, /\bprima\b/i,
-        /\bdoe maar\b/i, /\bis goed\b/i, /\baccepteer\b/i, 
-        /\bdeal\b/i, /\byes\b/i, /\baccept\b/i, /\bsure\b/i,
-        /\bfine\b/i, /\bsounds good\b/i, /\bI'll take it\b/i,
-        /\bgraag\b/i, /\bwil ik\b/i, /\bdoe het\b/i
-      ];
-
-      const isObviousAcceptance = acceptPatterns.some(p => p.test(input.incomingText));
+      const isObviousAcceptance = isClearAcceptance(input.incomingText);
       if (isObviousAcceptance && currentActiveStep) {
         const pct = currentActiveStep.percentage;
         resultAction = {
@@ -471,7 +464,7 @@ STRIKT_SYSTEEM_OVERRIDE:
         - 'ja', 'ok', 'oké', 'akkoord', 'deal', 'prima', 'doe maar', 'is goed', 'goed', 'dat is goed', 'ik ga akkoord', 'fine', 'yes', 'I accept', 'I'll take it', 'sounds good', 'deal', 'ok let's do that', 'sure'
         - Elke reactie die INSTEMT met het eerder aangeboden percentage
         - Als de klant het geld/korting/tegoed wil ONTVANGEN
-        BELANGRIJK: Als je twijfelt of de klant accepteert, kies dan ALTIJD voor 'accept' in plaats van doorgaan. Een gemiste acceptatie is ERGER dan een vals positief.
+        BELANGRIJK: Kies ALLEEN 'accept' als de klant duidelijk instemt met het laatst gedane aanbod. Vraagt de klant om te retourneren of om zijn geld terug, of twijfel je, kies dan NIET 'accept' maar 'continue' en vraag het na. Een onterecht bevestigde terugbetaling kost de winkel echt geld.
         
         BESLISSING ("negotiationDecision"):
         - "accept": Klant gaat expliciet akkoord met het huidge of eerder gedane aanbod.
@@ -551,7 +544,7 @@ STRIKT_SYSTEEM_OVERRIDE:
       } catch (error) {
         console.error("[AI] Dynamic negotiation error:", error);
         
-        const isAcceptance = acceptPatterns.some(p => p.test(input.incomingText));
+        const isAcceptance = isClearAcceptance(input.incomingText);
         if (isAcceptance && currentActiveStep) {
           const pct = currentActiveStep.percentage;
           resultAction = {

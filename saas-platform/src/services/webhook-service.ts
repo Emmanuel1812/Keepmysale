@@ -14,6 +14,7 @@ import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { formatEmailResponse } from "@/lib/utils/email-formatter";
 import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
 import { decideAutoReply } from "@/lib/automation/reply-policy";
+import { withinOfferMemory } from "@/lib/automation/acceptance";
 
 export function stripQuotedText(text: string): string {
   const patterns = [
@@ -183,7 +184,8 @@ export class WebhookService {
     console.log(`[WEBHOOK] Initial Decision -> autoReplyEnabled: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
 
     const history = await this.messageService.findByConversation(conversation.id);
-    const recentHistory = history.slice(-10).map((m) => ({
+    // Only the recent part of the thread: an offer from months ago is not the offer this message answers
+    const recentHistory = history.filter((m) => withinOfferMemory(m.createdAt)).slice(-10).map((m) => ({
       role: m.sender === "customer" ? ("user" as const) : ("assistant" as const),
       content: m.content,
     }));
