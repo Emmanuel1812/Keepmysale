@@ -29,3 +29,20 @@ export function isOpenOffer(action: { action: string; negotiationDecision?: stri
   if (action.negotiationDecision === "accept" || action.negotiationDecision === "reject") return false;
   return /\d{1,2}\s*(%|procent|percent)/i.test(message);
 }
+
+/**
+ * The email formatter adds the store's own greeting and sign-off around the AI text. When the model writes its
+ * own ("Goedemiddag Emmanuel," ... "Met vriendelijke groet, Klantenservice"), the customer gets two of each and
+ * anything appended after it (the return option) lands below the signature. Strip them from the AI text.
+ */
+const GREETING_LINE = /^(goede(?:morgen|middag|avond)|hoi|hallo|hey|beste|geachte|dear|hi|hello|good (?:morning|afternoon|evening)|ol[aá]|bom dia|boa tarde)\b[^\n]{0,60}$/i;
+const SIGN_OFF_LINE = /^(met vriendelijke groet(?:en)?|vriendelijke groet(?:en)?|groet(?:en|jes)?|hartelijke groet(?:en)?|kind regards|best regards|regards|best wishes|cumprimentos|atenciosamente)\b/i;
+
+export function stripSalutations(message: string): string {
+  const lines = message.replace(/\r\n/g, "\n").split("\n");
+  while (lines.length && !lines[0].trim()) lines.shift();
+  if (lines.length > 1 && GREETING_LINE.test(lines[0].trim())) lines.shift();
+  const signOffAt = lines.findIndex((line, index) => index > 0 && SIGN_OFF_LINE.test(line.trim()));
+  const kept = signOffAt === -1 ? lines : lines.slice(0, signOffAt);
+  return kept.join("\n").trim();
+}

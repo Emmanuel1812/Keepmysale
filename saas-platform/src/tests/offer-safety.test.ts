@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ensureReturnOption, isOpenOffer, statesReturnOption } from "@/lib/automation/offer-safety";
+import { ensureReturnOption, isOpenOffer, statesReturnOption, stripSalutations } from "@/lib/automation/offer-safety";
 
 describe("ensureReturnOption", () => {
   it("adds the plain return option to an offer that leaves it out", () => {
@@ -16,6 +16,18 @@ describe("ensureReturnOption", () => {
 
   it("uses the customer's language", () => {
     expect(ensureReturnOption("We offer 20% back.", "en").message).toMatch(/full purchase price/);
+  });
+});
+
+describe("stripSalutations", () => {
+  it("drops the model's own greeting and sign-off (the formatter adds the store's)", () => {
+    const text = "Goedemiddag Emmanuel,\n\nWe bieden je 20% terug.\n\nMet vriendelijke groet,\nKlantenservice efo-testing-store";
+    expect(stripSalutations(text)).toBe("We bieden je 20% terug.");
+  });
+
+  it("leaves a body without salutations alone, including words like 'groeten' mid-sentence", () => {
+    const text = "Je pakket is verzonden.\nDe vervoerder doet de groeten niet, maar levert morgen.";
+    expect(stripSalutations(text)).toBe(text);
   });
 });
 

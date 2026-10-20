@@ -8,7 +8,7 @@ import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/ge
 import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { isClearAcceptance } from "@/lib/automation/acceptance";
-import { ensureReturnOption, isOpenOffer } from "@/lib/automation/offer-safety";
+import { ensureReturnOption, isOpenOffer, stripSalutations } from "@/lib/automation/offer-safety";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -629,6 +629,9 @@ STRIKT_SYSTEEM_OVERRIDE:
     const needsOrder = intentResult.intent === "wismo" || intentResult.intent === "return" || intentResult.intent === "exchange";
     resultAction.facts = facts;
     resultAction.grounded = !needsOrder || facts.length > 0;
+
+    // The formatter adds the store's greeting and sign-off; drop the model's own so there is one of each
+    if (resultAction.messageBody) resultAction.messageBody = stripSalutations(resultAction.messageBody) || resultAction.messageBody;
 
     // Every open keep-it offer ends with the plain return option (lib/automation/offer-safety.ts)
     if (resultAction.messageBody && isOpenOffer(resultAction, resultAction.messageBody)) {
