@@ -90,6 +90,8 @@ export default function ConversationThreadPage() {
         createdAt: message.createdAt,
         isScheduled: message.isScheduled ?? (message.metadata as any)?.original_sender === "ai_scheduled",
         scheduledSendAt: message.scheduledSendAt ?? null,
+        facts: Array.isArray((message.metadata as any)?.facts_used) ? ((message.metadata as any).facts_used as string[]) : [],
+        returnOptionStated: (message.metadata as any)?.return_option_stated === true,
       })),
     [messages],
   );

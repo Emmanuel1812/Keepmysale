@@ -10,6 +10,10 @@ interface ThreadMessage {
   createdAt?: string;
   isScheduled?: boolean;
   scheduledSendAt?: string | null;
+  /** Order facts the AI answer was built on */
+  facts?: string[];
+  /** The offer told the customer they can still send it back for a full refund */
+  returnOptionStated?: boolean;
 }
 
 interface MessageThreadProps {
@@ -241,6 +245,22 @@ export function MessageThread({ messages, onSendDraft, onDiscardDraft, onEditDra
                     ) : <SendIcon />}
                     {isSending === message.id ? "Sending" : "Send"}
                   </Button>
+                </div>
+              )}
+
+              {/* ======= What the AI based this on, and the customer's return right ======= */}
+              {isAiType && ((message.facts?.length ?? 0) > 0 || message.returnOptionStated) && (
+                <div className="mt-1.5 flex max-w-full flex-wrap items-center justify-end gap-1.5 self-end text-[11px]">
+                  {(message.facts?.length ?? 0) > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 text-muted ring-1 ring-inset ring-line" title="The order data this answer used">
+                      Based on: {message.facts!.join(" · ")}
+                    </span>
+                  )}
+                  {message.returnOptionStated && (
+                    <span className="rounded-full bg-kept-soft px-2 py-0.5 font-medium text-kept-strong" title="The customer was told they can still return it for a full refund">
+                      Return option stated
+                    </span>
+                  )}
                 </div>
               )}
 

@@ -255,7 +255,12 @@ export default function ReplayPage() {
                         {openReply === item.id ? "Hide the answer" : "Show the answer KeepMySale would send"}
                       </button>
                       {openReply === item.id ? (
-                        <p className="kms-enter mt-2 whitespace-pre-wrap rounded-[10px] bg-surface-2 p-3.5 text-sm leading-relaxed text-foreground ring-1 ring-inset ring-line">{item.reply}</p>
+                        <>
+                          <p className="kms-enter mt-2 whitespace-pre-wrap rounded-[10px] bg-surface-2 p-3.5 text-sm leading-relaxed text-foreground ring-1 ring-inset ring-line">{item.reply}</p>
+                          {item.facts && item.facts.length > 0 ? (
+                            <p className="mt-1.5 text-xs text-muted">Based on: {item.facts.join(" · ")}</p>
+                          ) : null}
+                        </>
                       ) : null}
                     </div>
                   ) : null}

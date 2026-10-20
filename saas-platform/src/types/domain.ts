@@ -55,4 +55,10 @@ export interface ActionResult {
     | "send_general_reply";
   messageBody: string;
   negotiationDecision?: "accept" | "reject" | "next_step" | "continue";
+  /** The order facts the reply was built on, shown to the merchant. */
+  facts?: string[];
+  /** false when the question needed an order and none was found: then only a draft, never an automatic send. */
+  grounded?: boolean;
+  /** The offer ends with the plain "send it back for a full refund" option. */
+  returnOptionStated?: boolean;
 }

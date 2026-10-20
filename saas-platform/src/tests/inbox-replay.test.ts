@@ -116,6 +116,14 @@ describe("analyzeEmail", () => {
     expect(item.returnCase).toMatchObject({ eligible: false, keptIfAccepted: null });
   });
 
+  it("shows an answer about an order it could not find as a draft, like the live pipeline", async () => {
+    const { d } = deps({
+      classify: vi.fn(async () => intent({ intent: "wismo", extracted_order_number: "#9999" })),
+      draft: vi.fn(async () => ({ action: "send_tracking_status", messageBody: "x", grounded: false, facts: [] }) as never),
+    });
+    expect((await analyzeEmail(mail({ body: "Waar is #9999?" }), d)).outcome).toBe("draft");
+  });
+
   it("reports an AI failure as an error item instead of failing the whole replay", async () => {
     const { d } = deps({ classify: vi.fn(async () => { throw new Error("quota"); }) });
     expect(await analyzeEmail(mail(), d)).toMatchObject({ outcome: "error", reason: "quota" });

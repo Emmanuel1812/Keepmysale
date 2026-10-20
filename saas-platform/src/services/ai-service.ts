@@ -8,6 +8,7 @@ import { createGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from "@/lib/ge
 import { createGroqClient, GROQ_MODELS, callGroqWithRetry } from "@/lib/ai/groq-client";
 import { INTENT_STRUCTURED_PROMPT, INTENT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { isClearAcceptance } from "@/lib/automation/acceptance";
+import { ensureReturnOption, isOpenOffer } from "@/lib/automation/offer-safety";
 
 const resendPatterns = [
   /resend.*confirmation/i,
@@ -255,6 +256,8 @@ export class AiService {
 
     let orderContext = "Geen order gevonden.";
     let order: any = null;
+    // What the reply was based on, shown to the merchant next to the message (see webhook-service metadata)
+    const facts: string[] = [];
 
     if (orderNumberCandidate) {
       // Our own synced orders first: Shopify's REST orders endpoint only returns the last 60 days without the
@@ -294,25 +297,39 @@ export class AiService {
 
         const sanitize = (val: any) => (val === null || val === undefined || val === "undefined" ? "onbekend" : val);
 
-        const parts = [
-          `Order ${order.shopify_order_number || order.name || order.shopifyOrderId || "onbekend"}:`,
-          `- Financiële Status: ${sanitize(order.financial_status || order.financialStatus)}`,
-          `- Fulfillment Status: ${sanitize(order.fulfillment_status || order.fulfillmentStatus)}`,
-        ];
-        if (includeTracking) parts.push(`- Tracking: ${sanitize(order.tracking_number || order.trackingNumber)}`);
-        if (includeLineItems && lineItemsStr) parts.push(`- Producten in deze order: ${lineItemsStr}`);
-        parts.push(`- Totaal: ${order.totalPrice || order.total_price} ${currencyDisplay}`);
-        
-        const fulfillmentExplanation: Record<string, string> = {
-          'fulfilled': 'De bestelling is volledig verzonden/afgeleverd.',
-          'partial': 'De bestelling is gedeeltelijk verzonden.',
-          'unfulfilled': 'De bestelling is nog niet verzonden.',
-          'restocked': 'De bestelling is geretourneerd en opnieuw op voorraad.',
+        // Plain-language statuses: the model copied raw Shopify words ("*fulfilled*") into Dutch replies
+        const shippingExplanation: Record<string, string> = {
+          fulfilled: "verzonden (en volgens de vervoerder waarschijnlijk afgeleverd)",
+          partial: "gedeeltelijk verzonden",
+          unfulfilled: "nog niet verzonden",
+          restocked: "geretourneerd en weer op voorraad",
         };
+        const paymentExplanation: Record<string, string> = {
+          paid: "betaald",
+          pending: "betaling in afwachting",
+          authorized: "betaling gereserveerd",
+          refunded: "terugbetaald",
+          partially_refunded: "gedeeltelijk terugbetaald",
+        };
+        const shippingKey = (order.fulfillment_status || order.fulfillmentStatus || "").toLowerCase();
+        const paymentKey = (order.financial_status || order.financialStatus || "").toLowerCase();
+        const label = order.shopify_order_number || order.name || order.shopifyOrderId || "onbekend";
+        const tracking = order.tracking_number || order.trackingNumber || null;
+        // The order's own currency (a USD shop was described in EUR when the setting said EUR)
+        const total = `${order.totalPrice || order.total_price} ${order.currency || currencyDisplay}`;
 
-        const statusKey = (order.fulfillment_status || order.fulfillmentStatus || "").toLowerCase();
-        parts.push(`- Status uitleg: ${fulfillmentExplanation[statusKey] || 'De fulfillment status is onbekend.'}`);
-
+        const parts = [
+          `Order ${label}:`,
+          `- Betaling: ${paymentExplanation[paymentKey] ?? sanitize(paymentKey || null)}`,
+          `- Verzending: ${shippingExplanation[shippingKey] ?? "status onbekend"}`,
+        ];
+        if (includeTracking) parts.push(`- Trackingnummer: ${sanitize(tracking)}`);
+        if (includeLineItems && lineItemsStr) parts.push(`- Producten in deze order: ${lineItemsStr}`);
+        parts.push(`- Totaal: ${total}`);
+        facts.push(`Order ${label}`, `Verzending: ${shippingExplanation[shippingKey] ?? "onbekend"}`);
+        if (includeTracking && tracking) facts.push(`Tracking ${tracking}`);
+        facts.push(`Totaal ${total}`);
+        
         orderContext = parts.join("\n          ");
       }
     }
@@ -334,7 +351,8 @@ export class AiService {
         3. GEEN GREETINGS/AFSLUITING: Schrijf alleen de body van het bericht. Gebruik geen "Hoi", "Beste", of "Met vriendelijke groet".
         4. FAQ GEGEVENS: Als het intent van de klant algemeen/FAQ is en er is geen ordernummer verstrekt, vermeld dan NIET dat er geen order gevonden kon worden. Beantwoord gewoon hun vraag direct. Excuseer je nooit voor ontbrekende ordergegevens, tenzij de klant expliciet om een orderupdate (WISMO) vroeg en de order echt niet gevonden kan worden.
         5. FORMATTING: Gebruik dubbele newlines tussen alinea's. Schrijf NIET alles in één lange alinea. Maximaal 3-4 zinnen per alinea.
-        6. BELANGRIJK: Als de fulfillment status 'fulfilled' is, betekent dit dat het pakket AL verzonden en waarschijnlijk bezorgd is. Zeg NIET dat het 'in behandeling' of 'onderweg' is als de status fulfilled is. Controleer de tracking info en geef een accuraat antwoord.
+        6. BELANGRIJK: Staat bij Verzending 'verzonden', dan is het pakket AL verstuurd en waarschijnlijk bezorgd. Zeg dan NIET dat het 'in behandeling' is. Noem het trackingnummer als dat er is.
+        7. Gebruik gewone woorden, geen technische termen uit het systeem, en geen opmaak zoals *sterretjes* of **vet**.
         
         CONTEXT:
         ${orderContext}
@@ -604,6 +622,19 @@ STRIKT_SYSTEEM_OVERRIDE:
         action: "send_general_reply",
         messageBody: localText.general,
       };
+    }
+
+    // Grounding: questions about an order (status, return) need that order. Without it the reply may only be a
+    // draft for a person, never an automatic answer ("we cannot find your order" sent to a real customer).
+    const needsOrder = intentResult.intent === "wismo" || intentResult.intent === "return" || intentResult.intent === "exchange";
+    resultAction.facts = facts;
+    resultAction.grounded = !needsOrder || facts.length > 0;
+
+    // Every open keep-it offer ends with the plain return option (lib/automation/offer-safety.ts)
+    if (resultAction.messageBody && isOpenOffer(resultAction, resultAction.messageBody)) {
+      const ensured = ensureReturnOption(resultAction.messageBody, languageCode);
+      resultAction.messageBody = ensured.message;
+      resultAction.returnOptionStated = true;
     }
 
     console.log("[AI] Action result:", resultAction.action, resultAction.messageBody?.substring(0, 200));

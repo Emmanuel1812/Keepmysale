@@ -31,6 +31,8 @@ export interface ReplayItem {
   intent?: string;
   confidence?: number;
   reply?: string;
+  /** The order facts the answer was built on. */
+  facts?: string[];
   returnCase?: ReplayReturnCase;
 }
 

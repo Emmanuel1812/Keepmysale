@@ -348,6 +348,12 @@ export class WebhookService {
       shouldSkipAutoReply = false;
     }
 
+    // ── Grounding: a reply about an order that was not found is only a draft for a person ──
+    if (action.grounded === false && !shouldSkipAutoReply) {
+      console.log("[WEBHOOK] Reply not grounded in order data: saving as draft.");
+      shouldSkipAutoReply = true;
+    }
+
     // ── Determine if we should send or just draft ─────────────
     const isShadowMode = settings.shadow_mode === true;
 
@@ -459,6 +465,9 @@ export class WebhookService {
           auto_reply_blocked: !shouldAutoReply,
           shadow_mode: isShadowMode,
           negotiation_decision: action.negotiationDecision,
+          facts_used: action.facts ?? [],
+          grounded: action.grounded ?? true,
+          return_option_stated: action.returnOptionStated ?? false,
         },
         isScheduled,
         scheduledSendAt: scheduleSendAt,

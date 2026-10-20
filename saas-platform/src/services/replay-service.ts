@@ -122,7 +122,9 @@ export async function analyzeEmail(email: GmailMessage, deps: ReplayDeps): Promi
     const action = await deps.draft({ text: body, intent });
     const item: ReplayItem = {
       ...base,
-      outcome: decision.skipAutoReply ? "draft" : "auto_reply",
+      // Same rule as live: a reply about an order it could not find is a draft, not an automatic answer
+      outcome: decision.skipAutoReply || action.grounded === false ? "draft" : "auto_reply",
+      facts: action.facts ?? [],
       intent: intent.intent,
       confidence: intent.confidence,
       reply: action.messageBody,
