@@ -45,6 +45,7 @@ export async function Sidebar() {
         <NavItem href="/dashboard/inbox" label="Inbox" badge={unanswered > 0 ? unanswered : undefined} />
         <NavItem href="/dashboard/orders" label="Orders" />
         <NavItem href="/dashboard/returns" label="Returns" />
+        <NavItem href="/dashboard/replay" label="Inbox replay" />
         <NavItem href="/dashboard/settings" label="Settings" />
       </nav>
       

@@ -7,6 +7,7 @@ export const EMBEDDED_NAV: ReadonlyArray<{ href: string; label: string }> = [
   { href: "/dashboard/inbox", label: "Inbox" },
   { href: "/dashboard/orders", label: "Orders" },
   { href: "/dashboard/returns", label: "Returns" },
+  { href: "/dashboard/replay", label: "Inbox replay" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 

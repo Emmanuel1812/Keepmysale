@@ -137,6 +137,8 @@ export class AiService {
     shopAccessToken: string;
     merchantSettings: IMerchantSettings;
     activeNegotiation?: any;
+    /** A classification already made for this text (the inbox replay classifies first); skips a second AI call. */
+    precomputedIntent?: IIntentStructuredResult;
   }): Promise<ActionResult> {
     let intentResult: IIntentStructuredResult;
     const ms = input.merchantSettings;
@@ -153,7 +155,7 @@ export class AiService {
         reasoning: "System request for proactive satisfaction survey",
       };
     } else {
-      intentResult = await this.classifyIntent(input.incomingText, input.history);
+      intentResult = input.precomputedIntent ? { ...input.precomputedIntent } : await this.classifyIntent(input.incomingText, input.history);
       
       // STICKY INTENT LOGIC:
       // If we are currently in an active return negotiation (history shows previous assistent refund offer)

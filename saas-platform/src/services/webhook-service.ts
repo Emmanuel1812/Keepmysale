@@ -13,8 +13,9 @@ import { decryptAes256 } from "@/lib/encryption";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { formatEmailResponse } from "@/lib/utils/email-formatter";
 import { extractCleanEmail, stripHtml } from "@/lib/email/parser";
+import { decideAutoReply } from "@/lib/automation/reply-policy";
 
-function stripQuotedText(text: string): string {
+export function stripQuotedText(text: string): string {
   const patterns = [
     /On .+ wrote:[\s\S]*/m,
     /Op .+ schreef.*:[\s\S]*/m,
@@ -170,41 +171,14 @@ export class WebhookService {
       }
     }
 
-    // ── Settings Guard: auto_reply per intent ────────────────────
-    const intentAutoReplyMap: Record<string, boolean> = {
-      wismo: settings.auto_reply_wismo !== false,
-      return: settings.auto_negotiate !== false,
-      complaint: settings.auto_reply_complaint === true,
-      other: settings.auto_reply_general !== false,
-      faq: settings.auto_reply_general !== false,
-      exchange: settings.auto_reply_general !== false,
-      resend_confirmation: settings.auto_reply_wismo !== false,
-    };
-    const shouldAutoReply = intentAutoReplyMap[classification.intent] ?? settings.auto_reply_general !== false;
-
-    // ── Settings Guard: requires_human_threshold ─────────────────
-    const confidenceThreshold = settings.requires_human_threshold ?? 0.6;
-    const belowThreshold = classification.confidence < confidenceThreshold;
+    // ── Settings guards: auto-reply per intent, confidence threshold, informational + negotiation overrides ──
+    const decision = decideAutoReply(classification, settings);
+    const shouldAutoReply = decision.autoReplyEnabled;
+    const belowThreshold = decision.belowThreshold;
     if (belowThreshold) {
-      console.log(`[WEBHOOK] FLAG: Confidence ${classification.confidence} is below the threshold of ${confidenceThreshold}`);
+      console.log(`[WEBHOOK] FLAG: Confidence ${classification.confidence} is below the threshold of ${settings.requires_human_threshold ?? 0.6}`);
     }
-
-    const isNegotiation = classification.intent === "return" && settings.auto_negotiate !== false;
-    let shouldSkipAutoReply = !shouldAutoReply || classification.requires_human || belowThreshold;
-    
-    // Informational intents should ALWAYS send (never draft)
-    if (classification.intent === "wismo" || 
-        classification.intent === "faq" || 
-        classification.intent === "resend_confirmation") {
-      console.log("[WEBHOOK] Informational intent '" + classification.intent + "' — forcing send.");
-      shouldSkipAutoReply = false;
-    }
-
-    // ── Special Case: Automated Negotiation Bypass ───────────────
-    if (isNegotiation) {
-      console.log("[WEBHOOK] Negotiation intent detected. Bypassing skip guards.");
-      shouldSkipAutoReply = false;
-    }
+    let shouldSkipAutoReply = decision.skipAutoReply;
 
     console.log(`[WEBHOOK] Initial Decision -> autoReplyEnabled: ${shouldAutoReply}, requiresHuman: ${classification.requires_human}, belowThreshold: ${belowThreshold} | Result: skip=${shouldSkipAutoReply}`);
 

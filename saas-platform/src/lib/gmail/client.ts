@@ -76,12 +76,57 @@ export interface GmailMessage {
   subject: string;
   body: string;
   headers: Array<{ name: string; value: string }>;
+  /** When Gmail received it (ISO), when known. */
+  receivedAt?: string | null;
+}
+
+type GmailMessageData = {
+  id?: string | null;
+  threadId?: string | null;
+  internalDate?: string | null;
+  payload?: {
+    headers?: Array<{ name?: string | null; value?: string | null }> | null;
+    parts?: Array<{ mimeType?: string | null; body?: { data?: string | null } | null }> | null;
+    body?: { data?: string | null } | null;
+  } | null;
+};
+
+/** Headers, subject and the plain-text body of one Gmail message (simplified: first text/plain part, else the body). */
+export function parseGmailMessage(data: GmailMessageData): GmailMessage {
+  const headers = (data.payload?.headers || []) as Array<{ name: string; value: string }>;
+  const from = headers.find((h) => h.name === "From")?.value || "";
+  const to = headers.find((h) => h.name === "To")?.value || "";
+  const subject = headers.find((h) => h.name === "Subject")?.value || "";
+
+  let body = "";
+  const parts = data.payload?.parts || [];
+  const plainPart = parts.find((p) => p.mimeType === "text/plain");
+  if (plainPart?.body?.data) {
+    body = Buffer.from(plainPart.body.data, "base64").toString("utf-8");
+  } else if (data.payload?.body?.data) {
+    body = Buffer.from(data.payload.body.data, "base64").toString("utf-8");
+  }
+
+  return {
+    id: String(data.id ?? ""),
+    threadId: String(data.threadId ?? ""),
+    from,
+    to,
+    subject,
+    body,
+    headers, // Include all headers for filtering
+    receivedAt: data.internalDate ? new Date(Number(data.internalDate)).toISOString() : null,
+  };
+}
+
+function gmailFor(accessToken: string) {
+  const oauth2Client = createOAuth2Client();
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 export async function fetchNewEmails(accessToken: string): Promise<GmailMessage[]> {
-  const oauth2Client = createOAuth2Client();
-  oauth2Client.setCredentials({ access_token: accessToken });
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const gmail = gmailFor(accessToken);
 
   const response = await gmail.users.messages.list({
     userId: "me",
@@ -98,34 +143,30 @@ export async function fetchNewEmails(accessToken: string): Promise<GmailMessage[
       id: msg.id!,
       format: "full",
     });
-
-    const headers = (detail.data.payload?.headers || []) as Array<{ name: string; value: string }>;
-    const from = headers.find((h) => h.name === "From")?.value || "";
-    const to = headers.find((h) => h.name === "To")?.value || "";
-    const subject = headers.find((h) => h.name === "Subject")?.value || "";
-
-    // Simplified body extraction
-    let body = "";
-    const parts = detail.data.payload?.parts || [];
-    const plainPart = parts.find((p) => p.mimeType === "text/plain");
-    if (plainPart?.body?.data) {
-      body = Buffer.from(plainPart.body.data, "base64").toString("utf-8");
-    } else if (detail.data.payload?.body?.data) {
-       body = Buffer.from(detail.data.payload.body.data, "base64").toString("utf-8");
-    }
-
-    results.push({
-      id: msg.id!,
-      threadId: detail.data.threadId!,
-      from,
-      to,
-      subject,
-      body,
-      headers, // Include all headers for filtering
-    });
+    results.push(parseGmailMessage(detail.data));
   }
 
   return results;
+}
+
+/**
+ * Ids of the most recent mail customers sent to this inbox, read or unread. Read-only: listing never changes a label.
+ * Used by the inbox replay, which must leave the mailbox exactly as it found it.
+ */
+export async function listRecentInboxMessageIds(accessToken: string, max = 50): Promise<string[]> {
+  const gmail = gmailFor(accessToken);
+  const response = await gmail.users.messages.list({
+    userId: "me",
+    q: "in:inbox -from:me -category:promotions -category:social newer_than:90d",
+    maxResults: Math.min(Math.max(max, 1), 100),
+  });
+  return (response.data.messages || []).map((m) => String(m.id)).filter(Boolean);
+}
+
+/** One message by id. `messages.get` does not mark a message as read. */
+export async function getGmailMessage(accessToken: string, id: string): Promise<GmailMessage> {
+  const detail = await gmailFor(accessToken).users.messages.get({ userId: "me", id, format: "full" });
+  return parseGmailMessage(detail.data);
 }
 
 export async function sendGmailReply(accessToken: string, params: { to: string, subject: string, html: string, text: string, threadId?: string }) {
