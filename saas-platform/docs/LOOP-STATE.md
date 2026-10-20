@@ -12,6 +12,7 @@ Each wakeup: read this file, do ONE backlog item end to end, update this file, s
 - Stop the loop (ScheduleWakeup stop) when the backlog is empty or only "Needs Emmanuel" remains; then report in Dutch.
 
 ## Backlog (top first)
+0b. SECURITY FOUND loop 8: `/api/orders` returned ALL merchants' orders (with customer emails) whenever the signed-in merchant had none (a 'temporary workaround'); removed + `orders-isolation.test.ts`. Audit the other direct-table routes for missing merchant scoping/auth: admin/backfill-categories, admin/cleanup, returns, returns/[id]/process, webhooks/ses, inbox send routes.
 0. Every wakeup first: check the Vercel status of `git rev-parse origin/saas-platform-clean` (GitHub commit status API). If it is failure/error, fix or roll back before anything else. (Loop 4 commit was still "pending" when last checked.)
 1. ~~Email polling every 5 min~~ DONE in code (root `.github/workflows/keepmysale-gmail-poll.yml`, skips itself until GitHub secret CRON_SECRET exists). Also fixed a hole: `x-vercel-cron` header was trusted and an unset CRON_SECRET matched "Bearer undefined".
 1b. ~~old Python workflow~~ CHECKED: GitHub has it `disabled_inactivity` (last run 22 Jun), no credentials.json tracked, so it cannot send. Harmless; leave.
@@ -31,6 +32,7 @@ Each wakeup: read this file, do ONE backlog item end to end, update this file, s
 
 ## Log
 - 20 Oct (loop 1): cron auth fixed (new src/lib/cron-auth.ts, 4 tests, mutation-checked; default suite 89 pass, tsc clean), 5-min poll workflow moved to repo root.
+- 20 Oct (loop 8): cross-tenant orders leak fixed (suite green).
 - 20 Oct (loop 7): sidebar badge + inbox list reads slim/parallel (suite 112 pass, tsc clean).
 - 20 Oct (loop 6b): functions pinned to dub1 next to the database.
 - 20 Oct (loop 6): analytics summary reads parallel + slim messages (suite 110 pass, tsc clean).
