@@ -4,7 +4,7 @@ import { AutomationService, SyncResult } from "@/services/automation-service";
 import { MerchantsDal, mapMerchantRow } from "@/dal/merchants";
 import { getValidAccessToken, sendGmailReply } from "@/lib/gmail/client";
 import { getEnv } from "@/lib/env";
-import { isAuthorizedCronRequest } from "@/lib/cron-auth";
+import { isAuthorizedCronCall } from "@/lib/cron-auth";
 import { apiError } from "@/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ async function processGmailPolling(request: Request) {
   // AUTH CHECK: bearer secret only (see lib/cron-auth.ts; x-vercel-cron can be forged by anyone)
   const isDev = process.env.NODE_ENV === "development";
 
-  if (!isAuthorizedCronRequest(request, env.CRON_SECRET) && !isDev) {
+  if (!(await isAuthorizedCronCall(request, env.CRON_SECRET)) && !isDev) {
     const userAgent = request.headers.get("user-agent") || "";
     // Avoid spamming logs if it's just a browser or bot hit
     if (!userAgent.includes("Mozilla")) {

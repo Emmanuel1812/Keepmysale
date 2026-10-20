@@ -1,12 +1,16 @@
 name: Keepmysale Gmail poll
 
 # Vercel Hobby only runs one cron per day. GitHub runs this every 5 minutes (best effort, it can lag a few minutes).
-# Needs ONE repository secret: CRON_SECRET (the same value as the CRON_SECRET env var in Vercel).
-# Without the secret the job skips itself, so it never fails noisily.
+# No secret needed: the job proves who it is with a GitHub-signed OIDC token, which the app verifies
+# (saas-platform/src/lib/github-oidc.ts: this repository, this workflow, the production branch, schedule or manual).
 on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   poll:
@@ -14,13 +18,13 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Call the polling endpoint
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "CRON_SECRET is not set; skipping."
-            exit 0
+          TOKEN=$(curl -sS --fail -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=keepmysale-cron" | jq -r .value)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Could not get a GitHub OIDC token"
+            exit 1
           fi
           curl --fail-with-body --silent --show-error --max-time 120 \
             -X GET "https://keepmysale.com/api/cron/check-gmail" \
-            -H "Authorization: Bearer $CRON_SECRET"
+            -H "Authorization: Bearer $TOKEN"
