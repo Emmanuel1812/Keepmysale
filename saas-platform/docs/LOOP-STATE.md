@@ -27,6 +27,7 @@ LOOP STOPPED 20 Oct ~21:10 after loop 12: every engineering item is done or expl
 7. ~~Revenue mismatch~~ EXPLAINED: DB has 5 USD orders = $3095.13, no refunds; the old €3086.42 cannot be reproduced (earlier snapshot). Pre-existing failing e2e TEST 2 is a live-DB test, excluded by default; leave.
 
 ## Needs Emmanuel
+- Poll timing: GitHub's 5-min schedule ran ONCE between 21:00 and 23:00Z on 20 Oct (GitHub delays/skips schedules); something else called /api/cron/check-gmail at 22:40 and 22:56Z (no record of what — not GitHub, not a Claude scheduled task). For a dependable 5 minutes: a free cron-job.org job calling the endpoint with the CRON_SECRET bearer (his account), or Supabase pg_cron + pg_net (a production DB change, his OK).
 - SES inbound (only if you use it): the SNS subscription URL in AWS must become `https://keepmysale.com/api/webhooks/ses?secret=<value of AWS_SNS_WEBHOOK_SECRET in Vercel>` (needs >= 16 chars); until then the endpoint answers 401 (Gmail polling is unaffected).
 - Rotate leaked credentials (Shopify tokens of 3 old stores, Google OAuth client + Gmail token, Gemini/Groq keys, Supabase keys); make the GitHub repo private.
 - CRON_SECRET (>= 16 chars, random) must exist in Vercel Production env, and the same value as GitHub repo secret `CRON_SECRET`. Until it is set in Vercel, the cron routes answer 401 (Vercel then also sends it automatically on its daily cron). I could not read Vercel envs (MCP lacks team access).
